@@ -4,7 +4,7 @@
 
 - Snowflake began as a cloud data warehouse and has evolved into a cloud data platform for analytics, data engineering, data applications, and AI workloads.
 
-![What is Snowflake?](../img/what_is_snowflake.png)
+<img src="../img/what_is_snowflake.png" alt="What is Snowflake?" width="720">
 
 ## Multi-Cluster Shared Data Architecture
 
