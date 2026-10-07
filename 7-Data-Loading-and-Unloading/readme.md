@@ -98,20 +98,36 @@ COPY INTO my_table
   FILE_FORMAT = (FORMAT_NAME = my_csv_format);
 ```
 
-### Transform During the Load
+### Transform Data During a Load
 
-`COPY INTO` supports a limited set of SQL transformations while loading data:
+Use a `SELECT` query inside `COPY INTO <table>` for simple transformations at ingestion time. This can avoid creating a temporary table when you only need to reorder columns, omit columns, cast values, or apply supported expressions.
 
 ```sql
 COPY INTO my_table (value_as_number, raw_value)
   FROM (
     SELECT
-      TO_DOUBLE(t.$1),
-      t.$1
+      TRY_TO_DOUBLE(t.$1) AS value_as_number,
+      t.$1 AS raw_value
     FROM @my_int_stage t
   )
   FILE_FORMAT = (FORMAT_NAME = my_csv_format);
 ```
+
+`TRY_TO_DOUBLE` returns `NULL` for an invalid numeric value instead of failing the entire load. Use it only when a `NULL` value is an acceptable outcome and monitor the rejected or unexpected values separately.
+
+#### Supported Uses
+
+- Reorder or omit source columns.
+- Cast values with `::`, `TO_<type>()`, or `TRY_TO_<type>()`.
+- Apply simple supported expressions, such as `CASE`, `TRIM`, `CONCAT`, and `GET`.
+- Load JSON elements from staged files, for example `$1:customer_id::NUMBER`.
+
+#### Important Limitations
+
+- A transformation uses a limited subset of SQL functions.
+- `JOIN`, `GROUP BY`, `FLATTEN`, `WHERE`, `ORDER BY`, and `LIMIT` are not supported in the transformation query.
+- Do not combine a transformation `SELECT` with `MATCH_BY_COLUMN_NAME` or `VALIDATION_MODE`.
+- For complex business logic, load to a raw or staging table first, then transform with SQL models, Streams and Tasks, or dbt.
 
 Loading from another cloud region or cloud platform can incur data-transfer charges.
 
