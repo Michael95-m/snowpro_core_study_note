@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="530" viewBox="0 0 960 530" role="img" aria-labelledby="title desc">
+  <title id="title">Match Query Profile symptoms to a first investigation</title>
+  <desc id="desc">For queues inspect overload, provisioning, or blocking. For large spills reduce intermediate data or increase resources. For weak pruning check selective predicates and data layout. For exploding joins check keys and grain. Measure correctness and performance afterward.</desc>
+  <rect width="960" height="530" rx="18" fill="#f8fafc"/>
+  <g font-family="Arial, sans-serif" fill="#172b4d">
+    <text x="32" y="44" font-size="28" font-weight="700">Find the bottleneck before choosing a feature</text>
+    <text x="32" y="88" font-size="21">Query History → Query Profile / Insights → expensive operator</text>
+    <text x="50" y="132" font-size="19" font-weight="700">OBSERVED SYMPTOM</text>
+    <text x="365" y="132" font-size="19" font-weight="700">FIRST INVESTIGATION</text>
+    <rect x="32" y="151" width="896" height="68" rx="10" fill="#dbeafe"/>
+    <rect x="32" y="233" width="896" height="68" rx="10" fill="#e2e8f0"/>
+    <rect x="32" y="315" width="896" height="68" rx="10" fill="#ccfbf1"/>
+    <rect x="32" y="397" width="896" height="68" rx="10" fill="#ede9fe"/>
+    <text x="50" y="193" font-size="23" font-weight="700">Long queue time</text>
+    <text x="365" y="180" font-size="21">Overload, provisioning, or transaction blocking?</text>
+    <text x="365" y="205" font-size="18">Concurrency fixes differ from startup or lock fixes.</text>
+    <text x="50" y="275" font-size="23" font-weight="700">Large local / remote spill</text>
+    <text x="365" y="262" font-size="21">Reduce intermediate data; assess memory capacity.</text>
+    <text x="365" y="287" font-size="18">Check SQL, batch size, and warehouse size.</text>
+    <text x="50" y="357" font-size="23" font-weight="700">Weak pruning</text>
+    <text x="365" y="344" font-size="21">Compare scanned partitions with needed rows.</text>
+    <text x="365" y="369" font-size="18">Review selectivity and data layout for repeated patterns.</text>
+    <text x="50" y="439" font-size="23" font-weight="700">Exploding join</text>
+    <text x="365" y="426" font-size="21">Check join condition, duplicate keys, and data grain.</text>
+    <text x="365" y="451" font-size="18">Find the reason for unexpected row multiplication.</text>
+    <text x="32" y="505" font-size="20">Change one thing → compare results, runtime, and credits on representative work.</text>
+  </g>
+</svg>

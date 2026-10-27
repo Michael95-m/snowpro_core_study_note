@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="430" viewBox="0 0 960 430" role="img" aria-labelledby="title desc">
+  <title id="title">Role grant direction and privilege inheritance</title>
+  <desc id="desc">Table SELECT is granted to a reader role. The reader role is granted to a functional role, which is granted to a user. The functional parent inherits the child's privileges. The child does not inherit parent privileges.</desc>
+  <defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10Z" fill="#526580"/></marker></defs>
+  <rect width="960" height="430" rx="18" fill="#f8fafc"/>
+  <g font-family="Arial, sans-serif" fill="#172b4d">
+    <text x="32" y="45" font-size="28" font-weight="700">Privileges flow to the parent role</text>
+    <rect x="32" y="88" width="218" height="110" rx="12" fill="#e2e8f0"/>
+    <rect x="286" y="88" width="204" height="110" rx="12" fill="#dbeafe"/>
+    <rect x="526" y="88" width="218" height="110" rx="12" fill="#ccfbf1"/>
+    <rect x="780" y="88" width="148" height="110" rx="12" fill="#ede9fe"/>
+    <text x="141" y="128" text-anchor="middle" font-size="22" font-weight="700">Table access</text>
+    <text x="141" y="164" text-anchor="middle" font-size="20">SELECT on orders</text>
+    <text x="388" y="128" text-anchor="middle" font-size="22" font-weight="700">Reader role</text>
+    <text x="388" y="164" text-anchor="middle" font-size="20">Child / access role</text>
+    <text x="635" y="128" text-anchor="middle" font-size="22" font-weight="700">Analyst role</text>
+    <text x="635" y="164" text-anchor="middle" font-size="20">Parent / job role</text>
+    <text x="854" y="128" text-anchor="middle" font-size="22" font-weight="700">User</text>
+    <text x="854" y="164" text-anchor="middle" font-size="20">Assigned role</text>
+    <g stroke="#526580" stroke-width="2" marker-end="url(#arrow)">
+      <path d="M254 143 H280"/>
+      <path d="M494 143 H520"/>
+      <path d="M748 143 H774"/>
+    </g>
+    <rect x="32" y="238" width="896" height="64" rx="10" fill="#e0e7ff"/>
+    <text x="55" y="278" font-size="24" font-family="monospace">GRANT ROLE reader TO ROLE analyst;</text>
+    <text x="32" y="342" font-size="22">Analyst inherits reader access. Reader does not inherit analyst access.</text>
+    <text x="32" y="384" font-size="19" fill="#475569">Role ownership alone is not inheritance. Data and warehouse grants are still required.</text>
+  </g>
+</svg>

@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="480" viewBox="0 0 960 480" role="img" aria-labelledby="title desc">
+  <title id="title">Three cache concepts in Snowflake</title>
+  <desc id="desc">A persisted result reuses the final answer. Metadata supports planning and pruning without storing the final answer. A running warehouse caches previously read table data locally. Suspending clears warehouse-local cache, not persisted query results. The diagram groups responsibilities, not internal execution order.</desc>
+  <rect width="960" height="480" rx="18" fill="#f8fafc"/>
+  <g font-family="Arial, sans-serif" fill="#172b4d">
+    <text x="32" y="44" font-size="28" font-weight="700">What is being reused?</text>
+    <text x="32" y="82" font-size="21">Three concepts, not a fixed execution sequence</text>
+    <rect x="32" y="112" width="280" height="240" rx="14" fill="#dbeafe"/>
+    <rect x="340" y="112" width="280" height="240" rx="14" fill="#ede9fe"/>
+    <rect x="648" y="112" width="280" height="240" rx="14" fill="#ccfbf1"/>
+    <text x="52" y="152" font-size="24" font-weight="700">Persisted results</text>
+    <text x="52" y="195" font-size="21">Reuse the final answer.</text>
+    <text x="52" y="235" font-size="20">Eligible identical query</text>
+    <text x="52" y="265" font-size="20">can skip execution.</text>
+    <text x="52" y="313" font-size="19">Typically 24-hour lifetime*</text>
+    <text x="360" y="152" font-size="24" font-weight="700">Metadata</text>
+    <text x="360" y="195" font-size="21">Reuse facts about data.</text>
+    <text x="360" y="235" font-size="20">Statistics and ranges</text>
+    <text x="360" y="265" font-size="20">help avoid data scans.</text>
+    <text x="360" y="313" font-size="19">Managed by Snowflake</text>
+    <text x="668" y="152" font-size="24" font-weight="700">Warehouse cache</text>
+    <text x="668" y="195" font-size="21">Reuse table data read.</text>
+    <text x="668" y="235" font-size="20">Same running warehouse</text>
+    <text x="668" y="265" font-size="20">can read local data.</text>
+    <text x="668" y="313" font-size="19" font-weight="700">Cleared on suspension</text>
+    <text x="32" y="394" font-size="21">USE_CACHED_RESULT = FALSE disables result reuse, not local data caching.</text>
+    <text x="32" y="438" font-size="18" fill="#475569">* Eligible reuse can extend retention, up to 31 days from the original execution.</text>
+  </g>
+</svg>

@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="480" viewBox="0 0 960 480" role="img" aria-labelledby="title desc">
+  <title id="title">Aggregate versus window output grain</title>
+  <desc id="desc">Three orders are A with 10, A with 20, and B with 5. Grouped SUM returns A with 30 and B with 5. Window SUM keeps three original rows and adds totals 30, 30, and 5.</desc>
+  <rect width="960" height="480" rx="18" fill="#f8fafc"/>
+  <g font-family="Arial, sans-serif" fill="#172b4d">
+    <text x="32" y="44" font-size="28" font-weight="700">Aggregation changes grain; a window keeps it</text>
+    <text x="32" y="90" font-size="22" font-weight="700">Source: 3 orders</text>
+    <text x="340" y="90" font-size="22" font-weight="700">GROUP BY customer</text>
+    <text x="648" y="90" font-size="22" font-weight="700">SUM(...) OVER (...)</text>
+    <rect x="32" y="116" width="280" height="230" rx="12" fill="#e2e8f0"/>
+    <rect x="340" y="116" width="280" height="230" rx="12" fill="#dbeafe"/>
+    <rect x="648" y="116" width="280" height="230" rx="12" fill="#ccfbf1"/>
+    <g font-size="20" font-weight="700">
+      <text x="52" y="154">Customer</text><text x="205" y="154">Amount</text>
+      <text x="360" y="154">Customer</text><text x="530" y="154">SUM</text>
+      <text x="668" y="154">Cust.</text><text x="750" y="154">Amount</text><text x="853" y="154">Total</text>
+    </g>
+    <g font-size="23">
+      <text x="52" y="208">A</text><text x="230" y="208">10</text>
+      <text x="52" y="260">A</text><text x="230" y="260">20</text>
+      <text x="52" y="312">B</text><text x="230" y="312">5</text>
+      <text x="360" y="208">A</text><text x="540" y="208">30</text>
+      <text x="360" y="260">B</text><text x="540" y="260">5</text>
+      <text x="668" y="208">A</text><text x="780" y="208">10</text><text x="865" y="208">30</text>
+      <text x="668" y="260">A</text><text x="780" y="260">20</text><text x="865" y="260">30</text>
+      <text x="668" y="312">B</text><text x="780" y="312">5</text><text x="865" y="312">5</text>
+    </g>
+    <text x="32" y="388" font-size="21">One row per order</text>
+    <text x="340" y="388" font-size="21">One row per customer</text>
+    <text x="648" y="388" font-size="21">One row per order</text>
+    <text x="32" y="441" font-size="20">Window example: SUM(amount) OVER (PARTITION BY customer)</text>
+  </g>
+</svg>
