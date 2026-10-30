@@ -1,0 +1,76 @@
+-- Prerequisite: 00-setup.sql.
+-- Generates two CSV schemas directly in the internal stage.
+-- The same table owner runs the load, so it has OWNERSHIP for schema evolution.
+
+USE ROLE SYSADMIN;
+USE WAREHOUSE D3_STUDY_WH;
+USE DATABASE D3_STUDY;
+USE SCHEMA LAB;
+
+COPY INTO @D3_FILES/schema/v1/customers.csv
+  FROM (
+    SELECT
+      1::NUMBER AS CUSTOMER_ID,
+      'Aye'::STRING AS CUSTOMER_NAME
+  )
+  FILE_FORMAT = (
+    TYPE = CSV
+    COMPRESSION = NONE
+    FIELD_OPTIONALLY_ENCLOSED_BY = '"'
+  )
+  HEADER = TRUE
+  SINGLE = TRUE
+  OVERWRITE = TRUE;
+
+COPY INTO @D3_FILES/schema/v2/customers.csv
+  FROM (
+    SELECT
+      2::NUMBER AS CUSTOMER_ID,
+      'Min'::STRING AS CUSTOMER_NAME,
+      'min@example.com'::STRING AS EMAIL
+  )
+  FILE_FORMAT = (
+    TYPE = CSV
+    COMPRESSION = NONE
+    FIELD_OPTIONALLY_ENCLOSED_BY = '"'
+  )
+  HEADER = TRUE
+  SINGLE = TRUE
+  OVERWRITE = TRUE;
+
+-- Inspect the first file's inferred names and types before using them.
+SELECT COLUMN_NAME, TYPE, NULLABLE, ORDER_ID
+FROM TABLE(INFER_SCHEMA(
+  LOCATION => '@D3_FILES/schema/v1/',
+  FILE_FORMAT => 'D3_CSV_BY_NAME'
+))
+ORDER BY ORDER_ID;
+
+CREATE OR REPLACE TABLE D3_EVOLVING_CUSTOMERS
+  USING TEMPLATE (
+    SELECT ARRAY_AGG(OBJECT_CONSTRUCT(*))
+      WITHIN GROUP (ORDER BY ORDER_ID)
+    FROM TABLE(INFER_SCHEMA(
+      LOCATION => '@D3_FILES/schema/v1/',
+      FILE_FORMAT => 'D3_CSV_BY_NAME'
+    ))
+  );
+
+ALTER TABLE D3_EVOLVING_CUSTOMERS SET ENABLE_SCHEMA_EVOLUTION = TRUE;
+
+COPY INTO D3_EVOLVING_CUSTOMERS
+  FROM @D3_FILES/schema/v1/
+  FILE_FORMAT = (FORMAT_NAME = 'D3_CSV_BY_NAME')
+  MATCH_BY_COLUMN_NAME = CASE_INSENSITIVE;
+
+-- This later file has a new EMAIL column.
+COPY INTO D3_EVOLVING_CUSTOMERS
+  FROM @D3_FILES/schema/v2/
+  FILE_FORMAT = (FORMAT_NAME = 'D3_CSV_BY_NAME')
+  MATCH_BY_COLUMN_NAME = CASE_INSENSITIVE;
+
+DESCRIBE TABLE D3_EVOLVING_CUSTOMERS;
+SELECT * FROM D3_EVOLVING_CUSTOMERS ORDER BY CUSTOMER_ID;
+-- Expected: EMAIL exists; customer 1 has EMAIL = NULL;
+-- customer 2 has EMAIL = min@example.com.
+-- Detection proposed the initial schema; evolution changed it during loading.

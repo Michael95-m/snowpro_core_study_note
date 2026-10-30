@@ -1,0 +1,66 @@
+-- Prerequisite: 00-setup.sql.
+-- This creates and initializes one small dynamic table, then suspends scheduling.
+-- Initialization/manual refresh use D3_STUDY_WH and consume compute credits.
+
+USE ROLE SYSADMIN;
+USE WAREHOUSE D3_STUDY_WH;
+USE DATABASE D3_STUDY;
+USE SCHEMA LAB;
+
+CREATE OR REPLACE TABLE D3_DT_SOURCE (
+  ORDER_ID NUMBER,
+  REGION STRING,
+  AMOUNT NUMBER(12, 2)
+);
+INSERT INTO D3_DT_SOURCE VALUES
+  (1, 'APAC', 100),
+  (2, 'EMEA', 200),
+  (3, 'APAC', 50);
+
+CREATE OR REPLACE DYNAMIC TABLE D3_REGION_TOTALS
+  TARGET_LAG = '10 minutes'
+  WAREHOUSE = D3_STUDY_WH
+  REFRESH_MODE = INCREMENTAL
+  INITIALIZE = ON_CREATE
+AS
+  SELECT
+    REGION,
+    COUNT(*) AS ORDER_COUNT,
+    SUM(AMOUNT) AS TOTAL_AMOUNT
+  FROM D3_DT_SOURCE
+  GROUP BY REGION;
+
+-- Stop future scheduled refreshes while doing this controlled exercise.
+ALTER DYNAMIC TABLE D3_REGION_TOTALS SUSPEND;
+
+SELECT * FROM D3_REGION_TOTALS ORDER BY REGION;
+-- Expected: APAC, 2, 150; EMEA, 1, 200.
+
+INSERT INTO D3_DT_SOURCE VALUES (4, 'APAC', 25);
+
+SELECT * FROM D3_REGION_TOTALS ORDER BY REGION;
+-- Expected: still APAC total 150 because scheduling is suspended.
+
+-- Manual refresh is supported even when scheduling is suspended.
+ALTER DYNAMIC TABLE D3_REGION_TOTALS REFRESH;
+
+SELECT * FROM D3_REGION_TOTALS ORDER BY REGION;
+-- After the manual refresh succeeds: APAC, 3, 175; EMEA, 1, 200.
+
+SHOW DYNAMIC TABLES LIKE 'D3_REGION_TOTALS' IN SCHEMA D3_STUDY.LAB;
+
+SELECT
+  NAME, STATE, REFRESH_ACTION, REFRESH_TRIGGER,
+  REFRESH_START_TIME, REFRESH_END_TIME
+FROM TABLE(D3_STUDY.INFORMATION_SCHEMA.DYNAMIC_TABLE_REFRESH_HISTORY(
+  NAME => 'D3_STUDY.LAB.D3_REGION_TOTALS',
+  RESULT_LIMIT => 10
+))
+ORDER BY REFRESH_START_TIME DESC;
+
+-- Optional: allow Snowflake to schedule future refreshes to meet TARGET_LAG.
+-- This is a freshness goal, not an exact refresh-every-ten-minutes timer.
+-- ALTER DYNAMIC TABLE D3_REGION_TOTALS RESUME;
+
+-- Stop again before ending the lab.
+ALTER DYNAMIC TABLE D3_REGION_TOTALS SUSPEND;

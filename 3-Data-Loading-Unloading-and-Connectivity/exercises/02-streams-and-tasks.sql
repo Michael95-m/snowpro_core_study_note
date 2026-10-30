@@ -1,0 +1,156 @@
+-- Prerequisite: 00-setup.sql.
+-- Run in sections. EXECUTE TASK requires the task owner's EXECUTE TASK
+-- account privilege; see the optional administrator grants in 00-setup.sql.
+-- All task definitions below remain suspended unless you explicitly resume them.
+
+USE ROLE SYSADMIN;
+USE WAREHOUSE D3_STUDY_WH;
+USE DATABASE D3_STUDY;
+USE SCHEMA LAB;
+
+-- 1. A standard stream records net inserts, updates, and deletes.
+CREATE OR REPLACE TABLE D3_CDC_SOURCE (
+  ORDER_ID NUMBER,
+  REGION STRING,
+  AMOUNT NUMBER(12, 2)
+);
+CREATE OR REPLACE TABLE D3_CURRENT_ORDERS LIKE D3_CDC_SOURCE;
+CREATE OR REPLACE STREAM D3_ORDER_CHANGES ON TABLE D3_CDC_SOURCE;
+
+INSERT INTO D3_CDC_SOURCE VALUES
+  (1, 'APAC', 100),
+  (2, 'EMEA', 200);
+
+SELECT ORDER_ID, REGION, AMOUNT,
+  METADATA$ACTION, METADATA$ISUPDATE, METADATA$ROW_ID
+FROM D3_ORDER_CHANGES;
+
+SELECT COUNT(*) AS CHANGES_STILL_AVAILABLE FROM D3_ORDER_CHANGES;
+-- Expected: 2. A SELECT does not advance the stream offset.
+
+INSERT INTO D3_CURRENT_ORDERS (ORDER_ID, REGION, AMOUNT)
+SELECT ORDER_ID, REGION, AMOUNT
+FROM D3_ORDER_CHANGES;
+
+SELECT COUNT(*) AS CHANGES_AFTER_COMMITTED_INSERT FROM D3_ORDER_CHANGES;
+-- Expected: 0. The committed INSERT consumed the stream.
+
+-- 2. Observe a real update after the first offset has been consumed.
+UPDATE D3_CDC_SOURCE SET AMOUNT = 125 WHERE ORDER_ID = 1;
+DELETE FROM D3_CDC_SOURCE WHERE ORDER_ID = 2;
+INSERT INTO D3_CDC_SOURCE VALUES (3, 'AMER', 300);
+
+SELECT
+  ORDER_ID, REGION, AMOUNT,
+  METADATA$ACTION AS CHANGE_ACTION,
+  METADATA$ISUPDATE AS IS_UPDATE
+FROM D3_ORDER_CHANGES
+ORDER BY ORDER_ID, CHANGE_ACTION;
+-- Expected: four change rows:
+-- order 1 DELETE + INSERT, both IS_UPDATE = TRUE;
+-- order 2 DELETE, IS_UPDATE = FALSE;
+-- order 3 INSERT, IS_UPDATE = FALSE.
+
+-- This exercise keeps ORDER_ID stable and unique in the source.
+-- A production MERGE must also handle duplicate source keys and key changes.
+MERGE INTO D3_CURRENT_ORDERS t
+USING (
+  SELECT
+    ORDER_ID, REGION, AMOUNT,
+    METADATA$ACTION AS CHANGE_ACTION
+  FROM D3_ORDER_CHANGES
+  WHERE METADATA$ACTION = 'INSERT'
+     OR (
+       METADATA$ACTION = 'DELETE'
+       AND METADATA$ISUPDATE = FALSE
+     )
+) s
+ON t.ORDER_ID = s.ORDER_ID
+WHEN MATCHED AND s.CHANGE_ACTION = 'DELETE' THEN DELETE
+WHEN MATCHED AND s.CHANGE_ACTION = 'INSERT' THEN
+  UPDATE SET REGION = s.REGION, AMOUNT = s.AMOUNT
+WHEN NOT MATCHED AND s.CHANGE_ACTION = 'INSERT' THEN
+  INSERT (ORDER_ID, REGION, AMOUNT)
+  VALUES (s.ORDER_ID, s.REGION, s.AMOUNT);
+
+SELECT * FROM D3_CURRENT_ORDERS ORDER BY ORDER_ID;
+-- Expected: (1, APAC, 125) and (3, AMER, 300).
+SELECT COUNT(*) AS CHANGES_AFTER_MERGE FROM D3_ORDER_CHANGES;
+-- Expected: 0.
+
+-- 3. A rollback preserves the stream offset.
+INSERT INTO D3_CDC_SOURCE VALUES (4, 'APAC', 40);
+BEGIN;
+INSERT INTO D3_CURRENT_ORDERS (ORDER_ID, REGION, AMOUNT)
+SELECT ORDER_ID, REGION, AMOUNT FROM D3_ORDER_CHANGES;
+ROLLBACK;
+
+SELECT COUNT(*) AS CHANGES_AFTER_ROLLBACK FROM D3_ORDER_CHANGES;
+-- Expected: 1. Order 4 is still waiting to be consumed.
+
+-- 4. Give a separate append-only stream to a separate pipeline.
+CREATE OR REPLACE TABLE D3_TASK_SOURCE (
+  ORDER_ID NUMBER,
+  REGION STRING,
+  AMOUNT NUMBER(12, 2)
+);
+CREATE OR REPLACE TABLE D3_TASK_TARGET LIKE D3_TASK_SOURCE;
+CREATE OR REPLACE STREAM D3_TASK_INSERTS
+  ON TABLE D3_TASK_SOURCE
+  APPEND_ONLY = TRUE;
+
+CREATE OR REPLACE TASK D3_PROCESS_NEW_ORDERS
+  WAREHOUSE = D3_STUDY_WH
+  WHEN SYSTEM$STREAM_HAS_DATA('D3_STUDY.LAB.D3_TASK_INSERTS')
+AS
+  INSERT INTO D3_TASK_TARGET (ORDER_ID, REGION, AMOUNT)
+  SELECT ORDER_ID, REGION, AMOUNT
+  FROM D3_TASK_INSERTS;
+
+SHOW TASKS LIKE 'D3_PROCESS_NEW_ORDERS' IN SCHEMA D3_STUDY.LAB;
+-- Expected: state = suspended.
+
+INSERT INTO D3_TASK_SOURCE VALUES (10, 'APAC', 50);
+SELECT SYSTEM$STREAM_HAS_DATA('D3_STUDY.LAB.D3_TASK_INSERTS');
+-- Expected: TRUE for this controlled example.
+-- In general, TRUE can be a false positive: it is not an exact row count.
+
+-- 5. Optional one-time run; submit only after the task privilege is granted.
+-- This is asynchronous. It does not enable recurring execution.
+-- EXECUTE TASK D3_PROCESS_NEW_ORDERS;
+
+SELECT NAME, STATE, QUERY_ID, ERROR_CODE, ERROR_MESSAGE, SCHEDULED_TIME
+FROM TABLE(D3_STUDY.INFORMATION_SCHEMA.TASK_HISTORY(
+  TASK_NAME => 'D3_PROCESS_NEW_ORDERS',
+  SCHEDULED_TIME_RANGE_START => DATEADD('hour', -1, CURRENT_TIMESTAMP()),
+  RESULT_LIMIT => 20
+))
+ORDER BY SCHEDULED_TIME DESC;
+
+SELECT * FROM D3_TASK_TARGET;
+-- Before executing the task: 0 rows.
+-- After the one-time task run succeeds: order 10, APAC, 50.
+-- Refresh the history/result query if the run is still scheduled or executing.
+
+-- Optional continuous triggered execution:
+-- ALTER TASK D3_PROCESS_NEW_ORDERS RESUME;
+-- After checking a later INSERT is processed, stop future automatic runs:
+-- ALTER TASK D3_PROCESS_NEW_ORDERS SUSPEND;
+
+-- 6. Optional serverless task: omitting WAREHOUSE selects managed compute.
+-- Creation/running also requires EXECUTE MANAGED TASK for the owner.
+-- Kept commented because the basic CDC lab does not need this privilege.
+-- CREATE OR REPLACE TABLE D3_TASK_AUDIT (RUN_AT TIMESTAMP_LTZ, MESSAGE STRING);
+-- CREATE OR REPLACE TASK D3_SERVERLESS_AUDIT
+--   USER_TASK_MANAGED_INITIAL_WAREHOUSE_SIZE = 'XSMALL'
+--   SCHEDULE = '60 MINUTES'
+-- AS
+--   INSERT INTO D3_TASK_AUDIT
+--   VALUES (CURRENT_TIMESTAMP(), 'serverless example');
+-- EXECUTE TASK D3_SERVERLESS_AUDIT;
+-- ALTER TASK D3_SERVERLESS_AUDIT SUSPEND;
+
+-- Leave all automatic task execution stopped.
+ALTER TASK D3_PROCESS_NEW_ORDERS SUSPEND;
+-- A task already executing is not canceled merely by suspending its schedule.
+-- Check TASK_HISTORY before ending the session.
