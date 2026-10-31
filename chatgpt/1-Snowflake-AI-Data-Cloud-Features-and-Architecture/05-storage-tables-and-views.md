@@ -4,20 +4,37 @@
 
 ## Micro-partitions and natural clustering
 
-For standard Snowflake tables, Snowflake automatically organizes rows into immutable, compressed, columnar micro-partitions. You do not define and maintain traditional table partitions yourself. This description does not imply that every specialized table type uses the identical storage mechanism.
+- For standard Snowflake tables, Snowflake automatically organizes rows into **micro-partitions**.
+- These are:
+  - Immutable.
+  - Compressed.
+  - Columnar.
+- You do not define and maintain traditional table partitions yourself.
+- Specialized table types do not necessarily use the same storage mechanism.
 
 - A micro-partition represents approximately 50 MB to 500 MB of uncompressed data; physical storage is compressed.
 - Snowflake records metadata such as per-column value ranges and distinct-value information.
 - A selective predicate can use metadata to skip partitions that cannot match. This is **micro-partition pruning**.
 - Updates/deletes produce new micro-partitions rather than modifying the old ones in place. Historical versions can remain for applicable protection periods.
 
-<p align="center"><img src="../img/domain1-partition-pruning.png" alt="A March date filter skips January-only and February-only partitions, while scanning partitions whose metadata ranges overlap March." width="760"></p>
+<p align="center"><img src="../../img/domain1-partition-pruning.png" alt="A March date filter skips January-only and February-only partitions, while scanning partitions whose metadata ranges overlap March." width="760"></p>
 
-The ranges are illustrative: a candidate partition can contain rows outside the filter. Pruning selects what must be scanned; the query still evaluates which rows match.
+- The ranges in the image are illustrative.
+- A candidate partition can contain rows outside the filter.
+- **Pruning** selects which partitions must be scanned.
+- The query still checks which rows match.
 
-Data arrives with a natural organization based on load/insert order. If values used by frequent filters are scattered across many overlapping micro-partitions, pruning can become less effective. An optional clustering key guides maintenance of a better organization for a suitable large-table workload. It is not mandatory for every table.
+- **Natural clustering** comes from the order in which data is loaded or inserted.
+- Pruning can become less effective when frequently filtered values are scattered across many overlapping micro-partitions.
+- An optional **clustering key** guides maintenance of a better organization for a suitable large-table workload.
+- A clustering key is not mandatory for every table.
 
-These fundamentals were moved from the storage course chapter. For scan metrics, key choices, maintenance costs, and tuning SQL, use [Domain 4](../4-Performance-Optimization-Querying-and-Transformation/readme.md).
+- These fundamentals were moved from the storage course chapter.
+- Use [Domain 4](../4-Performance-Optimization-Querying-and-Transformation/readme.md) for:
+  - Scan metrics.
+  - Clustering-key choices.
+  - Maintenance costs.
+  - SQL tuning.
 
 ## Table lifetimes and data protection
 
@@ -27,7 +44,10 @@ These fundamentals were moved from the storage course chapter. For scan metrics,
 | Temporary | Current session only, unless dropped sooner. | Up to one day while available; do not rely on recovery after the session ends. | None. | Session-local intermediate work. |
 | Transient | Until dropped; survives sessions. | 0 or 1 day. | None. | Rebuildable staging or derived data. |
 
-Temporary tables are session-scoped, not user-scoped across every connection. A temporary table can hide a permanent table of the same name in that session. Transient does not mean “automatically deleted soon.”
+- **Temporary tables** are scoped to a session.
+- They are not shared across every connection owned by the same user.
+- A temporary table can hide a permanent table with the same name in that session.
+- **Transient** does not mean “automatically deleted soon.”
 
 ```sql
 -- Run in an existing writable study schema.
@@ -39,7 +59,11 @@ CREATE TRANSIENT TABLE study_rebuildable (id NUMBER)
 
 ## External, Iceberg, and dynamic tables
 
-These describe data access/format/refresh behavior, rather than a simple lifetime alternative to every row above.
+- External, Iceberg, and Dynamic Tables describe:
+  - Data access.
+  - Data format.
+  - Refresh behavior.
+- They are not simply alternative lifetimes for every table type listed above.
 
 | Table | What it does | Key distinction |
 | --- | --- | --- |
@@ -47,7 +71,19 @@ These describe data access/format/refresh behavior, rather than a simple lifetim
 | Apache Iceberg | Uses the open Iceberg table format with catalog metadata and data files. | Catalog ownership and storage location affect management and supported operations. |
 | Dynamic | Stores the result of a query and refreshes it to pursue a target freshness. | Declare the query and target lag instead of writing every pipeline step manually. |
 
-For Iceberg, distinguish a Snowflake-managed catalog from an external catalog. Current Snowflake supports Snowflake-provided storage as well as external-volume storage in appropriate configurations. An external catalog requires an appropriate external storage configuration. Do not assume that every Iceberg table is read-only, externally stored, or protected by standard-table Fail-safe rules; check the actual catalog/storage setup.
+- For **Iceberg**, check the catalog and storage choices separately.
+- **Catalog:**
+  - Snowflake-managed catalog.
+  - External catalog.
+- **Storage:**
+  - Snowflake-provided storage is supported in appropriate configurations.
+  - External-volume storage is also supported in appropriate configurations.
+  - An external catalog requires an appropriate external storage configuration.
+- Do not assume that every Iceberg table:
+  - Is read-only.
+  - Is externally stored.
+  - Follows standard-table Fail-safe rules.
+- Check the actual catalog and storage setup.
 
 ```sql
 -- Existing source table and refresh warehouse required.
@@ -61,7 +97,12 @@ AS
   GROUP BY order_date;
 ```
 
-Target lag is a freshness target relative to source data, not a fixed refresh interval or guaranteed SLA. Snowflake schedules refresh work to pursue it. Incremental/full refresh support depends on the query and mode; refreshed results consume compute. Direct ordinary DML is not how you maintain dynamic-table results.
+- **Target lag** is a freshness target relative to source data.
+- It is not a fixed refresh interval or guaranteed SLA.
+- Snowflake schedules refresh work to pursue the target.
+- Incremental/full refresh support depends on the query and mode.
+- Refreshing the stored result consumes compute.
+- Ordinary direct DML is not how you maintain Dynamic Table results.
 
 ## View types
 
@@ -82,7 +123,14 @@ CREATE SECURE VIEW study_public_customers AS
   FROM analytics.mart.customer;
 ```
 
-`SECURE` does not automatically grant access or replace row/masking policies. Materialized views are not the same as dynamic tables: dynamic tables support pipeline definitions with broader transformation patterns, while materialized views focus on eligible query acceleration and can be selected by the optimizer. See [Domain 4](../4-Performance-Optimization-Querying-and-Transformation/readme.md) for materialized-view restrictions and tuning.
+- `SECURE` does not automatically grant access.
+- It does not replace row access or masking policies.
+- **Dynamic Tables:**
+  - Support pipeline definitions with broader transformation patterns.
+- **Materialized views:**
+  - Focus on eligible query acceleration.
+  - Can be selected by the optimizer.
+- Use [Domain 4](../4-Performance-Optimization-Querying-and-Transformation/readme.md) for materialized-view restrictions and tuning.
 
 ## What to recall
 

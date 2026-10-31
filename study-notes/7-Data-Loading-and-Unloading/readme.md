@@ -7,6 +7,8 @@
 
 ## Stages
 
+For the C03 object hierarchy and the distinction between stages, file formats, and pipes, see [Domain 1.3](../../chatgpt/1-Snowflake-AI-Data-Cloud-Features-and-Architecture/03-objects-sessions-and-parameters.md). This section keeps the loading/unloading operations and examples.
+
 - Stages are storage locations for files used in Snowflake loading and unloading.
 - **Internal stages** store files inside Snowflake.
 - **External stages** reference files in cloud storage, such as Amazon S3, Google Cloud Storage, or Microsoft Azure.
@@ -46,7 +48,7 @@
 
 - `LIST` displays files in a stage.
 - You can query staged files with SQL when you provide the appropriate file format.
-- `REMOVE` deletes files from an internal stage. It does not delete objects from an external cloud-storage location.
+- `REMOVE` deletes matching files from an internal stage or an external stage. External deletion requires the appropriate cloud-storage delete permission. Dropping an external stage is different: `DROP STAGE` leaves the cloud files in place. See [REMOVE](https://docs.snowflake.com/en/sql-reference/sql/remove).
 
 ```sql
 LIST @my_stage;
@@ -145,7 +147,7 @@ Use `ON_ERROR` to choose what happens when Snowflake encounters invalid rows. Co
 `VALIDATION_MODE` checks staged files without loading them. Use one of these values:
 
 - `RETURN_ERRORS`
-- `RETURN_10_ROWS` (replace `10` with the number of rows to validate)
+- `RETURN_10_ROWS` (replace `10` with the number of parsed rows to preview; validation stops if an error is encountered)
 - `RETURN_ALL_ERRORS`
 
 ```sql
@@ -204,7 +206,7 @@ These practices apply to both Snowpipe and bulk loading:
 
 - Aim for compressed files of roughly 100-250 MB. Split very large files and avoid large numbers of tiny files.
 - Organize files in logical stage paths, such as by date or source system.
-- For Snowpipe, creating a new file about once per minute is usually a good balance between cost and latency. More frequent small files increase queue-management overhead and do not guarantee lower latency.
+- For Snowpipe, creating a new file about once per minute can balance load efficiency and latency. File size/frequency still affects throughput and latency, but current Snowpipe pricing charges by data volume, with no per-file fee. Text formats are billed on uncompressed size; binary formats on observed size. See [Snowpipe costs](https://docs.snowflake.com/en/user-guide/data-load-snowpipe-billing).
 - Snowpipe is serverless. For bulk loads, use a warehouse separate from interactive-query workloads when isolation is needed.
 - Pre-sort files only when it supports a known clustering or query-access pattern.
 

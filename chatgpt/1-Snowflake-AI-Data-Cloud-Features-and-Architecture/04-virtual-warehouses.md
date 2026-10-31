@@ -4,7 +4,9 @@
 
 ## Purpose and warehouse types
 
-A virtual warehouse supplies compute, memory, and local storage for warehouse-backed work. Multiple warehouses can access the same persistent tables while maintaining independent compute and data caches.
+- A **virtual warehouse** supplies compute, memory, and local storage for warehouse-backed work.
+- Multiple warehouses can access the same persistent tables.
+- Each maintains independent compute and data caches.
 
 | Type | Best fit | Remember |
 | --- | --- | --- |
@@ -12,7 +14,13 @@ A virtual warehouse supplies compute, memory, and local storage for warehouse-ba
 | Standard Gen2 | General workloads on newer compute hardware/software improvements. | A generation choice, not a different edition or extra cluster. |
 | Snowpark-optimized | Memory-intensive Snowpark workloads, including some ML training. | Configurable memory/architecture; ordinary SQL is not guaranteed to benefit. |
 
-Snowpark code can run on a standard warehouse. “Uses Python” alone is not enough reason to select Snowpark-optimized. Generation availability, sizing, credit rates, and QAS defaults should be checked for the account rather than inferred from an old recording.
+- Snowpark code can run on a **Standard warehouse**.
+- “Uses Python” alone is not enough reason to select **Snowpark-optimized**.
+- Check these for your account rather than relying on an old recording:
+  - Generation availability.
+  - Sizing.
+  - Credit rates.
+  - QAS defaults.
 
 ## Create a small practice warehouse
 
@@ -26,28 +34,52 @@ CREATE WAREHOUSE study_wh
   INITIALLY_SUSPENDED = TRUE;
 ```
 
-`AUTO_SUSPEND` is in seconds. `AUTO_RESUME` permits work to restart a suspended warehouse; it does not keep it running. `INITIALLY_SUSPENDED` prevents starting compute immediately on creation. Each start has a 60-second billing minimum for standard warehouses; running warehouses use per-second billing afterward.
+- `AUTO_SUSPEND`:
+  - Uses seconds.
+- `AUTO_RESUME`:
+  - Permits work to restart a suspended warehouse.
+  - Does not keep the warehouse running.
+- `INITIALLY_SUSPENDED`:
+  - Prevents compute from starting immediately on creation.
+- Standard warehouse billing:
+  1. Each start has a **60-second minimum**.
+  2. A continuously running warehouse uses per-second billing afterward.
 
 ## Scale up/down versus out/in
 
-<p align="center"><img src="../img/domain1-warehouse-scaling.png" alt="Scale up adds resources to a cluster for demanding queries; scale out adds clusters for concurrent queries. Both use the same persistent data." width="760"></p>
+<p align="center"><img src="../../img/domain1-warehouse-scaling.png" alt="Scale up adds resources to a cluster for demanding queries; scale out adds clusters for concurrent queries. Both use the same persistent data." width="760"></p>
 
 | Change | Changes what? | Choose it when |
 | --- | --- | --- |
 | Scale up/down | Size/resources of a cluster. | An individual query needs more memory or processing power, or a smaller size meets its target. |
 | Scale out/in | Number of running clusters in a multi-cluster warehouse. | Many concurrent queries cause queues, or demand later falls. |
 
-Upsizing does not guarantee a proportional speedup. Extra clusters primarily improve concurrency. For one exploding join or a large remote spill, inspect SQL and Query Profile first; see [Domain 4](../4-Performance-Optimization-Querying-and-Transformation/readme.md).
+- Upsizing does not guarantee a proportional speedup.
+- Extra clusters primarily improve **concurrency**.
+- For an exploding join or large remote spill:
+  1. Inspect the SQL.
+  2. Inspect **Query Profile**.
+- **Related note:** [Domain 4](../4-Performance-Optimization-Querying-and-Transformation/readme.md).
 
 ```sql
 ALTER WAREHOUSE study_wh SET WAREHOUSE_SIZE = SMALL;
 ```
 
-Generation is a separate setting for Standard warehouses; where supported, `GENERATION = '2'` selects Gen2. It is not a setting for Snowpark-optimized warehouses. Use `SHOW WAREHOUSES` to inspect the actual configuration instead of assuming a default generation.
+- **Generation** is a separate setting for Standard warehouses.
+- Where supported, `GENERATION = '2'` selects Gen2.
+- This is not a setting for Snowpark-optimized warehouses.
+- Use `SHOW WAREHOUSES` to inspect the actual configuration.
+- Do not assume the default generation.
 
 ## Multi-cluster settings and scaling policies
 
-Multi-cluster warehouses require Enterprise or higher. `MIN_CLUSTER_COUNT < MAX_CLUSTER_COUNT` enables a range for auto-scaling. Setting both to the same value fixes the number of clusters while the warehouse is running (maximized mode).
+- Multi-cluster warehouses require **Enterprise or higher**.
+- **Auto-scale mode:**
+  - `MIN_CLUSTER_COUNT < MAX_CLUSTER_COUNT`.
+  - The warehouse can vary its cluster count within that range.
+- **Maximized mode:**
+  - Set both values to the same number.
+  - That fixes the cluster count while the warehouse is running.
 
 | Policy | Main goal | Trade-off |
 | --- | --- | --- |
@@ -62,7 +94,9 @@ ALTER WAREHOUSE study_wh SET
   SCALING_POLICY = 'STANDARD';
 ```
 
-The scaling policy governs cluster decisions; auto-suspend governs idle warehouse suspension. Increasing the cluster maximum does not mean every query is spread across that many clusters.
+- **Scaling policy:** governs cluster decisions.
+- **Auto-suspend:** governs idle warehouse suspension.
+- Increasing the cluster maximum does not mean every query is spread across that many clusters.
 
 ## Choose by workload
 
@@ -74,7 +108,13 @@ The scaling policy governs cluster decisions; auto-suspend governs idle warehous
 | Complex transformations | Assess size, spill, scan volume, and joins; scale up when resources are the bottleneck. |
 | Different teams | Separate warehouses when scheduling, performance, or cost ownership differs. |
 
-Suspending clears warehouse-local table cache; persistent tables remain. Frequent suspend/resume cycles trade idle savings against startup latency and cache rebuilding. Use [Domain 2](../2-Account-Management-and-Data-Governance/readme.md) for credit calculations and resource monitors.
+- Suspending a warehouse:
+  - Clears its local table cache.
+  - Keeps persistent tables.
+- Frequent suspend/resume cycles involve a trade-off:
+  - Less idle compute.
+  - More startup latency and cache rebuilding.
+- **Related note:** [Domain 2](../2-Account-Management-and-Data-Governance/readme.md) covers credit calculations and resource monitors.
 
 ## What to recall
 

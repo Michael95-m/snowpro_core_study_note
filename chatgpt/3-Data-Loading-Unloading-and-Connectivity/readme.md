@@ -1,6 +1,6 @@
 # Domain 3.0: Data Loading, Unloading, and Connectivity
 
-- **Exam outline:** the supplied [SnowPro Core C03 study guide](../SnowProCoreStudyGuideC03.pdf), pages 5 and 9.
+- **Exam outline:** the supplied [SnowPro Core C03 study guide](../../SnowProCoreStudyGuideC03.pdf), pages 5 and 9.
 - **Domain weighting in that guide:** **18%**.
 - **Documentation checked:** October 30, 2026.
 - **Purpose:** understand the feature, recognize when to use it, and practice with SQL.
@@ -48,7 +48,7 @@
 
 ### Where your earlier notes fit
 
-- [Loading and unloading course note](../7-Data-Loading-and-Unloading/readme.md):
+- [Loading and unloading course note](../../study-notes/7-Data-Loading-and-Unloading/readme.md):
   - Earlier explanations of stages, bulk loading, Snowpipe, and semi-structured files.
   - This Domain 3 note puts those ideas into the C03 structure and adds the other named objectives.
 - [Domain 1 object types](../1-Snowflake-AI-Data-Cloud-Features-and-Architecture/03-objects-sessions-and-parameters.md):
@@ -57,7 +57,7 @@
   - Roles, authentication, privileges, and cost controls.
 - [Domain 4 transformations](../4-Performance-Optimization-Querying-and-Transformation/readme.md#44-perform-data-transformation-techniques):
   - Deeper SQL transformations, JSON paths, `FLATTEN`, and unstructured-file access.
-- [Earlier transformation course note](../8-Data-transformation/readme.md):
+- [Earlier transformation course note](../../study-notes/8-Data-transformation/readme.md):
   - File URL functions and directory tables, with more transformation examples.
 - Folder numbers **7, 8, and 9 are course chapters**, not C03 domain numbers.
 

@@ -14,9 +14,13 @@ Organization
                 stored procedures, pipes, sequences, model objects
 ```
 
-<p align="center"><img src="../img/object_model.png" alt="Snowflake object hierarchy from the course notes" width="600"></p>
+<p align="center"><img src="../../img/object_model.png" alt="Snowflake object hierarchy from the course notes" width="600"></p>
 
-A container organizes child objects. A securable object can have privileges granted on it. The C03 list groups many objects together for study, but a **share is account-level**, not a child of a database schema. A Native App application is also an account-level installed object with its own contents.
+- A **container** organizes child objects.
+- A **securable object** can have privileges granted on it.
+- The C03 list groups many objects together for study.
+- A **share is account-level**, not a child of a database schema.
+- A Native App **application** is also an account-level installed object with its own contents.
 
 ## Object comparison
 
@@ -38,11 +42,15 @@ A container organizes child objects. A securable object can have privileges gran
 | ML model | Registered model object with versions and inference methods. | Model artifacts/metadata differ from the training dataset. |
 | Application | Installed Snowflake Native App and its packaged logic/data objects. | An application package is the provider's distribution container. |
 
-For loading operations, use the [loading note](../7-Data-Loading-and-Unloading/readme.md). For shares and app distribution, use the [sharing note](../9-Storage-Data-Protection-and-sharing/readme.md). For grants and ownership, use [Domain 2](../2-Account-Management-and-Data-Governance/readme.md).
+- **Loading operations:** [loading note](../../study-notes/7-Data-Loading-and-Unloading/readme.md).
+- **Shares and app distribution:** [sharing note](../../study-notes/9-Storage-Data-Protection-and-sharing/readme.md).
+- **Grants and ownership:** [Domain 2](../2-Account-Management-and-Data-Governance/readme.md).
 
 ## Example objects
 
-These require a writable schema selected by `USE DATABASE` and `USE SCHEMA`, plus suitable creation privileges.
+- Before running these examples:
+  1. Select a writable schema using `USE DATABASE` and `USE SCHEMA`.
+  2. Use a role with suitable creation privileges.
 
 ```sql
 CREATE FILE FORMAT study_csv TYPE = CSV SKIP_HEADER = 1;
@@ -57,11 +65,17 @@ CREATE FUNCTION study_add_tax(amount NUMBER(12,2))
 SELECT study_add_tax(100), study_order_seq.NEXTVAL;
 ```
 
-A function is suited to applying a reusable calculation inside SQL. A procedure is suited to a workflow that executes statements; it may return a value or table, but you do not generally substitute `CALL` into a scalar expression.
+- A **function** applies a reusable calculation inside SQL.
+- A **procedure** runs a workflow of statements:
+  - It may return a value or table.
+  - You do not generally substitute `CALL` into a scalar expression.
 
 ## Session context
 
-Each connection has session state. Context controls how unqualified names are resolved and which compute/role the session uses.
+- Each connection has its own **session state**.
+- **Session context** controls:
+  - How unqualified object names are resolved.
+  - Which compute and role the session uses.
 
 ```sql
 USE ROLE analyst_role;
@@ -72,7 +86,10 @@ USE SCHEMA mart;
 SELECT CURRENT_ROLE(), CURRENT_WAREHOUSE(), CURRENT_DATABASE(), CURRENT_SCHEMA();
 ```
 
-With this context, `orders` resolves to `analytics.mart.orders`. Fully qualified names reduce ambiguity. Quoted identifiers are case-sensitive; unquoted names normally resolve in uppercase.
+- With this context, `orders` resolves to `analytics.mart.orders`.
+- Fully qualified names reduce ambiguity.
+- **Quoted identifiers** are case-sensitive.
+- **Unquoted identifiers** normally resolve in uppercase.
 
 ## Variables versus parameters
 
@@ -94,11 +111,26 @@ SHOW PARAMETERS LIKE 'TIMEZONE' IN SESSION;
 
 ## Parameter hierarchy and precedence
 
-For a **session parameter**, an explicit session setting overrides a user setting, which overrides the account default. If none is explicitly set, the system default applies.
+- For a **session parameter**, use this order from highest to lowest priority:
+  1. Explicit session setting.
+  2. User setting.
+  3. Account default.
+  4. System default, if none of the above is explicitly set.
 
-For **object parameters**, inheritance depends on the parameter and supported containers. Table retention, for example, can be set at account/database/schema/table levels; the specific table setting takes precedence over a parent default. Account-only parameters cannot be overridden in a session. Never apply one universal precedence rule to every parameter.
+- For **object parameters**, inheritance depends on the parameter and its supported containers.
+- Example: table retention can be set at these levels:
+  - Account.
+  - Database.
+  - Schema.
+  - Table.
+- A specific table setting takes precedence over a parent default.
+- **Account-only parameters** cannot be overridden in a session.
+- Do not apply one universal precedence rule to every parameter.
 
-`SHOW PARAMETERS` displays the value and level. `UNSET` removes an explicit override and allows the inherited/default value to apply; it does not necessarily set a parameter to zero or false.
+- `SHOW PARAMETERS` displays the value and level.
+- `UNSET` removes an explicit override.
+- The inherited or default value can then apply.
+- `UNSET` does not necessarily set the parameter to zero or false.
 
 ## What to recall
 

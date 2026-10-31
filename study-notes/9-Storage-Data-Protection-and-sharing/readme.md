@@ -6,18 +6,11 @@ Snowflake stores table data in cloud-object storage managed by Snowflake on the 
 
 ## Micro-Partitions
 
-Snowflake automatically divides data in every table into immutable, columnar micro-partitions. You do not create or manage these partitions yourself.
-
-- Each micro-partition contains approximately **50 MB to 500 MB of uncompressed data**. Snowflake stores the actual data compressed.
-- Snowflake records metadata for each micro-partition, including the range of values and number of distinct values for columns.
-- When a query has a selective predicate, such as `WHERE order_date >= '2026-01-01'`, Snowflake can use this metadata to skip micro-partitions that cannot contain matching rows. This is **micro-partition pruning**.
-- Updates and deletes do not change an existing micro-partition. Snowflake writes new micro-partitions and keeps the old versions for Time Travel when applicable.
+The storage fundamentals from this section have moved to [Domain 1.5: micro-partitions and natural clustering](../../chatgpt/1-Snowflake-AI-Data-Cloud-Features-and-Architecture/05-storage-tables-and-views.md#micro-partitions-and-natural-clustering). That is the C03 home for the concept; this course chapter continues with recovery, storage billing, and sharing.
 
 ### Clustering and Pruning
 
-Micro-partitions are created using the order in which data is inserted or loaded. If commonly filtered values are spread across many overlapping micro-partitions, pruning is less effective.
-
-For large tables with frequent, selective filters, a clustering key can improve the natural ordering of the data and reduce the number of micro-partitions scanned. Clustering is optional; use it only when query-performance benefits justify its maintenance cost.
+Use [Domain 1.5](../../chatgpt/1-Snowflake-AI-Data-Cloud-Features-and-Architecture/05-storage-tables-and-views.md) for the storage explanation and [Domain 4.2](../../chatgpt/4-Performance-Optimization-Querying-and-Transformation/readme.md#42-optimize-query-performance) for clustering-key selection and performance tuning.
 
 ## Time Travel and Fail-safe
 

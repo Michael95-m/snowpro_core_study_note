@@ -1,6 +1,8 @@
 # Domain 1.0: Snowflake AI Data Cloud Features and Architecture
 
-This folder follows all six Domain 1 objectives in the supplied SnowPro Core C03 study guide. Read the topics in order; each file ends with recall questions and official references.
+- This folder follows all **six Domain 1 objectives** in the supplied SnowPro Core C03 study guide.
+- Read the topics in order.
+- Each topic ends with recall questions and official references.
 
 | C03 objective | Study topic |
 | --- | --- |
@@ -13,27 +15,47 @@ This folder follows all six Domain 1 objectives in the supplied SnowPro Core C03
 
 ## How your existing notes fit
 
-Your original architecture explanations and images are incorporated into topic 1.1. Table and view comparisons are expanded in 1.5. The micro-partition and natural-clustering explanation from the storage course chapter has moved into 1.5.
+- **Topic 1.1:** includes your original architecture explanations and images.
+- **Topic 1.5:** expands the table and view comparisons.
+- **Topic 1.5:** also includes the micro-partition and natural-clustering explanation from the storage course chapter.
 
-Some concepts legitimately appear in multiple domains. This folder explains what an object or service is; operational detail remains in the appropriate note:
+- Some concepts appear in more than one domain.
+- This folder explains **what each object or service is**.
+- Use the related notes below for operational details.
 
 | Related material | Where to study the detail |
 | --- | --- |
 | RBAC, ownership, authentication, governance, and cost controls | [Domain 2](../2-Account-Management-and-Data-Governance/readme.md) |
-| Stage operations, file formats, loading, unloading, and pipes | [Loading course chapter](../7-Data-Loading-and-Unloading/readme.md) |
+| Stage operations, file formats, loading, unloading, and pipes | [Loading course chapter](../../study-notes/7-Data-Loading-and-Unloading/readme.md) |
 | Clustering-key selection, materialized-view tuning, caching, and SQL optimization | [Domain 4](../4-Performance-Optimization-Querying-and-Transformation/readme.md) |
-| Time Travel, Fail-safe, cloning, replication, and collaboration examples | [Storage and sharing course chapter](../9-Storage-Data-Protection-and-sharing/readme.md) |
-| Unstructured files and additional transformation functions | [Transformation course chapter](../8-Data-transformation/readme.md) |
+| Time Travel, Fail-safe, cloning, replication, and collaboration examples | [Storage and sharing course chapter](../../study-notes/9-Storage-Data-Protection-and-sharing/readme.md) |
+| Unstructured files and additional transformation functions | [Transformation course chapter](../../study-notes/8-Data-transformation/readme.md) |
 
-Folder numbers 7, 8, and 9 are course chapter numbers, not C03 exam domains. The separate Level Up Accounts and Assurances file currently contains only a heading, so it had no lesson content to relocate.
+- Folder numbers **7, 8, and 9** are course chapter numbers, not C03 exam domains.
+- The separate Level Up Accounts and Assurances file currently contains only a heading.
+- It had no lesson content to relocate.
 
 ## Scope and practice
 
-Our completed chat practice is saved in the [practice Q&A folder](practice/readme.md), with separate files for sections 1.1, 1.2, and 1.3. Each records your answers, corrections, and follow-up explanations. Answers are collapsible for self-testing.
+- Completed chat practice is saved in the [practice Q&A folder](practice/readme.md).
+- Sections **1.1, 1.2, and 1.3** have separate files.
+- Each records your answers, corrections, and follow-up explanations.
+- Answers are collapsible for self-testing.
 
-Examples are study patterns reviewed against official documentation, not executed in your account. SQL that references existing objects requires those objects, a suitable role, and warehouse access. Creating or resuming compute and maintained objects can consume credits.
+- Examples are study patterns reviewed against official documentation.
+- They have **not been executed in your account**.
+- SQL that references existing objects requires:
+  1. Those objects to exist.
+  2. A suitable role.
+  3. Warehouse access.
+- Creating or resuming compute and maintained objects can consume credits.
 
-The supplied guide marks the default warehouse for Notebooks with a footnote saying it will not be tested until globally GA. Preserve that condition when using this guide; do not infer current exam eligibility merely from availability in one account. Current notebook experiences and warehouse defaults evolve, so the notes emphasize purpose, compute selection, and cost rather than memorizing a changing default name.
+- The supplied guide has a footnote about the default warehouse for Notebooks:
+  - It will not be tested until globally **Generally Available (GA)**.
+  - Preserve this condition when using the guide.
+- Availability in one account does not prove that the feature is currently testable.
+- Notebook experiences and warehouse defaults change.
+- Focus on purpose, compute selection, and cost rather than memorizing a changing default name.
 
 ## Whole-domain recall
 

@@ -1,20 +1,20 @@
 # Archived Original Course Outline
 
-This preserves your original architecture draft and images for reference. It is superseded by the corrected, expanded [Domain 1 topics](readme.md). The original wording below has not been treated as a verified current reference; use the topic files for study.
+This preserves your original architecture draft and images for reference. It is superseded by the corrected, expanded [Domain 1 topics](../../chatgpt/1-Snowflake-AI-Data-Cloud-Features-and-Architecture/readme.md). The original wording below has not been treated as a verified current reference; use the topic files for study.
 
 ## What Is Snowflake?
 
 - Snowflake began as a cloud data warehouse and has evolved into a cloud data platform for analytics, data engineering, data applications, and AI workloads.
 
 
-    <img src="../img/what_is_snowflake.png" alt="What is Snowflake?" width="720">
+    <img src="../../img/what_is_snowflake.png" alt="What is Snowflake?" width="720">
 
 
 ## Multi-Cluster Shared Data Architecture
 
 - Two common data-architecture patterns are **shared disk** and **shared nothing**.
 
-    ![Shared disk vs. shared nothing](../img/Shared_disk_vs_Shared_nothing.png)
+    ![Shared disk vs. shared nothing](../../img/Shared_disk_vs_Shared_nothing.png)
 
 ### Shared Disk
 
@@ -30,7 +30,7 @@ This preserves your original architecture draft and images for reference. It is 
 
 - Snowflake follows "Multi-cluster shared-data architecture" which decouples storage and compute which allows to scale indefinitely. Generally, snowflake services can be categorzied into three separate layers like below image.
 
-    ![Multi-cluster shared-data architecture](../img/Multi-cluster-shared-data-architecture.png)
+    ![Multi-cluster shared-data architecture](../../img/Multi-cluster-shared-data-architecture.png)
 
 ## Storage layer
 
@@ -51,13 +51,13 @@ This preserves your original architecture draft and images for reference. It is 
 
 - Virtual warehouse can be came in different sizes starting from XS.
 
-    <img src="../img/Query_Processing_layer_with_storage.png" alt="Query Processing Layer with Storage"  width="720">
+    <img src="../../img/Query_Processing_layer_with_storage.png" alt="Query Processing Layer with Storage"  width="720">
 
 ## Services Layer
 
 - It is reffered as **global services layer** since it is a colleciton of highly available and scable services that coordinates activities across all snowflake accounts.
 
-    <img src="../img/Services_layer.png" alt="Service Layer" width="720">
+    <img src="../../img/Services_layer.png" alt="Service Layer" width="720">
 
 ## Snowflake Edition
 
@@ -81,7 +81,7 @@ This preserves your original architecture draft and images for reference. It is 
 
     - Examples: tables , views , and schemas. Objects are the fundamental building blocks in Snowflake.
 
-    <img src="../img/object_model.png" alt="hierarchy_of_object" width="720">
+    <img src="../../img/object_model.png" alt="hierarchy_of_object" width="720">
 
 
 ## Table Types

@@ -105,7 +105,7 @@ Database roles cannot receive privileges on objects in a different database. The
 
 ### Role inheritance and ownership
 
-<p align="center"><img src="../img/domain2-role-inheritance.png" alt="SELECT is granted to a reader role, the reader role is granted to an analyst role, and the analyst role is granted to a user. The parent analyst role inherits the reader privileges." width="760"></p>
+<p align="center"><img src="../../img/domain2-role-inheritance.png" alt="SELECT is granted to a reader role, the reader role is granted to an analyst role, and the analyst role is granted to a user. The parent analyst role inherits the reader privileges." width="760"></p>
 
 `GRANT ROLE child TO ROLE parent` means the **parent inherits the child's privileges**. The child does not inherit the parent's privileges. Owning a role is different from inheriting it: ownership alone does not give access to everything that role can query.
 
@@ -439,7 +439,7 @@ The SQL examples are separate study patterns. Use test objects and replace names
 
 ### Masking policies: column-level security
 
-<p align="center"><img src="../img/domain2-row-access-and-masking.png" alt="For an APAC reader without email access, the row access policy first removes the EMEA row; masking then hides the email in the remaining APAC row. Source values are unchanged." width="760"></p>
+<p align="center"><img src="../../img/domain2-row-access-and-masking.png" alt="For an APAC reader without email access, the row access policy first removes the EMEA row; masking then hides the email in the remaining APAC row. Source values are unchanged." width="760"></p>
 
 A **masking policy** controls what a user sees in a column at query time. The underlying data stays unchanged; the returned value is masked or transformed for unauthorized users.
 
@@ -847,7 +847,7 @@ The database-only group above does not include users, roles, or warehouses. Plan
 
 [References: CREATE FAILOVER GROUP](https://docs.snowflake.com/en/sql-reference/sql/create-failover-group) · [Replication setup and refresh](https://docs.snowflake.com/en/user-guide/account-replication-config)
 
-See [replication and failover](https://docs.snowflake.com/en/user-guide/account-replication-intro) and the [storage course note](../9-Storage-Data-Protection-and-sharing/readme.md) for supporting examples. Folder numbers 7/8/9 refer to course chapters, not C03 exam domains.
+See [replication and failover](https://docs.snowflake.com/en/user-guide/account-replication-intro) and the [storage course note](../../study-notes/9-Storage-Data-Protection-and-sharing/readme.md) for supporting examples. Folder numbers 7/8/9 refer to course chapters, not C03 exam domains.
 
 ### Data lineage
 
