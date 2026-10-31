@@ -1,3 +1,6 @@
 .DS_Store
 Snowflake-level-up-series/
 *.pdf
+
+# Personal account screenshot: keep outside the published study notes.
+/img/Screenshot 2026-09-29 at 23.41.22.png
