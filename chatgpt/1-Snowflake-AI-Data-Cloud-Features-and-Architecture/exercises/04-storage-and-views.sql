@@ -1,0 +1,55 @@
+-- Objective 1.5. Permanent database required (00-setup.sql creates one).
+USE ROLE SYSADMIN;
+USE WAREHOUSE D1_STUDY_WH;
+USE DATABASE D1_STUDY;
+USE SCHEMA LAB;
+
+CREATE OR REPLACE TABLE PERMANENT_SAMPLE (ID NUMBER);
+CREATE OR REPLACE TRANSIENT TABLE TRANSIENT_SAMPLE (ID NUMBER);
+CREATE OR REPLACE TEMPORARY TABLE TEMPORARY_SAMPLE (ID NUMBER);
+INSERT INTO PERMANENT_SAMPLE VALUES (1);
+INSERT INTO TRANSIENT_SAMPLE VALUES (2);
+INSERT INTO TEMPORARY_SAMPLE VALUES (3);
+SHOW TABLES IN SCHEMA D1_STUDY.LAB;
+-- Compare kind/is_transient/retention_time where shown by your client.
+-- In a second connection, TEMPORARY_SAMPLE is not visible. The other two are.
+
+CREATE OR REPLACE TABLE NAME_SHADOW (SOURCE STRING);
+INSERT INTO NAME_SHADOW VALUES ('PERMANENT');
+CREATE OR REPLACE TEMPORARY TABLE NAME_SHADOW (SOURCE STRING);
+INSERT INTO NAME_SHADOW VALUES ('TEMPORARY');
+SELECT * FROM NAME_SHADOW;
+-- Expected: TEMPORARY, even with the fully qualified name in this session.
+DROP TABLE NAME_SHADOW;
+SELECT * FROM NAME_SHADOW;
+-- Expected: PERMANENT. The previous DROP removed the temporary table.
+
+CREATE OR REPLACE VIEW REGIONAL_SALES AS
+  SELECT REGION, SUM(AMOUNT) AS TOTAL FROM ORDERS GROUP BY REGION;
+CREATE OR REPLACE SECURE VIEW PUBLIC_ORDER_TOTAL AS
+  SELECT ORDER_ID, AMOUNT FROM ORDERS;
+SELECT * FROM REGIONAL_SALES ORDER BY REGION;
+-- Expected: AMER 300, APAC 175, EMEA 275.
+-- SECURE changes definition/security behavior; it does not store a normal
+-- view's result or grant SELECT to other roles automatically.
+
+SELECT PARSE_JSON(SYSTEM$CLUSTERING_INFORMATION(
+  'D1_STUDY.LAB.ORDERS', '(ORDER_DATE)'
+)) AS CLUSTERING_INFO;
+-- An expression is required because ORDERS has no declared clustering key.
+-- Six rows cannot demonstrate a meaningful pruning/performance difference.
+
+-- OPTIONAL Enterprise+ retention example, on this permanent lab table only:
+-- ALTER TABLE PERMANENT_SAMPLE SET DATA_RETENTION_TIME_IN_DAYS = 30;
+-- SHOW PARAMETERS LIKE 'DATA_RETENTION_TIME_IN_DAYS' IN TABLE PERMANENT_SAMPLE;
+-- ALTER TABLE PERMANENT_SAMPLE SET DATA_RETENTION_TIME_IN_DAYS = 1;
+-- This does not retroactively recover expired history.
+
+-- OPTIONAL Dynamic Table: initialization/refreshes use D1_STUDY_WH.
+-- CREATE OR REPLACE DYNAMIC TABLE DAILY_SALES
+--   TARGET_LAG = '10 minutes' WAREHOUSE = D1_STUDY_WH
+-- AS SELECT ORDER_DATE, SUM(AMOUNT) AS TOTAL FROM ORDERS GROUP BY ORDER_DATE;
+-- ALTER DYNAMIC TABLE DAILY_SALES SUSPEND;
+-- SELECT * FROM DAILY_SALES ORDER BY ORDER_DATE;
+-- Four daily totals: 100, 250, 100, 300. Keep refreshes suspended afterward.
+-- External/Iceberg examples need real cloud/catalog setup; see topic 1.5.

@@ -2,7 +2,13 @@
 
 [Domain 1 index](readme.md)
 
-## Micro-partitions and natural clustering
+- **C03 objective:** 1.5. Read the definitions, work through the scenario, then answer recall questions.
+- **Practice:** [ordered lab guide](exercises/readme.md); start with its setup.
+- **SQL status:** examples reviewed against official documentation; not executed in your account.
+
+<a id="micro-partitions-and-natural-clustering"></a>
+
+## 1.5.1 Micro-partitions and natural clustering
 
 - For standard Snowflake tables, Snowflake automatically organizes rows into **micro-partitions**.
 - These are:
@@ -36,7 +42,9 @@
   - Maintenance costs.
   - SQL tuning.
 
-## Table lifetimes and data protection
+<a id="table-lifetimes-and-data-protection"></a>
+
+## 1.5.2 Table lifetimes and data protection
 
 | Standard table type | Lifetime | Time Travel | Fail-safe | Common use |
 | --- | --- | --- | --- | --- |
@@ -57,7 +65,9 @@ CREATE TRANSIENT TABLE study_rebuildable (id NUMBER)
   DATA_RETENTION_TIME_IN_DAYS = 1;
 ```
 
-## External, Iceberg, and dynamic tables
+<a id="external-iceberg-and-dynamic-tables"></a>
+
+## 1.5.3 External, Iceberg, and dynamic tables
 
 - External, Iceberg, and Dynamic Tables describe:
   - Data access.
@@ -93,7 +103,7 @@ CREATE DYNAMIC TABLE study_daily_sales
   REFRESH_MODE = AUTO
 AS
   SELECT order_date, SUM(amount) AS daily_sales
-  FROM analytics.mart.orders
+  FROM D1_STUDY.LAB.ORDERS
   GROUP BY order_date;
 ```
 
@@ -104,7 +114,9 @@ AS
 - Refreshing the stored result consumes compute.
 - Ordinary direct DML is not how you maintain Dynamic Table results.
 
-## View types
+<a id="view-types"></a>
+
+## 1.5.4 View types
 
 | View | Stores query result? | Purpose and trade-off |
 | --- | --- | --- |
@@ -115,12 +127,12 @@ AS
 ```sql
 CREATE VIEW study_sales_summary AS
   SELECT order_date, SUM(amount) AS sales
-  FROM analytics.mart.orders
+  FROM D1_STUDY.LAB.ORDERS
   GROUP BY order_date;
 
 CREATE SECURE VIEW study_public_customers AS
   SELECT customer_id, customer_name
-  FROM analytics.mart.customer;
+  FROM D1_STUDY.LAB.CUSTOMERS;
 ```
 
 - `SECURE` does not automatically grant access.
@@ -132,7 +144,38 @@ CREATE SECURE VIEW study_public_customers AS
   - Can be selected by the optimizer.
 - Use [Domain 4](../4-Performance-Optimization-Querying-and-Transformation/readme.md) for materialized-view restrictions and tuning.
 
+<a id="iceberg-configuration-pruning-and-exercise-checkpoints"></a>
+
+## 1.5.5 Iceberg configuration, pruning, and exercise checkpoints
+
+### Iceberg: separate the catalog from file storage
+
+1. **Catalog** records the table's schema, snapshots, and file references.
+2. **Data files** contain the actual values, usually Parquet for Iceberg.
+3. A Snowflake-managed catalog lets Snowflake manage table metadata and supported table operations.
+4. An external catalog makes another system responsible for catalog metadata; Snowflake's integration and supported operations depend on that catalog/configuration.
+5. An external volume supplies supported storage-location/access configuration for externally stored Iceberg data. It is different from a stage's storage integration.
+6. A catalog integration connects supported external catalog/metadata sources. It is different from the external volume that describes storage.
+
+- Snowflake can manage the catalog while the files remain in your cloud storage.
+- Supported Snowflake-managed configurations can also use Snowflake-provided storage; do not memorize “all Iceberg files must be in the customer's S3 bucket.”
+- Check [catalog options](https://docs.snowflake.com/en/user-guide/tables-iceberg#catalog-options) and [external volumes](https://docs.snowflake.com/en/user-guide/tables-iceberg-configure-external-volume).
+
+### A pruning example without a large warehouse
+
+- Suppose one partition's recorded PRICE range is **10 to 100**.
+- `WHERE PRICE = 150` -> this partition cannot match and can be skipped.
+- `WHERE PRICE = 50` -> this partition is a candidate; the range does not prove a row with 50 actually exists.
+- This is a reasoning example, not a physical partition layout guaranteed by a six-row lab.
+- **Practice:** [04-storage-and-views.sql](exercises/04-storage-and-views.sql).
+- **Checkpoint:** the temporary `NAME_SHADOW` is selected first; dropping it reveals the permanent table.
+- **Checkpoint:** a standard view returns totals **AMER 300 / APAC 175 / EMEA 275** without storing its own result.
+- **Remember:** lifetime, file format/catalog ownership, and refresh behavior are different axes of table design.
+- **Exam clue:** `SECURE` protects view behavior/definition; it does not decide whether the result is materialized.
+
 ## What to recall
+
+
 
 1. What makes micro-partitions immutable, and what metadata supports pruning?
 2. How does natural clustering differ from an explicitly maintained clustering key?
@@ -142,6 +185,22 @@ CREATE SECURE VIEW study_public_customers AS
 6. What are the separate Iceberg catalog and storage decisions?
 7. Why does a ten-minute target lag not mean a refresh exactly every ten minutes?
 8. How do secure, materialized, and standard views differ?
+9. How do an external volume and a catalog integration have different jobs?
+
+<details>
+<summary>Open the recall answer key</summary>
+
+1. Existing micro-partitions are not edited in place; modifications create replacement storage. Value ranges/distinct metadata support pruning.
+2. Natural clustering follows load organization; an explicit key guides paid background maintenance for suitable workloads.
+3. Temporary ends with the session; transient persists until dropped and has no Fail-safe.
+4. More than one day, up to 90 days for supported permanent objects, needs Enterprise+ and explicit/inherited configuration.
+5. An external table exposes external files read-only; Iceberg adds an open table format, snapshots, and catalog-managed metadata with configuration-dependent operations.
+6. Choose who manages catalog metadata separately from where data files are stored and how storage access is configured.
+7. Target lag guides freshness scheduling and can be exceeded; it is not a fixed ten-minute timer.
+8. Standard stores a query; materialized stores maintained results; SECURE protects view behavior/definition and can apply to either.
+9. An external volume configures supported external Iceberg storage access; a catalog integration connects supported catalog/metadata sources.
+
+</details>
 
 ## Official references
 

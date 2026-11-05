@@ -35,6 +35,7 @@
 
 ## Practice setup and exercise files
 
+- Review the [25-question Domain 4 practice quiz](practice/domain-4-qa.md).
 - Follow the [ordered lab guide and checkpoints](exercises/readme.md).
 - Run [00-setup.sql](exercises/00-setup.sql) first in a fresh lab session.
 - Finish with [99-stop-lab.sql](exercises/99-stop-lab.sql).

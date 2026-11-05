@@ -2,7 +2,13 @@
 
 [Domain 1 index](readme.md)
 
-## Choose by the problem
+- **C03 objective:** 1.6. Read the definitions, work through the scenario, then answer recall questions.
+- **Practice:** [ordered lab guide](exercises/readme.md); start with its setup.
+- **SQL status:** examples reviewed against official documentation; not executed in your account.
+
+<a id="choose-by-the-problem"></a>
+
+## 1.6.1 Choose by the problem
 
 | Need | Feature | Why it fits |
 | --- | --- | --- |
@@ -14,7 +20,9 @@
 | Ask business questions about structured data in natural language | Cortex Analyst | Uses semantic definitions to help produce SQL grounded in business concepts. |
 | Develop, register, and operate predictive models | Snowflake ML | Model development and model lifecycle tools. |
 
-## Snowflake Notebooks
+<a id="snowflake-notebooks"></a>
+
+## 1.6.2 Snowflake Notebooks
 
 - **Snowflake Notebooks** combine:
   - SQL cells.
@@ -37,7 +45,9 @@
   - Selecting suitable compute.
   - Understanding cost.
 
-## Streamlit in Snowflake
+<a id="streamlit-in-snowflake"></a>
+
+## 1.6.3 Streamlit in Snowflake
 
 - **Streamlit** turns Python into an interactive application.
 - An app can provide:
@@ -57,7 +67,9 @@
 - Native Apps add packaging and installation for consumers.
 - **Related note:** [sharing course chapter](../../study-notes/9-Storage-Data-Protection-and-sharing/readme.md).
 
-## Snowpark
+<a id="snowpark"></a>
+
+## 1.6.4 Snowpark
 
 - **Snowpark** provides APIs for data processing in Snowflake.
 - Its **DataFrames** represent relational operations.
@@ -69,7 +81,7 @@
 from snowflake.snowpark.functions import col
 
 apac_orders = (
-    session.table("ANALYTICS.MART.ORDERS")
+    session.table("D1_STUDY.LAB.ORDERS")
     .filter(col("REGION") == "APAC")
     .select("ORDER_ID", "AMOUNT")
 )
@@ -83,7 +95,9 @@ apac_orders.show()  # Action: execute and display a small result.
 - **Snowpark-optimized** compute is a workload choice.
 - It is not mandatory for every Snowpark program.
 
-## Cortex AI SQL functions
+<a id="cortex-ai-sql-functions"></a>
+
+## 1.6.5 Cortex AI SQL functions
 
 - Managed AI functions apply model capabilities without you operating model-serving infrastructure.
 - Recognize these use cases:
@@ -110,7 +124,9 @@ SELECT AI_COMPLETE('supported-model-name', 'Explain micro-partition pruning brie
 - Generated output can be wrong.
 - Validate it for its intended use.
 
-## Cortex Search versus Cortex Analyst
+<a id="cortex-search-versus-cortex-analyst"></a>
+
+## 1.6.6 Cortex Search versus Cortex Analyst
 
 - **Cortex Search** combines vector/semantic and keyword retrieval over indexed content.
 - Use it to retrieve relevant:
@@ -143,7 +159,9 @@ SELECT AI_COMPLETE('supported-model-name', 'Explain micro-partition pruning brie
   - Semantic definitions.
   - Validation.
 
-## Snowflake ML and model objects
+<a id="snowflake-ml-and-model-objects"></a>
+
+## 1.6.7 Snowflake ML and model objects
 
 - **Snowflake ML** supports:
   - Feature preparation.
@@ -165,7 +183,41 @@ SELECT AI_COMPLETE('supported-model-name', 'Explain micro-partition pruning brie
   - Can support either workflow.
   - Are development/processing tools, not one particular model family.
 
+<a id="a-practical-ai-workflow-and-exercise-checkpoints"></a>
+
+## 1.6.8 A practical AI workflow and exercise checkpoints
+
+1. Start with a small governed dataset and a clear question.
+2. Choose the tool from the task: analysis cells, user-facing app, relational transformation, document search, or structured natural-language analysis.
+3. Choose the runtime/warehouse and required roles explicitly.
+4. Reduce data in Snowflake before transferring it to Python.
+5. Inspect generated/model output before relying on it.
+6. Stop both query compute and independent runtime services when appropriate.
+
+### Analyst definitions versus evaluation
+
+- A semantic view/model describes tables, relationships, dimensions, and business metrics such as net revenue.
+- A verified query pairs a natural-language question with a reviewed SQL answer.
+- Evaluations use selected verified queries as expected answers to test generated SQL and detect regressions as definitions change.
+- Useful test set: a regional total, a date range, a join-sensitive question, and a metric with a business exclusion.
+- Use fixed dates for repeatable tests; “last month” changes over time.
+- Evaluation has warehouse/inference/storage costs and is optional implementation depth beyond choosing Analyst for a structured-data question.
+- Reference: [Cortex Analyst evaluations](https://docs.snowflake.com/en/user-guide/snowflake-cortex/cortex-analyst-evaluations).
+
+### Feature Store versus Model Registry
+
+- **Feature Store:** governed reusable inputs, such as 30-day spend and purchase frequency, used in training/inference.
+- **Model Registry:** trained model artifacts, versions, metadata, and supported callable methods.
+- Reusing a feature definition helps keep training and prediction inputs consistent.
+- Registering a model does not itself prove quality, retrain it, or grant every user prediction access.
+- **Practice:** [05-ai-and-applications.sql](exercises/05-ai-and-applications.sql), then optional [06-snowpark.py](exercises/06-snowpark.py).
+- **Checkpoint:** aggregate in Snowflake, then Python receives only **3 regional summary rows**.
+- **Remember:** killing a Python kernel is not proof the notebook service/compute pool stopped. Inspect its runtime/service controls and current compute state.
+- **Exam clue:** Cortex Search retrieves relevant indexed content; Cortex Analyst supports natural-language questions over structured business data.
+
 ## What to recall
+
+
 
 1. When is a notebook more suitable than a Streamlit app?
 2. What triggers a lazy Snowpark DataFrame to execute?
@@ -175,6 +227,24 @@ SELECT AI_COMPLETE('supported-model-name', 'Explain micro-partition pruning brie
 6. Why does a Cortex Search service's owner's-rights model matter?
 7. What are the Model Registry and Feature Store for?
 8. Which runtime, privileges, costs, and quality checks apply to the chosen workflow?
+9. How do semantic definitions and verified queries support Analyst development and evaluation?
+10. Does killing a notebook kernel prove that its service/compute pool stopped?
+
+<details>
+<summary>Open the recall answer key</summary>
+
+1. Notebook for exploratory SQL/Python/Markdown; Streamlit for an interactive application intended for end users.
+2. An action such as show(), collect(), or an appropriate write triggers execution of a lazy DataFrame plan.
+3. It transfers results into client memory/network; large results can exhaust resources. Filter/aggregate first.
+4. Managed AI calls available model capabilities; custom ML training fits and evaluates your own model and inputs.
+5. Cortex Search for relevant indexed content; Cortex Analyst for structured-data questions using semantic definitions and SQL.
+6. Search uses service-owner rights, so service usage can expose indexed content without direct source-table access; control service access.
+7. Feature Store manages reusable governed inputs; Model Registry manages trained model artifacts, versions, and callable methods.
+8. Check selected runtime/compute, source/service/model privileges, ongoing charges, and output/model quality.
+9. Semantic definitions describe the business data; verified question/SQL pairs provide reviewed expected answers for guidance/evaluation.
+10. No. Check/stop the actual notebook service/runtime and independent compute resources, not just the kernel or SQL warehouse.
+
+</details>
 
 ## Official references
 

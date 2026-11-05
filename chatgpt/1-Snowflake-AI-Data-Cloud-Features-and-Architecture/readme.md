@@ -1,5 +1,10 @@
 # Domain 1.0: Snowflake AI Data Cloud Features and Architecture
 
+- **Exam outline:** supplied [C03 guide](../../SnowProCoreStudyGuideC03.pdf), pages 5-7; **31%** weighting.
+- **Format and exercise update:** November 5, 2026.
+- **Study cycle:** numbered topic -> Remember line/scenario -> exercise -> expected result -> closed-book recall -> answer key.
+- **SQL status:** reviewed against official documentation; not executed in your account.
+
 - This folder follows all **six Domain 1 objectives** in the supplied SnowPro Core C03 study guide.
 - Read the topics in order.
 - Each topic ends with recall questions and official references.
@@ -12,6 +17,31 @@
 | 1.4 Virtual warehouses | [Warehouse configuration and workload choices](04-virtual-warehouses.md) |
 | 1.5 Storage concepts | [Micro-partitions, clustering, table types, and views](05-storage-tables-and-views.md) |
 | 1.6 AI/ML and application development | [Notebooks, Streamlit, Snowpark, Cortex, and Snowflake ML](06-ai-ml-and-applications.md) |
+
+## Practice setup and exercise files
+
+- Follow the [ordered lab guide](exercises/readme.md) for runnable examples and prerequisites.
+- Start with [00-setup.sql](exercises/00-setup.sql), which creates `D1_STUDY.LAB` and a small warehouse.
+- The fixture has **6 orders totaling 750**; use those checks before interpreting a result.
+- Run [architecture/context](exercises/01-architecture-and-context.sql), [objects/parameters](exercises/02-objects-and-parameters.sql), [warehouses](exercises/03-virtual-warehouses.sql), [storage/views](exercises/04-storage-and-views.sql), and [AI inputs](exercises/05-ai-and-applications.sql) in order.
+- Optional [Snowpark notebook cells](exercises/06-snowpark.py) aggregate in Snowflake before collecting three summary rows.
+- Finish with [99-stop-lab.sql](exercises/99-stop-lab.sql), and stop any independent notebook runtime separately.
+- Basic labs use synthetic data. Extended retention, multi-cluster settings, Dynamic Tables, and paid AI calls are marked optional with their prerequisites.
+
+## Scenario decision guide
+
+| Requirement | Feature/reasoning |
+| --- | --- |
+| ETL and BI must not compete for warehouse memory/CPU | Separate virtual warehouses reading shared persistent tables. |
+| One optimized query needs more memory | Evaluate scale up; adding clusters primarily helps concurrency. |
+| A burst of concurrent small queries causes overload queues | Evaluate scale out or workload isolation. |
+| Session-local work table | Temporary table. |
+| Rebuildable table that survives sessions, without Fail-safe | Transient table. |
+| Repeated supported single-table result with maintenance cost justified | Materialized view. |
+| SQL-defined pipeline with a freshness target | Dynamic Table; target lag is a goal. |
+| Documents need relevant-passage retrieval | Cortex Search. |
+| Business users ask revenue questions in natural language | Cortex Analyst with semantic definitions and validation. |
+| Govern reusable ML inputs versus trained versions | Feature Store versus Model Registry. |
 
 ## How your existing notes fit
 
@@ -75,3 +105,25 @@
 14. How do standard, materialized, and secure views differ?
 15. When would you choose Notebooks, Streamlit, Snowpark, Cortex Search, Cortex Analyst, or Snowflake ML?
 16. What costs and access controls must you consider before running an AI or ML workload?
+
+<details>
+<summary>Open the whole-domain answer key</summary>
+
+1. Storage retains managed data; compute executes; cloud services coordinates authentication, metadata, parsing, and optimization.
+2. They have independent compute resources and access shared persistent storage.
+3. Enterprise+ for multi-cluster and extended permanent-object retention; Business Critical+ for Tri-Secret Secure.
+4. Snowsight for browser workflows, CLI for terminal scripting, VS Code for IDE development.
+5. Warehouses/users/roles/shares/integrations are account-level; named stages/file formats/tables/views/functions/pipes/Git repository objects are schema-level.
+6. Stages reference files; formats parse; pipes define ingestion; UDFs calculate; procedures run workflows; sequences allocate values; model objects store registered versions; applications are installed app objects.
+7. Variables store values, context functions report state, and parameters configure behavior.
+8. Explicit session settings win for session parameters. Object/account-only parameters have their own supported inheritance rules.
+9. Scale up for per-query resources, out for concurrency. Standard favors responsiveness; Economy favors utilization/cost.
+10. It reduces idle time but loses local table cache and introduces resume/startup work.
+11. Gen1/Gen2 are Standard generations; Snowpark-optimized is a memory-oriented type, not a requirement for all Python.
+12. Value ranges and related micro-partition metadata. Natural organization may be sufficient when representative filters already prune well.
+13. Permanent/temporary/transient define lifetimes/protection; external/Iceberg describe external/open-table access/storage/catalog; dynamic describes maintained query results.
+14. Standard stores SQL; materialized stores maintained results; secure controls definition/security behavior and may apply to either.
+15. Notebook for interactive analysis; Streamlit for apps; Snowpark for APIs near data; Search for retrieval; Analyst for semantic structured questions; ML for model development/lifecycle.
+16. Check runtime/warehouse/pool resources, permissions, service/model availability, storage/maintenance/inference charges, and output quality.
+
+</details>

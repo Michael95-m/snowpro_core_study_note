@@ -2,7 +2,13 @@
 
 [Domain 1 index](readme.md)
 
-## Object hierarchy
+- **C03 objective:** 1.3. Read the definitions, work through the scenario, then answer recall questions.
+- **Practice:** [ordered lab guide](exercises/readme.md); start with its setup.
+- **SQL status:** examples reviewed against official documentation; not executed in your account.
+
+<a id="object-hierarchy"></a>
+
+## 1.3.1 Object hierarchy
 
 ```text
 Organization
@@ -22,7 +28,9 @@ Organization
 - A **share is account-level**, not a child of a database schema.
 - A Native App **application** is also an account-level installed object with its own contents.
 
-## Object comparison
+<a id="object-comparison"></a>
+
+## 1.3.2 Object comparison
 
 | Object | What it represents | Important distinction |
 | --- | --- | --- |
@@ -46,7 +54,9 @@ Organization
 - **Shares and app distribution:** [sharing note](../../study-notes/9-Storage-Data-Protection-and-sharing/readme.md).
 - **Grants and ownership:** [Domain 2](../2-Account-Management-and-Data-Governance/readme.md).
 
-## Example objects
+<a id="example-objects"></a>
+
+## 1.3.3 Example objects
 
 - Before running these examples:
   1. Select a writable schema using `USE DATABASE` and `USE SCHEMA`.
@@ -70,7 +80,9 @@ SELECT study_add_tax(100), study_order_seq.NEXTVAL;
   - It may return a value or table.
   - You do not generally substitute `CALL` into a scalar expression.
 
-## Session context
+<a id="session-context"></a>
+
+## 1.3.4 Session context
 
 - Each connection has its own **session state**.
 - **Session context** controls:
@@ -78,20 +90,22 @@ SELECT study_add_tax(100), study_order_seq.NEXTVAL;
   - Which compute and role the session uses.
 
 ```sql
-USE ROLE analyst_role;
-USE WAREHOUSE analytics_wh;
-USE DATABASE analytics;
-USE SCHEMA mart;
+USE ROLE SYSADMIN;
+USE WAREHOUSE D1_STUDY_WH;
+USE DATABASE D1_STUDY;
+USE SCHEMA LAB;
 
 SELECT CURRENT_ROLE(), CURRENT_WAREHOUSE(), CURRENT_DATABASE(), CURRENT_SCHEMA();
 ```
 
-- With this context, `orders` resolves to `analytics.mart.orders`.
+- With this context, `orders` resolves to `D1_STUDY.LAB.ORDERS`.
 - Fully qualified names reduce ambiguity.
 - **Quoted identifiers** are case-sensitive.
 - **Unquoted identifiers** normally resolve in uppercase.
 
-## Variables versus parameters
+<a id="variables-versus-parameters"></a>
+
+## 1.3.5 Variables versus parameters
 
 | Concept | Example | Meaning |
 | --- | --- | --- |
@@ -109,7 +123,9 @@ SHOW PARAMETERS LIKE 'TIMEZONE' IN SESSION;
 -- If changed during practice, restore your previous setting afterward.
 ```
 
-## Parameter hierarchy and precedence
+<a id="parameter-hierarchy-and-precedence"></a>
+
+## 1.3.6 Parameter hierarchy and precedence
 
 - For a **session parameter**, use this order from highest to lowest priority:
   1. Explicit session setting.
@@ -132,7 +148,38 @@ SHOW PARAMETERS LIKE 'TIMEZONE' IN SESSION;
 - The inherited or default value can then apply.
 - `UNSET` does not necessarily set the parameter to zero or false.
 
+<a id="more-object-distinctions-and-exercise-checkpoints"></a>
+
+## 1.3.7 More object distinctions and exercise checkpoints
+
+| Need | Object/control | Scope or behavior |
+| --- | --- | --- |
+| Secure access to external storage | Storage integration | Account-level; a stage can reference it. |
+| Store or reference staged files | Named stage | Schema-level; not a table of loaded rows. |
+| Keep parsing settings | Named file format | Schema-level; `FORMAT_NAME` references its saved settings. |
+| Fetch code into Snowflake | Git repository object | Schema-level; distinct from its account-level API integration. |
+| Configure allowed login methods | Authentication policy | Schema-level policy assigned to a user/account. |
+| Restrict incoming network origins | Network policy | Account-level policy object; creation and activation are separate. |
+
+- A **scalar function** returns one value per call; a **table function** returns rows/columns usable in a FROM clause.
+- `TABLE(...)` makes a table function's output usable as a relation; it does not create a persistent table.
+
+```sql
+SELECT SEQ4() AS EXAMPLE_VALUE
+FROM TABLE(GENERATOR(ROWCOUNT => 3));
+-- Three result rows; no persistent table is created.
+```
+
+- A procedure can perform authorized work such as an INSERT and return a status; its execution rights still matter.
+- A sequence allocates identifiers, not business-event counts. Rollbacks/concurrency can leave gaps.
+- An application package is the provider's packaging/distribution object; an installed application exists in the consumer account. It is not simply a Docker image.
+- **Practice:** [02-objects-and-parameters.sql](exercises/02-objects-and-parameters.sql).
+- **Checkpoint:** UDF tax result **107**; procedure log **1 row**; region variable returns order IDs **1, 2, 5**.
+- **Remember:** a variable holds a value, a context function reports state, and a parameter changes supported behavior.
+
 ## What to recall
+
+
 
 1. Where do warehouses, shares, schemas, pipes, and UDFs sit in the hierarchy?
 2. How do stage, file format, and pipe differ?
@@ -141,6 +188,23 @@ SHOW PARAMETERS LIKE 'TIMEZONE' IN SESSION;
 5. How does a fully qualified name differ from the current database/schema context?
 6. How do a session variable and a session parameter differ?
 7. Which session-parameter level wins, and what does `UNSET` do?
+8. What are the scopes of a storage integration and a Git repository object?
+9. What does a table function return, and does TABLE(...) create permanent storage?
+
+<details>
+<summary>Open the recall answer key</summary>
+
+1. Warehouses/shares are account-level; schemas belong to databases; pipes/UDFs belong to schemas.
+2. A stage stores/references files; a file format stores parsing settings; a pipe stores an ingestion definition.
+3. Use a UDF for reusable expressions/table-returning calculations; use a procedure for an authorized workflow invoked with CALL.
+4. Values can be allocated without becoming committed business rows, so gaps are possible.
+5. A fully qualified name specifies database.schema.object explicitly; an unqualified name uses session defaults.
+6. A session variable stores a referenced value; a session parameter configures supported behavior.
+7. An explicit session value wins over user/account defaults for a session parameter. UNSET removes the override so inheritance/defaults can apply.
+8. Storage integration: account-level. Git repository clone: schema-level. The clone is separate from its API integration.
+9. Rows and columns that can be queried with FROM TABLE(...); it does not create a permanent table.
+
+</details>
 
 ## Official references
 

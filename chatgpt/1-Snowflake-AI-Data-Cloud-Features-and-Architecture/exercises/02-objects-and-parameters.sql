@@ -1,0 +1,57 @@
+-- Objective 1.3. Run 00-setup.sql first; use a fresh lab session.
+USE ROLE SYSADMIN;
+USE WAREHOUSE D1_STUDY_WH;
+USE DATABASE D1_STUDY;
+USE SCHEMA LAB;
+
+CREATE OR REPLACE FILE FORMAT D1_CSV TYPE = CSV SKIP_HEADER = 1;
+CREATE STAGE IF NOT EXISTS D1_FILES
+  ENCRYPTION = (TYPE = 'SNOWFLAKE_SSE')
+  FILE_FORMAT = (FORMAT_NAME = 'D1_CSV');
+SHOW STAGES LIKE 'D1_FILES' IN SCHEMA D1_STUDY.LAB;
+LIST @D1_FILES;
+-- Initially no files. A stage and file format do not create table rows.
+
+CREATE OR REPLACE SEQUENCE D1_IDS START = 1 INCREMENT = 1;
+SELECT D1_IDS.NEXTVAL AS GENERATED_ID;
+SELECT D1_IDS.NEXTVAL AS GENERATED_ID;
+-- Observe distinct generated values. Do not infer a gap-free guarantee.
+
+CREATE OR REPLACE FUNCTION ADD_TAX(AMOUNT NUMBER(12,2))
+  RETURNS NUMBER(12,2) LANGUAGE SQL AS $$ AMOUNT * 1.07 $$;
+SELECT ADD_TAX(100) AS AMOUNT_WITH_TAX;
+-- Expected: 107.00. A UDF is usable as an expression.
+
+CREATE OR REPLACE TABLE PROCEDURE_LOG (MESSAGE STRING);
+CREATE OR REPLACE PROCEDURE RECORD_MESSAGE(MSG STRING)
+  RETURNS STRING LANGUAGE SQL EXECUTE AS CALLER
+AS
+$$
+BEGIN
+  INSERT INTO D1_STUDY.LAB.PROCEDURE_LOG (MESSAGE) VALUES (:MSG);
+  RETURN 'message recorded';
+END;
+$$;
+CALL RECORD_MESSAGE('Domain 1 practice');
+SELECT * FROM PROCEDURE_LOG;
+-- Expected: one row. CALL invokes the procedure; it performs authorized DML.
+
+SET D1_REGION = 'APAC';
+SELECT ORDER_ID, AMOUNT FROM ORDERS WHERE REGION = $D1_REGION ORDER BY ORDER_ID;
+-- Expected order IDs: 1, 2, 5.
+UNSET D1_REGION;
+
+SHOW PARAMETERS LIKE 'QUERY_TAG' IN SESSION;
+ALTER SESSION SET QUERY_TAG = 'D1_OBJECTS_LAB';
+SHOW PARAMETERS LIKE 'QUERY_TAG' IN SESSION;
+-- Observe the explicit session setting and its level.
+ALTER SESSION UNSET QUERY_TAG;
+-- UNSET removes the override; it does not mean every parameter becomes FALSE.
+
+SHOW PARAMETERS LIKE 'DATA_RETENTION_TIME_IN_DAYS' IN TABLE ORDERS;
+-- Table retention is an object parameter, not a session variable.
+CREATE OR REPLACE TABLE "MixedCase" (ID NUMBER);
+INSERT INTO "MixedCase" VALUES (1);
+SELECT * FROM "MixedCase";
+-- Intentional failure: SELECT * FROM MixedCase;
+-- Unquoted MixedCase resolves to MIXEDCASE, a different identifier.

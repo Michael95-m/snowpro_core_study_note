@@ -2,7 +2,13 @@
 
 [Domain 1 index](readme.md)
 
-## Purpose and warehouse types
+- **C03 objective:** 1.4. Read the definitions, work through the scenario, then answer recall questions.
+- **Practice:** [ordered lab guide](exercises/readme.md); start with its setup.
+- **SQL status:** examples reviewed against official documentation; not executed in your account.
+
+<a id="purpose-and-warehouse-types"></a>
+
+## 1.4.1 Purpose and warehouse types
 
 - A **virtual warehouse** supplies compute, memory, and local storage for warehouse-backed work.
 - Multiple warehouses can access the same persistent tables.
@@ -22,7 +28,9 @@
   - Credit rates.
   - QAS defaults.
 
-## Create a small practice warehouse
+<a id="create-a-small-practice-warehouse"></a>
+
+## 1.4.2 Create a small practice warehouse
 
 ```sql
 -- Requires CREATE WAREHOUSE. Running/resuming compute consumes credits.
@@ -45,7 +53,9 @@ CREATE WAREHOUSE study_wh
   1. Each start has a **60-second minimum**.
   2. A continuously running warehouse uses per-second billing afterward.
 
-## Scale up/down versus out/in
+<a id="scale-updown-versus-outin"></a>
+
+## 1.4.3 Scale up/down versus out/in
 
 <p align="center"><img src="../../img/domain1-warehouse-scaling.png" alt="Scale up adds resources to a cluster for demanding queries; scale out adds clusters for concurrent queries. Both use the same persistent data." width="760"></p>
 
@@ -71,7 +81,9 @@ ALTER WAREHOUSE study_wh SET WAREHOUSE_SIZE = SMALL;
 - Use `SHOW WAREHOUSES` to inspect the actual configuration.
 - Do not assume the default generation.
 
-## Multi-cluster settings and scaling policies
+<a id="multi-cluster-settings-and-scaling-policies"></a>
+
+## 1.4.4 Multi-cluster settings and scaling policies
 
 - Multi-cluster warehouses require **Enterprise or higher**.
 - **Auto-scale mode:**
@@ -98,7 +110,9 @@ ALTER WAREHOUSE study_wh SET
 - **Auto-suspend:** governs idle warehouse suspension.
 - Increasing the cluster maximum does not mean every query is spread across that many clusters.
 
-## Choose by workload
+<a id="choose-by-workload"></a>
+
+## 1.4.5 Choose by workload
 
 | Workload | Practical configuration reasoning |
 | --- | --- |
@@ -116,7 +130,31 @@ ALTER WAREHOUSE study_wh SET
   - More startup latency and cache rebuilding.
 - **Related note:** [Domain 2](../2-Account-Management-and-Data-Governance/readme.md) covers credit calculations and resource monitors.
 
+<a id="configuration-decisions-and-exercise-checkpoints"></a>
+
+## 1.4.6 Configuration decisions and exercise checkpoints
+
+| Scenario | Configuration reasoning |
+| --- | --- |
+| One optimized query has large remote spill | More memory/compute per cluster may help: evaluate scale up. |
+| Many individually fast queries queue at peak time | More concurrent capacity may help: evaluate scale out or workload isolation. |
+| Fixed capacity must already be available during business hours | Maximized mode: set MIN and MAX to the same needed cluster count while running. |
+| Demand varies and some queueing is acceptable to save credits | Auto-scale range with Economy can fit; validate responsiveness. |
+| Warehouse is idle between infrequent jobs | Shorter auto-suspend reduces idle time, but each resume has startup/cache trade-offs. |
+
+- **No ramp-up after a spike** assumes the required clusters are already running; even a maximized warehouse needs provisioning when started from suspension.
+- `AUTO_RESUME = FALSE` does not prevent manual resume. It prevents arriving work from automatically starting the suspended warehouse.
+- `AUTO_SUSPEND = NULL` or `0` disables idle auto-suspension. It is not a Boolean FALSE setting.
+- Setting an idle timer does not cancel a running query; statement timeout is a separate control.
+- Notebook runtime services/compute pools, Snowpipe, and other serverless services can consume independently from the chosen SQL warehouse.
+- **Practice:** [03-virtual-warehouses.sql](exercises/03-virtual-warehouses.sql).
+- **Checkpoint:** at the exercise's assumed rate, one cluster for 15 minutes = **0.25 credits**; three = **0.75 credits**.
+- **Remember:** type, generation, size, cluster count, and account edition are separate decisions.
+- **Exam clue:** adding clusters primarily solves concurrency; a single query is not divided over every added warehouse cluster.
+
 ## What to recall
+
+
 
 1. When is Snowpark-optimized preferable to Standard?
 2. How do type, generation, size, and cluster count differ?
@@ -125,6 +163,23 @@ ALTER WAREHOUSE study_wh SET
 5. How do auto-suspend, auto-resume, and initially suspended differ?
 6. Why might one shared warehouse be unsuitable for BI and heavy ETL?
 7. How does suspension affect local cache versus table data?
+8. Does AUTO_SUSPEND cancel an active query after that many seconds?
+9. Does stopping a SQL warehouse necessarily stop notebook runtime compute?
+
+<details>
+<summary>Open the recall answer key</summary>
+
+1. For workloads needing its additional memory/architecture, such as suitable memory-intensive ML/Snowpark work; Python alone is insufficient.
+2. Type is workload-oriented compute; generation is the Standard hardware/software generation; size is resources per cluster; count is concurrent cluster capacity.
+3. Investigate the queue first; multi-cluster scale-out/isolation can help concurrency, while size can also affect throughput for an appropriate workload.
+4. Standard starts extra capacity more readily; Economy favors existing-cluster utilization and can allow more waiting.
+5. AUTO_SUSPEND is idle timeout; AUTO_RESUME permits automatic restart; INITIALLY_SUSPENDED controls creation state.
+6. Long ETL can compete with latency-sensitive BI for the same compute and cache.
+7. Suspension clears warehouse-local cached table data; persistent tables remain.
+8. No. An idle timer does not cancel active work. A statement timeout is separate.
+9. No. Stop/check the independent notebook service/runtime or compute pool separately.
+
+</details>
 
 ## Official references
 

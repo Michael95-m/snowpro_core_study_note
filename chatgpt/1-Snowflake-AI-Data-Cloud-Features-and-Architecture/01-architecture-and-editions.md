@@ -2,7 +2,13 @@
 
 [Domain 1 index](readme.md)
 
-## What is Snowflake?
+- **C03 objective:** 1.1. Read the definitions, work through the scenario, then answer recall questions.
+- **Practice:** [ordered lab guide](exercises/readme.md); start with its setup.
+- **SQL status:** examples reviewed against official documentation; not executed in your account.
+
+<a id="what-is-snowflake"></a>
+
+## 1.1.1 What is Snowflake?
 
 - **Snowflake** is a cloud data platform for analytics, engineering, applications, collaboration, and AI/ML.
 - Snowflake operates the platform on supported public-cloud infrastructure.
@@ -14,7 +20,9 @@
 
 <p align="center"><img src="../../img/what_is_snowflake.png" alt="Snowflake platform overview from the course notes" width="560"></p>
 
-## Shared disk, shared nothing, and Snowflake
+<a id="shared-disk-shared-nothing-and-snowflake"></a>
+
+## 1.1.2 Shared disk, shared nothing, and Snowflake
 
 | Architecture | Basic idea | Trade-off |
 | --- | --- | --- |
@@ -32,7 +40,9 @@
 
 <p align="center"><img src="../../img/Multi-cluster-shared-data-architecture.png" alt="Multi-cluster shared-data architecture" width="640"></p>
 
-## The three layers
+<a id="the-three-layers"></a>
+
+## 1.1.3 The three layers
 
 | Layer | Responsibility | Exam example |
 | --- | --- | --- |
@@ -50,7 +60,9 @@
 - Managed storage billing uses average stored bytes over time.
 - A cloud-storage durability percentage is not a Snowflake availability guarantee.
 
-## Editions
+<a id="editions"></a>
+
+## 1.1.4 Editions
 
 - Higher editions include lower-edition capabilities and add features.
 - Also consider:
@@ -72,7 +84,9 @@
   - Region.
 - Buying a higher edition does not automatically enable or configure every feature.
 
-## Three distinctions to remember from practice
+<a id="three-distinctions-to-remember-from-practice"></a>
+
+## 1.1.5 Three distinctions to remember from practice
 
 ### 1. MPP within a cluster versus independent warehouses
 
@@ -109,7 +123,7 @@
 
 ```sql
 -- Existing permanent table required; Enterprise Edition or higher.
-ALTER TABLE analytics.mart.orders
+ALTER TABLE D1_STUDY.LAB.ORDERS
   SET DATA_RETENTION_TIME_IN_DAYS = 30;
 ```
 
@@ -133,7 +147,27 @@ ALTER TABLE analytics.mart.orders
 
 - **References:** [private connectivity](https://docs.snowflake.com/en/user-guide/private-connectivity-inbound) and [VPS](https://docs.snowflake.com/en/user-guide/intro-editions#virtual-private-snowflake-vps).
 
+<a id="worked-scenario-and-exercise-checkpoints"></a>
+
+## 1.1.6 Worked scenario and exercise checkpoints
+
+- **Scenario:** ETL and BI read the same `ORDERS` table, but ETL should not take BI's warehouse CPU/memory.
+  1. Put the workloads on separate virtual warehouses.
+  2. Keep one shared persistent table instead of copying it for each warehouse.
+  3. Size each warehouse for its own workload.
+  4. Remember that each warehouse can use MPP internally.
+- **Layer choice:** cloud services parses/optimizes and coordinates authorization; warehouse compute executes the plan; database storage preserves the managed data.
+- **Pruning example:** min/max metadata helps identify partitions that cannot match a predicate. Candidate partitions still require execution-time row checks.
+- **Edition scenario:** 30-day retention on a permanent table needs Enterprise+ **and** a retention setting. Upgrading alone is insufficient.
+- **Protection scenario:** PHI/HIPAA support is associated with Business Critical+ and the required contractual/configuration conditions; the edition alone does not make a deployment compliant.
+- **Remember:** account edition = available feature set; warehouse size = compute capacity; a larger warehouse does not upgrade the account edition.
+- **Practice:** [01-architecture-and-context.sql](exercises/01-architecture-and-context.sql), after [setup](exercises/00-setup.sql).
+- **Checkpoint:** two warehouses both return total **750**; suspending both leaves the table object intact.
+- **Exam clue:** workload isolation means separate compute; shared data means independent compute can access the same persistent tables.
+
 ## What to recall
+
+
 
 1. Why does Snowflake combine characteristics of shared disk and shared nothing?
 2. Which layer parses SQL? Which executes it? Which retains data after suspension?
@@ -142,6 +176,21 @@ ALTER TABLE analytics.mart.orders
 5. How is VPS different from merely using a private endpoint?
 6. How does MPP within a cluster differ from using separate warehouses for ETL and BI?
 7. After upgrading to Enterprise, what must you configure to give an existing permanent table 30 days of Time Travel?
+8. Does a partition range containing PRICE = 50 prove that a matching row exists?
+
+<details>
+<summary>Open the recall answer key</summary>
+
+1. It combines shared persistent storage with independent compute clusters that use parallel processing.
+2. Cloud services parses and optimizes; warehouse compute executes; database storage retains managed data.
+3. Separating ETL, BI, or teams prevents them competing for the same warehouse CPU/memory and supports separate sizing.
+4. Enterprise: multi-cluster, extended permanent-object retention, masking/row access, materialized views. Business Critical: features such as Tri-Secret Secure and private connectivity.
+5. Private connectivity changes the network path; VPS provides the additional isolated Snowflake environment/hardware boundary.
+6. MPP splits work among nodes within a cluster; separate warehouses isolate workloads while accessing shared persistent data.
+7. Set DATA_RETENTION_TIME_IN_DAYS = 30 on the supported permanent table or its applicable parent default; upgrading alone does not set it.
+8. No. A partition whose range includes 50 is a candidate; execution still checks actual row values.
+
+</details>
 
 ## Official references
 
