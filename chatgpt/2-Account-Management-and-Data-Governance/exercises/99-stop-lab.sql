@@ -1,0 +1,30 @@
+USE ROLE SYSADMIN;
+ALTER ALERT IF EXISTS D2_STUDY.LAB.ORDERS_PRESENT SUSPEND;
+-- Check state so this also works after idle auto-suspension.
+EXECUTE IMMEDIATE $$
+DECLARE
+  LAB_WH_STATE STRING;
+BEGIN
+  SHOW WAREHOUSES LIKE 'D2_STUDY_WH';
+  SELECT MAX("state") INTO :LAB_WH_STATE
+    FROM TABLE(RESULT_SCAN(LAST_QUERY_ID()));
+  IF (LAB_WH_STATE = 'STARTED') THEN
+    ALTER WAREHOUSE D2_STUDY_WH SUSPEND;
+  END IF;
+END;
+$$;
+USE SECONDARY ROLES ALL;
+ALTER SESSION UNSET QUERY_TAG;
+SHOW WAREHOUSES LIKE 'D2_STUDY_WH';
+-- This stops only lab-owned compute/scheduling, not unrelated notebook services.
+-- Account policies were not assigned by the basic labs.
+-- Objects/grants remain for review. Optional final deletion (administrator):
+-- USE ROLE ACCOUNTADMIN;
+-- DROP DATABASE D2_STUDY;
+-- DROP WAREHOUSE D2_STUDY_WH;
+-- DROP ROLE D2_STUDY_ANALYST;
+-- DROP ROLE D2_STUDY_APAC;
+-- DROP ROLE D2_STUDY_FULL_ACCESS;
+-- DROP ROLE D2_STUDY_DB_USER;
+-- DROP ROLE D2_STUDY_FUTURE_READER;
+-- DROP ROLE D2_STUDY_READER;

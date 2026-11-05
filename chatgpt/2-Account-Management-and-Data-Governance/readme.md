@@ -1,22 +1,56 @@
 # Domain 2.0: Account Management and Data Governance
 
-This note follows the SnowPro Core Certification Study Guide (C03) objectives:
+- **Exam outline:** supplied [SnowPro Core C03 guide](../../SnowProCoreStudyGuideC03.pdf), pages 5 and 8.
+- **Domain weighting in that guide:** **20%**.
+- **Format and exercise update:** November 5, 2026.
+- **Purpose:** understand the feature, recognize a scenario, and practice with SQL.
+- Technical terms stay unchanged; explanations use short bullets and numbered steps.
+- SQL examples are reviewed against official documentation, **not executed in your Snowflake account**.
 
-1. Explain Snowflake's security model and principles.
-2. Define data-governance features and how they are used.
-3. Explain monitoring and cost management.
+## How to use this note
 
-Scope: the supplied **C03 guide**, Domain 2, is the exam checklist. Examples below are study patterns checked against documentation, not executed in your Snowflake account. Existing users, databases, schemas, tables, warehouses, and suitable privileges are prerequisites unless the example creates them. Features and editions can change; use the linked official references for account-specific setup.
+1. Read one numbered subsection.
+2. Learn its **Remember** line and scenario distinctions.
+3. Run the related exercise and compare the expected result.
+4. Answer **What to Recall** without looking, then open its answer key.
+5. Check the official reference when a feature or prerequisite needs more detail.
 
-> **Exam mindset:** start with the business need. Then choose the most specific Snowflake feature that solves it. For example: **hide a column value → masking policy**; **hide whole rows → row access policy**; **stop a warehouse after a credit threshold → resource monitor**.
+### The C03 coverage checklist
 
----
+| C03 objective | Coverage | Start |
+| --- | --- | --- |
+| **2.1** | RBAC/DAC; hierarchy; network/authentication; roles; identifiers; logging/tracing. | [2.1](#21-security-model-and-principles) |
+| **2.2** | Masking/row access; tagging; privacy; Trust Center; encryption; alerts/notifications; DR; lineage. | [2.2](#22-data-governance-features) |
+| **2.3** | Resource monitors; warehouse cost arithmetic; account-usage investigation. | [2.3](#23-monitoring-and-cost-management) |
+
+### Core study versus optional depth
+
+- Start with the named guide objectives and feature-selection distinctions.
+- Add the runnable lab to connect the definition to an observed result.
+- Reference snippets outside the exercise folder are separate patterns with stated prerequisites; do not run the entire README as one SQL script.
+- Account-wide security changes, real email, multi-account DR, paid AI, and paid background optimization require their own setup.
+- New product features do not automatically become new exam objectives. The guide also says its list is not exhaustive.
+- Keep the existing images, practice Q&A, and course references as supporting material.
+
+## Practice setup and exercise files
+
+- Follow the [ordered lab guide and checkpoints](exercises/readme.md).
+- Run [00-setup.sql](exercises/00-setup.sql) first in a fresh lab session.
+- Finish with [99-stop-lab.sql](exercises/99-stop-lab.sql).
+- Each script uses only its named study objects and synthetic data.
+- Basic queries can resume the small warehouse and consume credits.
+- Optional blocks are clearly marked; their permissions/editions and cleanup are in the lab guide.
 
 ## 2.1 Security Model and Principles
 
-### Core access-control concepts
+<a id="core-access-control-concepts"></a>
 
-Snowflake denies access unless an appropriate privilege allows it. Access is controlled through **securable objects**, **privileges**, **roles**, and **users**.
+### 2.1.1 Core access-control concepts
+
+- **Remember:** A successful sign-in proves identity; privileges still authorize each action.
+
+- Snowflake denies access unless an appropriate privilege allows it.
+- Access is controlled through **securable objects**, **privileges**, **roles**, and **users**.
 
 | Term | Meaning | Exam clue |
 | --- | --- | --- |
@@ -26,9 +60,13 @@ Snowflake denies access unless an appropriate privilege allows it. Access is con
 | **User** | A human or service identity that signs in to Snowflake. | A user can have more than one role. |
 | **OWNERSHIP** | Special privilege that controls an object and can transfer its ownership. | Each object has one owner role. |
 
-### Securable object hierarchy
+<a id="securable-object-hierarchy"></a>
 
-The normal hierarchy is:
+### 2.1.2 Securable object hierarchy
+
+- **Remember:** Reading a table normally needs database/schema USAGE and table SELECT; warehouse access is separate.
+
+- The normal hierarchy is:
 
 ```text
 Organization
@@ -38,34 +76,45 @@ Organization
             └── Object (table, view, stage, function, etc.)
 ```
 
-To query `analytics.mart.orders`, a role normally needs:
+- To query `analytics.mart.orders`, a role normally needs:
 
 1. `USAGE` on the `analytics` database.
 2. `USAGE` on the `analytics.mart` schema.
 3. `SELECT` on the `orders` table or view.
 
-A query that executes on a warehouse also needs `USAGE` on that warehouse. Warehouse access and data access are separate grants. Warehouses, users, and roles are account-level objects; they are not children of a schema in the hierarchy above.
+- A query that executes on a warehouse also needs `USAGE` on that warehouse.
+- Warehouse access and data access are separate grants.
+- Warehouses, users, and roles are account-level objects; they are not children of a schema in the hierarchy above.
 
-**Exam trap:** `SELECT` on a table alone is not enough when the role lacks `USAGE` on its parent database or schema.
+- **Exam trap:** `SELECT` on a table alone is not enough when the role lacks `USAGE` on its parent database or schema.
 
-### RBAC and DAC
+<a id="rbac-and-dac"></a>
 
-Snowflake combines several access-control models.
+### 2.1.3 RBAC and DAC
+
+- **Remember:** RBAC grants through roles; DAC centers on object ownership. Managed access centralizes grant decisions.
+
+- Snowflake combines several access-control models.
 
 | Model | How it works in Snowflake | When to recognize it |
 | --- | --- | --- |
 | **Role-Based Access Control (RBAC)** | Privileges are granted to roles; roles are granted to users or other roles. | The normal, recommended access-management approach. |
 | **Discretionary Access Control (DAC)** | An object's owner can grant access to that object. | A question focuses on the object owner deciding who gets access. |
 
-In a regular schema, the object owner can usually grant access on that object. In a **managed access schema**, grant decisions are centralized: the schema owner or a role with `MANAGE GRANTS` makes grants, not individual object owners.
+- In a regular schema, the object owner can usually grant access on that object.
+- In a **managed access schema**, grant decisions are centralized: the schema owner or a role with `MANAGE GRANTS` makes grants, not individual object owners.
 
-Snowflake also supports direct privileges on users, but RBAC is the normal design to use and the C03 guide focuses on RBAC and DAC.
+- Snowflake also supports direct privileges on users, but RBAC is the normal design to use and the C03 guide focuses on RBAC and DAC.
 
-### Least privilege and role design
+<a id="least-privilege-and-role-design"></a>
 
-Use **least privilege**: grant only the minimum access needed for a role's job.
+### 2.1.4 Least privilege and role design
 
-A scalable pattern is:
+- **Remember:** Give a role only the access needed for its job, then build an understandable inheritance hierarchy.
+
+- Use **least privilege**: grant only the minimum access needed for a role's job.
+
+- A scalable pattern is:
 
 ```text
 Object privileges → access roles → functional roles → users
@@ -75,11 +124,17 @@ Object privileges → access roles → functional roles → users
 - **Functional role:** describes a job, for example `FINANCE_ANALYST`.
 - Grant access roles to functional roles, then grant functional roles to users.
 
-This separates *what data can be accessed* from *who needs that access*. It also makes auditing and changes easier.
+- This separates *what data can be accessed* from *who needs that access*.
+- It also makes auditing and changes easier.
 
-Avoid putting broad business-object privileges directly on system roles such as `SYSADMIN` or `ACCOUNTADMIN`. Keep system administration and day-to-day data access separate.
+- Avoid putting broad business-object privileges directly on system roles such as `SYSADMIN` or `ACCOUNTADMIN`.
+- Keep system administration and day-to-day data access separate.
 
-### System-defined roles
+<a id="system-defined-roles"></a>
+
+### 2.1.5 System-defined roles
+
+- **Remember:** USERADMIN manages users/roles; SECURITYADMIN manages grants; SYSADMIN manages data/compute; ACCOUNTADMIN combines broad administration.
 
 | Role | Main responsibility | Remember |
 | --- | --- | --- |
@@ -91,23 +146,36 @@ Avoid putting broad business-object privileges directly on system roles such as 
 | `SYSADMIN` | Creates and manages warehouses, databases, and other account objects. | Custom object-owner roles are commonly placed under this hierarchy. |
 | `PUBLIC` | Automatically available to every user and role. | Never place sensitive access here. |
 
-**Exam trap:** `ACCOUNTADMIN` is not the normal working role. It is powerful and should be controlled carefully.
+- **Exam trap:** `ACCOUNTADMIN` is not the normal working role.
+- It is powerful and should be controlled carefully.
 
-### Account roles, database roles, and custom roles
+<a id="account-roles-database-roles-and-custom-roles"></a>
+
+### 2.1.6 Account roles, database roles, and custom roles
+
+- **Remember:** Database roles have one-database scope and cannot be activated directly with USE ROLE.
 
 | Role type | Scope | Can be activated directly in a session? | Best use |
 | --- | --- | --- | --- |
 | **Account role** | Across the account. | Yes. | Warehouses, account objects, and user-facing functional roles. |
-| **Database role** | One database and objects inside it. | No. Grant it to an account role first. | Portable, database-scoped access; useful for sharing. |
+| **Database role** | One database and objects inside it. | No. The lab uses the account-role grant path. | Portable, database-scoped access; useful for sharing. |
 | **Custom role** | A role you create for your organization. | Depends on whether it is an account or database role. | Least-privilege business and access roles. |
 
-Database roles cannot receive privileges on objects in a different database. They are granted to an account role, which is then activated by the user.
+- Database roles cannot receive privileges on objects in a different database.
+- The common activation path used here grants the database role to an account role, which the user activates.
+- A database role cannot itself be selected by USE ROLE.
 
-### Role inheritance and ownership
+<a id="role-inheritance-and-ownership"></a>
+
+### 2.1.7 Role inheritance and ownership
+
+- **Remember:** GRANT ROLE child TO ROLE parent gives the parent the child privileges; ownership of a role is different.
 
 <p align="center"><img src="../../img/domain2-role-inheritance.png" alt="SELECT is granted to a reader role, the reader role is granted to an analyst role, and the analyst role is granted to a user. The parent analyst role inherits the reader privileges." width="760"></p>
 
-`GRANT ROLE child TO ROLE parent` means the **parent inherits the child's privileges**. The child does not inherit the parent's privileges. Owning a role is different from inheriting it: ownership alone does not give access to everything that role can query.
+- `GRANT ROLE child TO ROLE parent` means the **parent inherits the child's privileges**.
+- The child does not inherit the parent's privileges.
+- Owning a role is different from inheriting it: ownership alone does not give access to everything that role can query.
 
 ```sql
 USE ROLE USERADMIN;
@@ -117,9 +185,11 @@ GRANT ROLE mart_sales_reader TO ROLE finance_analyst;
 GRANT ROLE finance_analyst TO ROLE SYSADMIN;
 ```
 
-In this example, `finance_analyst` inherits reader access, and `SYSADMIN` inherits both roles. `MANAGE GRANTS` allows grant administration; it does not automatically supply `SELECT` on every table. Snowflake has no role that bypasses all authorization checks.
+- In this example, `finance_analyst` inherits reader access, and `SYSADMIN` inherits both roles.
+- `MANAGE GRANTS` allows grant administration; it does not automatically supply `SELECT` on every table.
+- Snowflake has no role that bypasses all authorization checks.
 
-A database owner can delegate access inside its database with a database role:
+- A database owner can delegate access inside its database with a database role:
 
 ```sql
 -- Run with a role that owns analytics or has CREATE DATABASE ROLE there,
@@ -132,11 +202,18 @@ GRANT SELECT ON ALL TABLES IN SCHEMA analytics.mart
 GRANT DATABASE ROLE analytics.mart_reader TO ROLE finance_analyst;
 ```
 
-Granting a database role to an account role implicitly supplies `USAGE` on the containing database. Schema and object privileges still need to be granted. See [access-control design](https://docs.snowflake.com/en/user-guide/security-access-control-considerations).
+- Granting a database role to an account role implicitly supplies `USAGE` on the containing database.
+- Schema and object privileges still need to be granted.
+- See [access-control design](https://docs.snowflake.com/en/user-guide/security-access-control-considerations).
 
-### Practical RBAC SQL
+<a id="practical-rbac-sql"></a>
 
-The following example grants read access to all current and future tables in one schema. Use names that fit your account.
+### 2.1.8 Practical RBAC SQL
+
+- **Remember:** ALL covers existing objects; FUTURE covers objects created later; tables and views need separate grants.
+
+- The following example grants read access to all current and future tables in one schema.
+- Use names that fit your account.
 
 ```sql
 -- Create a custom account role and assign it to a user.
@@ -153,9 +230,13 @@ GRANT SELECT ON FUTURE TABLES IN SCHEMA analytics.mart TO ROLE mart_sales_reader
 GRANT USAGE ON WAREHOUSE analytics_wh TO ROLE mart_sales_reader;
 ```
 
-`ALL TABLES` covers existing tables. `FUTURE TABLES` covers tables created later. In a production role design, also decide who owns the schema and who is allowed to manage grants.
+- `ALL TABLES` covers existing tables.
+- `FUTURE TABLES` covers tables created later.
+- In a production role design, also decide who owns the schema and who is allowed to manage grants.
 
-Views are separate objects: a grant on all tables does not grant `SELECT` on all views. Use `ALL VIEWS` / `FUTURE VIEWS` when required. Future grants are defaults for new objects; they do not backfill existing access.
+- Views are separate objects: a grant on all tables does not grant `SELECT` on all views.
+- Use `ALL VIEWS` / `FUTURE VIEWS` when required.
+- Future grants are defaults for new objects; they do not backfill existing access.
 
 ```sql
 SHOW GRANTS TO ROLE mart_sales_reader;
@@ -164,11 +245,17 @@ SHOW GRANTS ON TABLE analytics.mart.orders;
 REVOKE SELECT ON TABLE analytics.mart.orders FROM ROLE mart_sales_reader;
 ```
 
-Revoking one grant may leave access available through another active role or role hierarchy. Check the effective access paths, not just one grant.
+- Revoking one grant may leave access available through another active role or role hierarchy.
+- Check the effective access paths, not just one grant.
 
-### Primary and secondary roles
+<a id="primary-and-secondary-roles"></a>
 
-Each session has exactly one **primary role** (also called the current role). A session can also have multiple **secondary roles**.
+### 2.1.9 Primary and secondary roles
+
+- **Remember:** Most query authorization can combine active roles; object creation is authorized through the primary role and its inheritance.
+
+- Each session has exactly one **primary role** (also called the current role).
+- A session can also have multiple **secondary roles**.
 
 ```sql
 -- Change the primary role for this session.
@@ -182,19 +269,29 @@ USE SECONDARY ROLES ALL;
 - Authorization to create an object comes from the **primary role**. The new object's ownership is assigned to that primary role.
 - Secondary roles are useful when a user must query objects protected by different roles, for example in a cross-database join.
 
-**Exam trap:** a database role cannot be activated directly. Grant it to an account role first.
+- **Exam trap:** a database role cannot be activated directly.
+- Grant it to an account role first.
 
-### Network policies
+<a id="network-policies"></a>
 
-A **network policy** restricts where connections to Snowflake can originate. It uses allowed and blocked network rules, usually IP addresses or CIDR ranges.
+### 2.1.10 Network policies
+
+- **Remember:** Create the policy, then assign it. An unassigned policy does not restrict a connection.
+
+- A **network policy** restricts where connections to Snowflake can originate.
+- It uses allowed and blocked network rules, usually IP addresses or CIDR ranges.
 
 - An account policy is the broad default.
 - A user policy overrides an account policy.
 - A security-integration policy is the most specific and overrides user and account policies.
 
-Use network policies to allow office/VPN egress addresses and block untrusted sources. Plan carefully: an incorrectly restrictive policy can lock administrators out.
+- Use network policies to allow office/VPN egress addresses and block untrusted sources.
+- Plan carefully: an incorrectly restrictive policy can lock administrators out.
 
-The workflow is **create network rule → include it in a network policy → activate the policy**. A policy that has not been assigned does not restrict traffic. If the same address is allowed and blocked, the block wins. An allow list implicitly excludes other addresses of that identifier type.
+- The workflow is **create network rule → include it in a network policy → activate the policy**.
+- A policy that has not been assigned does not restrict traffic.
+- If the same address is allowed and blocked, the block wins.
+- An allow list implicitly excludes other addresses of that identifier type.
 
 ```sql
 -- Example only: documentation address range, not your actual office network.
@@ -209,13 +306,19 @@ CREATE NETWORK POLICY office_access
 -- ALTER USER analyst_user SET NETWORK_POLICY = office_access;
 ```
 
-For Snowflake OAuth token requests, user-level policy handling has integration-specific exceptions; do not assume the general precedence table covers every token flow. See [network policy rules and precedence](https://docs.snowflake.com/en/user-guide/network-policies).
+- For Snowflake OAuth token requests, user-level policy handling has integration-specific exceptions; do not assume the general precedence table covers every token flow.
+- See [network policy rules and precedence](https://docs.snowflake.com/en/user-guide/network-policies).
 
-### Authentication methods
+<a id="authentication-methods"></a>
 
-Authentication means **proving who is connecting**. The connection might come from a person opening Snowsight or an application running a scheduled job.
+### 2.1.11 Authentication methods
 
-Start by separating these three questions:
+- **Remember:** Network origin, identity proof, and data authorization answer different questions.
+
+- Authentication means **proving who is connecting**.
+- The connection might come from a person opening Snowsight or an application running a scheduled job.
+
+- Start by separating these three questions:
 
 | Question | Snowflake control | Example |
 | --- | --- | --- |
@@ -223,15 +326,18 @@ Start by separating these three questions:
 | **How will you prove who you are?** | Authentication method and authentication policy | Sign in through company SSO, or use a password with MFA. |
 | **What may you do after connecting?** | Authorization: applicable privileges | Read a table only when the session has the required access. |
 
-**Example:** an employee passes company SSO and MFA, but has no applicable `SELECT` grant on `SALES`. They can sign in, but they cannot read that table. Passing authentication does not grant data access.
+- **Example:** an employee passes company SSO and MFA, but has no applicable `SELECT` grant on `SALES`.
+- They can sign in, but they cannot read that table.
+- Passing authentication does not grant data access.
 
-[References: Authentication overview](https://docs.snowflake.com/en/user-guide/security-authentication-overview) · [Access control](https://docs.snowflake.com/en/user-guide/security-access-control-overview)
+- [References: Authentication overview](https://docs.snowflake.com/en/user-guide/security-authentication-overview) · [Access control](https://docs.snowflake.com/en/user-guide/security-access-control-overview)
 
 #### 1. Password and MFA: your password plus another proof
 
-A password proves **something you know**. MFA means **multi-factor authentication**: adding another kind of proof, such as an authenticator-app code or an approval using a registered device.
+- A password proves **something you know**.
+- MFA means **multi-factor authentication**: adding another kind of proof, such as an authenticator-app code or an approval using a registered device.
 
-A typical human login looks like this:
+- A typical human login looks like this:
 
 ```text
 Open Snowsight
@@ -240,21 +346,28 @@ Open Snowsight
     → Snowflake verifies the login and opens your session
 ```
 
-**Enrollment** means registering your second factor, such as setting up an authenticator app. **Using MFA** means completing the check when signing in, subject to the applicable session rules.
+- **Enrollment** means registering your second factor, such as setting up an authenticator app.
+- **Using MFA** means completing the check when signing in, subject to the applicable session rules.
 
-Two passwords are still the same kind of proof; MFA uses different factors. It is an extra check in a login path, not a grant of table privileges.
+- Two passwords are still the same kind of proof; MFA uses different factors.
+- It is an extra check in a login path, not a grant of table privileges.
 
-**Remember: password = what you know; MFA = another kind of proof.** Snowflake is enforcing MFA for password sign-ins through a rollout. Do not design unattended jobs around a human password login without MFA; service users need a supported application authentication method.
+- **Remember: password = what you know; MFA = another kind of proof.** Snowflake is enforcing MFA for password sign-ins through a rollout.
+- Do not design unattended jobs around a human password login without MFA; service users need a supported application authentication method.
 
-[Reference: Multi-factor authentication](https://docs.snowflake.com/en/user-guide/security-mfa)
+- [Reference: Multi-factor authentication](https://docs.snowflake.com/en/user-guide/security-mfa)
 
 #### 2. Company SSO: your company checks your identity
 
-**SSO** means **single sign-on**: use your company identity across applications. An **identity provider (IdP)**, such as Microsoft Entra ID or Okta, manages that identity. Snowflake is the **service provider (SP)**: the application you want to enter.
+- **SSO** means **single sign-on**: use your company identity across applications.
+- An **identity provider (IdP)**, such as Microsoft Entra ID or Okta, manages that identity.
+- Snowflake is the **service provider (SP)**: the application you want to enter.
 
-**SAML** means **Security Assertion Markup Language**. It is a standard for sending identity proof between systems. A SAML assertion is an XML message exchanged behind the login screens.
+- **SAML** means **Security Assertion Markup Language**.
+- It is a standard for sending identity proof between systems.
+- A SAML assertion is an XML message exchanged behind the login screens.
 
-For a company using SAML with Entra ID:
+- For a company using SAML with Entra ID:
 
 1. Open Snowflake and choose the company SSO option.
 2. Your browser goes to the company's Entra ID login page.
@@ -262,24 +375,29 @@ For a company using SAML with Entra ID:
 4. The browser carries signed identity proof back to Snowflake.
 5. Snowflake validates it, maps the identity to a Snowflake user, and opens a session.
 
-The company password stays with the IdP. Administrators first configure a **security integration** so Snowflake knows which provider to trust.
+- The company password stays with the IdP.
+- Administrators first configure a **security integration** so Snowflake knows which provider to trust.
 
-**Remember: Entra ID/Okta = who checks you; SAML = how proof travels; SSO = the login experience.** Federated authentication is the trust arrangement. OIDC is another supported standard for company login.
+- **Remember: Entra ID/Okta = who checks you; SAML = how proof travels; SSO = the login experience.** Federated authentication is the trust arrangement.
+- OIDC is another supported standard for company login.
 
-[Reference: Federated authentication and SSO](https://docs.snowflake.com/en/user-guide/admin-security-fed-auth-overview)
+- [Reference: Federated authentication and SSO](https://docs.snowflake.com/en/user-guide/admin-security-fed-auth-overview)
 
 #### 3. OAuth: an application connects using an access token
 
-Imagine a BI application connecting to Snowflake for an analyst. With OAuth, it presents an **access token**, rather than keeping the analyst's Snowflake password.
+- Imagine a BI application connecting to Snowflake for an analyst.
+- With OAuth, it presents an **access token**, rather than keeping the analyst's Snowflake password.
 
-Think of a token as a temporary access pass with limits. The **authorization server** issues that pass. Snowflake validates it and still applies access checks.
+- Think of a token as a temporary access pass with limits.
+- The **authorization server** issues that pass.
+- Snowflake validates it and still applies access checks.
 
 | OAuth option | Who issues the token? | Simple example |
 | --- | --- | --- |
 | **Snowflake OAuth** | Snowflake | A supported BI client obtains a token through Snowflake's OAuth flow. |
 | **External OAuth** | An external authorization server | Entra ID issues the token that a configured BI client presents to Snowflake. |
 
-A simplified interactive flow is:
+- A simplified interactive flow is:
 
 ```text
 Open the BI application
@@ -289,17 +407,19 @@ Open the BI application
     → Snowflake validates it and checks the permitted role access
 ```
 
-SSO and OAuth can work together. For example, a Snowflake OAuth flow can use company SSO to verify the person. The token issuer determines whether it is **Snowflake OAuth** or **External OAuth**; seeing a Microsoft login page alone does not determine that.
+- SSO and OAuth can work together.
+- For example, a Snowflake OAuth flow can use company SSO to verify the person.
+- The token issuer determines whether it is **Snowflake OAuth** or **External OAuth**; seeing a Microsoft login page alone does not determine that.
 
-**Remember: OAuth = application uses a token; ask who issued it.** The token does not give unrestricted table access.
+- **Remember: OAuth = application uses a token; ask who issued it.** The token does not give unrestricted table access.
 
-[References: Snowflake OAuth](https://docs.snowflake.com/en/user-guide/oauth-snowflake-overview) · [External OAuth](https://docs.snowflake.com/en/user-guide/oauth-ext-overview)
+- [References: Snowflake OAuth](https://docs.snowflake.com/en/user-guide/oauth-snowflake-overview) · [External OAuth](https://docs.snowflake.com/en/user-guide/oauth-ext-overview)
 
 #### 4. Key pairs: an application proves it holds a secret key
 
-**Example:** a Python job loads data every night without a person available to approve a login.
+- **Example:** a Python job loads data every night without a person available to approve a login.
 
-A key pair has two matching parts:
+- A key pair has two matching parts:
 
 | Key | Where it belongs | Job |
 | --- | --- | --- |
@@ -313,19 +433,27 @@ Python job signs authentication proof using its private key
     → Snowflake opens the session if all requirements pass
 ```
 
-The private key itself is not uploaded to Snowflake. The key pair authenticates the application identity; applicable privileges still control its actions.
+- The private key itself is not uploaded to Snowflake.
+- The key pair authenticates the application identity; applicable privileges still control its actions.
 
-For users configured with `RSA_PUBLIC_KEY`, rotation can use both public-key slots: add the new public key in `RSA_PUBLIC_KEY_2`, move and verify all clients using the new private key, then remove the old public key.
+- For users configured with `RSA_PUBLIC_KEY`, rotation can use both public-key slots: add the new public key in `RSA_PUBLIC_KEY_2`, move and verify all clients using the new private key, then remove the old public key.
 
-**Remember: private signs; public verifies.** Key pairs fit automation; do not confuse them with a person completing MFA.
+- Current key-pair management also supports **named key pairs** with expiration and role restrictions.
+- `ALTER USER ... ADD KEY PAIR` registers a public key; the application retains the private key.
+- The two legacy `RSA_PUBLIC_KEY` slots remain a rotation pattern; they are not a universal limit on all current named key-pair configurations.
+- Use the current [key-pair reference](https://docs.snowflake.com/en/user-guide/key-pair-auth) when implementing rotation.
 
-[Reference: Key-pair authentication and rotation](https://docs.snowflake.com/en/user-guide/key-pair-auth)
+- **Remember: private signs; public verifies.** Key pairs fit automation; do not confuse them with a person completing MFA.
+
+- [Reference: Key-pair authentication and rotation](https://docs.snowflake.com/en/user-guide/key-pair-auth)
 
 #### 5. Authentication policies: set the login rules
 
-An authentication policy controls allowed login methods and MFA requirements. It is a **rule object**, not a new way of proving identity. A **security integration** establishes trust with an IdP; the policy can restrict which configured integrations are allowed.
+- An authentication policy controls allowed login methods and MFA requirements.
+- It is a **rule object**, not a new way of proving identity.
+- A **security integration** establishes trust with an IdP; the policy can restrict which configured integrations are allowed.
 
-The settings answer different questions:
+- The settings answer different questions:
 
 | Setting | Meaning | Example |
 | --- | --- | --- |
@@ -333,7 +461,7 @@ The settings answer different questions:
 | `MFA_ENROLLMENT` | Who must register a Snowflake MFA factor? | `'REQUIRED_PASSWORD_ONLY'` targets human password users. |
 | `MFA_POLICY` | How is Snowflake MFA enforced? | Its properties can also require Snowflake MFA after external SSO. |
 
-For `MFA_ENROLLMENT`:
+- For `MFA_ENROLLMENT`:
 
 | Value | Meaning |
 | --- | --- |
@@ -341,11 +469,15 @@ For `MFA_ENROLLMENT`:
 | `'REQUIRED'` | Human password and SSO users must enroll. |
 | `'OPTIONAL'` | Legacy compatibility value; it does not bypass Snowflake's enforced MFA requirements. |
 
-**Important distinction:** `REQUIRED_PASSWORD_ONLY` means **require MFA enrollment for password users**. It does not mean **allow only password login**. If `AUTHENTICATION_METHODS` is omitted, its default is `ALL`.
+- **Important distinction:** `REQUIRED_PASSWORD_ONLY` means **require MFA enrollment for password users**.
+- It does not mean **allow only password login**.
+- If `AUTHENTICATION_METHODS` is omitted, its default is `ALL`.
 
-[Reference: Authentication policy parameters](https://docs.snowflake.com/en/sql-reference/sql/create-authentication-policy#optional-parameters)
+- [Reference: Authentication policy parameters](https://docs.snowflake.com/en/sql-reference/sql/create-authentication-policy#optional-parameters)
 
-**Example A: require MFA enrollment for password users.** These examples assume `SECURITY.POLICIES`, `TEST_USER`, and the necessary privileges already exist. Creating a policy requires `CREATE AUTHENTICATION POLICY` on the schema; assigning it requires suitable `APPLY AUTHENTICATION POLICY` authority. SQL here illustrates configuration; it has not been executed in your account.
+- **Example A: require MFA enrollment for password users.** These examples assume `SECURITY.POLICIES`, `TEST_USER`, and the necessary privileges already exist.
+- Creating a policy requires `CREATE AUTHENTICATION POLICY` on the schema; assigning it requires suitable `APPLY AUTHENTICATION POLICY` authority.
+- SQL here illustrates configuration; it has not been executed in your account.
 
 ```sql
 CREATE OR REPLACE AUTHENTICATION POLICY SECURITY.POLICIES.MY_MFA_POLICY
@@ -359,7 +491,8 @@ ALTER USER TEST_USER
 DESCRIBE AUTHENTICATION POLICY SECURITY.POLICIES.MY_MFA_POLICY;
 ```
 
-**Example B: allow only the configured SAML login path.** This assumes a working SAML security integration. It does not create the Entra ID/Okta connection for you.
+- **Example B: allow only the configured SAML login path.** This assumes a working SAML security integration.
+- It does not create the Entra ID/Okta connection for you.
 
 ```sql
 CREATE OR REPLACE AUTHENTICATION POLICY SECURITY.POLICIES.SAML_ONLY_POLICY
@@ -370,11 +503,14 @@ ALTER USER TEST_USER
   SET AUTHENTICATION POLICY SECURITY.POLICIES.SAML_ONLY_POLICY;
 ```
 
-**Create → Assign → Enforce.** Creating the object alone does not enforce it. An account assignment supplies the default; a user-level authentication policy overrides it for that user.
+- **Create → Assign → Enforce.** Creating the object alone does not enforce it.
+- An account assignment supplies the default; a user-level authentication policy overrides it for that user.
 
-MFA at the company IdP and Snowflake MFA are separate controls. To require Snowflake MFA after external SSO, the policy supports `MFA_POLICY = (ENFORCE_MFA_ON_EXTERNAL_AUTHENTICATION = 'ALL')`. Enrollment and enforcement settings should be considered together.
+- MFA at the company IdP and Snowflake MFA are separate controls.
+- To require Snowflake MFA after external SSO, the policy supports `MFA_POLICY = (ENFORCE_MFA_ON_EXTERNAL_AUTHENTICATION = 'ALL')`.
+- Enrollment and enforcement settings should be considered together.
 
-[Reference: Creating and assigning authentication policies](https://docs.snowflake.com/en/user-guide/authentication-policies)
+- [Reference: Creating and assigning authentication policies](https://docs.snowflake.com/en/user-guide/authentication-policies)
 
 #### 6. What to remember
 
@@ -389,40 +525,65 @@ MFA at the company IdP and Snowflake MFA are separate controls. To require Snowf
 | Restrict login methods or require MFA enrollment | Authentication policy. |
 | Signed in successfully, but cannot query a table | Check authorization: active roles and applicable grants. |
 
-Practice explaining these aloud: **Who verifies a SAML login? Who issues an External OAuth token? Where does the private key stay? What does `REQUIRED_PASSWORD_ONLY` actually require?**
+- Practice explaining these aloud: **Who verifies a SAML login?
+- Who issues an External OAuth token?
+- Where does the private key stay?
+- What does `REQUIRED_PASSWORD_ONLY` actually require?**
 
-### Account identifiers
+<a id="account-identifiers"></a>
 
-For modern URLs and client connections, prefer the organization-account identifier:
+### 2.1.12 Account identifiers
+
+- **Remember:** CURRENT_ACCOUNT returns the locator; organization/account names form the readable connection identifier.
+
+- For modern URLs and client connections, prefer the organization-account identifier:
 
 ```text
 my_organization-my_account
 ```
 
-The legacy account locator can still appear in older connection strings, but the organization-account identifier is the preferred, readable form.
+- The legacy account locator can still appear in older connection strings, but the organization-account identifier is the preferred, readable form.
 
-For a normal public endpoint, the hostname is `<organization>-<account>.snowflakecomputing.com`. Client configuration often expects the identifier without the hostname suffix. `CURRENT_ACCOUNT()` returns the locator; `CURRENT_ACCOUNT_NAME()` and `CURRENT_ORGANIZATION_NAME()` return readable names.
+- For a normal public endpoint, the hostname is `<organization>-<account>.snowflakecomputing.com`.
+- Client configuration often expects the identifier without the hostname suffix.
+- `CURRENT_ACCOUNT()` returns the locator; `CURRENT_ACCOUNT_NAME()` and `CURRENT_ORGANIZATION_NAME()` return readable names.
 
-### Logging and tracing
+<a id="logging-and-tracing"></a>
 
-Snowflake logging and tracing help diagnose application code and handlers, especially Snowpark procedures and UDFs.
+### 2.1.13 Logging and tracing
+
+- **Remember:** Configure supported telemetry levels and its event-table destination; do not log secrets.
+
+- Snowflake logging and tracing help diagnose application code and handlers, especially Snowpark procedures and UDFs.
 
 - **Logging** records events and messages.
 - **Tracing** records the path of work through an application.
 - **Metrics** measure numeric behavior, such as counts or durations.
 - Event data is stored in an **event table**. Snowflake provides a default event table, or you can configure your own.
 
-This is application observability. It is different from `ACCOUNT_USAGE`, which is mainly historical account monitoring and audit data.
+- This is application observability.
+- It is different from `ACCOUNT_USAGE`, which is mainly historical account monitoring and audit data.
 
-Configure the collection level (`LOG_LEVEL` / `TRACE_LEVEL`) and an active event table before expecting telemetry. Collecting very verbose events can increase storage and processing cost; avoid writing credentials or sensitive values into logs. Use `LOGIN_HISTORY` for authentication investigation, `QUERY_HISTORY` for SQL activity, and `ACCESS_HISTORY` for data-access auditing. An event table is not a replacement for those audit views.
+- Configure the collection level (`LOG_LEVEL` / `TRACE_LEVEL`) and an active event table before expecting telemetry.
+- Collecting very verbose events can increase storage and processing cost; avoid writing credentials or sensitive values into logs.
+- Use `LOGIN_HISTORY` for authentication investigation, `QUERY_HISTORY` for SQL activity, and `ACCESS_HISTORY` for data-access auditing.
+- An event table is not a replacement for those audit views.
 
 ---
 
 ## 2.2 Data Governance Features
 
-The SQL examples are separate study patterns. Use test objects and replace names with your own. For the examples using `analytics.mart.customer`, assume columns `customer_id`, `email`, and `region`; for `analytics.mart.orders`, assume `order_id`, `region`, and `order_date`. The named databases, schemas, warehouses, roles, and users must exist unless the example creates them. Policy creation, attachment, and inspection each require appropriate privileges; being able to query the data is not enough to administer its policies.
+- The SQL examples are separate study patterns.
+- Use test objects and replace names with your own.
+- For the examples using `analytics.mart.customer`, assume columns `customer_id`, `email`, and `region`; for `analytics.mart.orders`, assume `order_id`, `region`, and `order_date`.
+- The named databases, schemas, warehouses, roles, and users must exist unless the example creates them.
+- Policy creation, attachment, and inspection each require appropriate privileges; being able to query the data is not enough to administer its policies.
 
-### Fast feature selection
+<a id="fast-feature-selection"></a>
+
+### 2.2.1 Fast feature selection
+
+- **Remember:** Mask values, filter rows, label metadata, limit privacy loss, inspect risk, or control spend: choose by the actual need.
 
 | Need | Best feature |
 | --- | --- |
@@ -437,13 +598,18 @@ The SQL examples are separate study patterns. Use test objects and replace names
 | Maintain a disaster-recovery replica in another account or region | Replication and failover groups |
 | Understand upstream/downstream data relationships | Data lineage |
 
-### Masking policies: column-level security
+<a id="masking-policies-column-level-security"></a>
+
+### 2.2.2 Masking policies: column-level security
+
+- **Remember:** Masking changes returned values at query time; it does not grant SELECT or rewrite source data.
 
 <p align="center"><img src="../../img/domain2-row-access-and-masking.png" alt="For an APAC reader without email access, the row access policy first removes the EMEA row; masking then hides the email in the remaining APAC row. Source values are unchanged." width="760"></p>
 
-A **masking policy** controls what a user sees in a column at query time. The underlying data stays unchanged; the returned value is masked or transformed for unauthorized users.
+- A **masking policy** controls what a user sees in a column at query time.
+- The underlying data stays unchanged; the returned value is masked or transformed for unauthorized users.
 
-Example: show an email address only to the `PII_FULL_ACCESS` role; show a masked value to everyone else.
+- Example: show an email address only to the `PII_FULL_ACCESS` role; show a masked value to everyone else.
 
 ```sql
 CREATE OR REPLACE MASKING POLICY governance.pii.email_mask
@@ -458,13 +624,17 @@ ALTER TABLE analytics.mart.customer
   SET MASKING POLICY governance.pii.email_mask;
 ```
 
-Use a masking policy when the user may see the row but should not see the unprotected value in a particular column.
+- Use a masking policy when the user may see the row but should not see the unprotected value in a particular column.
 
-Dynamic masking and row access policies require Enterprise Edition or higher. They supplement object privileges: a policy does not grant permission to query the table. `IS_ROLE_IN_SESSION` considers the active role hierarchy, while `CURRENT_ROLE()` returns only the primary role name. Keep this distinction in mind when secondary roles are enabled.
+- Dynamic masking and row access policies require Enterprise Edition or higher.
+- They supplement object privileges: a policy does not grant permission to query the table.
+- `IS_ROLE_IN_SESSION` considers the active role hierarchy, while `CURRENT_ROLE()` returns only the primary role name.
+- Keep this distinction in mind when secondary roles are enabled.
 
 #### Test the returned values
 
-The test user must have both roles available, and each role needs the usual warehouse, database, schema, and table privileges. For the masked test, `ANALYST` must not inherit `PII_FULL_ACCESS`.
+- The test user must have both roles available, and each role needs the usual warehouse, database, schema, and table privileges.
+- For the masked test, `ANALYST` must not inherit `PII_FULL_ACCESS`.
 
 ```sql
 USE SECONDARY ROLES NONE;
@@ -480,11 +650,13 @@ FROM analytics.mart.customer;
 -- Expected: the original email is returned.
 ```
 
-Disabling secondary roles makes this comparison easier to understand. It does not remove privileges inherited by the primary role. These statements change only the session's role selection; the policy does not rewrite the stored email.
+- Disabling secondary roles makes this comparison easier to understand.
+- It does not remove privileges inherited by the primary role.
+- These statements change only the session's role selection; the policy does not rewrite the stored email.
 
 #### Inspect the policy and its assignments
 
-Run with suitable policy-administration privileges:
+- Run with suitable policy-administration privileges:
 
 ```sql
 DESCRIBE MASKING POLICY governance.pii.email_mask;
@@ -496,15 +668,20 @@ FROM TABLE(analytics.INFORMATION_SCHEMA.POLICY_REFERENCES(
 ));
 ```
 
-`POLICY_REFERENCES` helps answer **which policy is attached to which column?** Visibility depends on policy privileges, so a normal reader may receive an authorization error or see only part of the configuration.
+- `POLICY_REFERENCES` helps answer **which policy is attached to which column?** Visibility depends on policy privileges, so a normal reader may receive an authorization error or see only part of the configuration.
 
-[References: Masking policy SQL](https://docs.snowflake.com/en/sql-reference/sql/create-masking-policy) · [POLICY_REFERENCES](https://docs.snowflake.com/en/sql-reference/functions/policy_references)
+- [References: Masking policy SQL](https://docs.snowflake.com/en/sql-reference/sql/create-masking-policy) · [POLICY_REFERENCES](https://docs.snowflake.com/en/sql-reference/functions/policy_references)
 
-### Row access policies: row-level security
+<a id="row-access-policies-row-level-security"></a>
 
-A **row access policy** evaluates a Boolean expression to decide which rows a user can see. It is applied to a table or view.
+### 2.2.3 Row access policies: row-level security
 
-Example: regional analysts can see only rows matching their assigned region.
+- **Remember:** A Boolean row policy filters visible rows. A table has one row policy at a time; it can combine many conditions.
+
+- A **row access policy** evaluates a Boolean expression to decide which rows a user can see.
+- It is applied to a table or view.
+
+- Example: regional analysts can see only rows matching their assigned region.
 
 ```sql
 CREATE OR REPLACE ROW ACCESS POLICY governance.policies.region_filter
@@ -519,9 +696,13 @@ ALTER TABLE analytics.mart.orders
   ADD ROW ACCESS POLICY governance.policies.region_filter ON (region);
 ```
 
-Use a row access policy when the user should not receive certain records at all. If a table has both row access and masking policies, Snowflake evaluates row access first.
+- Use a row access policy when the user should not receive certain records at all.
+- If a table has both row access and masking policies, Snowflake evaluates row access first.
 
-In larger designs, use a mapping table from role/user to region instead of hard-coding every region into the policy. Snowflake checks policy-referenced objects using the policy owner's privileges; readers do not need direct `SELECT` on the mapping table. Policy administration and data ownership can therefore be separated. See [row access policy behavior](https://docs.snowflake.com/en/user-guide/security-row-intro).
+- In larger designs, use a mapping table from role/user to region instead of hard-coding every region into the policy.
+- Snowflake checks policy-referenced objects using the policy owner's privileges; readers do not need direct `SELECT` on the mapping table.
+- Policy administration and data ownership can therefore be separated.
+- See [row access policy behavior](https://docs.snowflake.com/en/user-guide/security-row-intro).
 
 #### Test which rows remain visible
 
@@ -541,11 +722,13 @@ GROUP BY region;
 -- Expected: every region present in the table.
 ```
 
-Both roles need the normal query privileges. Do not use a broad parent role for the APAC test if it also inherits `SALES_GLOBAL`.
+- Both roles need the normal query privileges.
+- Do not use a broad parent role for the APAC test if it also inherits `SALES_GLOBAL`.
 
 #### Use a mapping table for more regions
 
-This is an alternative implementation for the same table. Run the setup once as the policy administrator; the new policy's owner must retain `SELECT` on the mapping table.
+- This is an alternative implementation for the same table.
+- Run the setup once as the policy administrator; the new policy's owner must retain `SELECT` on the mapping table.
 
 ```sql
 CREATE TABLE governance.policies.role_region_map (
@@ -572,15 +755,22 @@ ALTER TABLE analytics.mart.orders
   ADD ROW ACCESS POLICY governance.policies.region_filter_from_map ON (region);
 ```
 
-Adding a new role-to-region mapping can now change access without editing the policy body. A table has one row access policy at a time; the replacement statement assumes the earlier `region_filter` is attached.
+- Adding a new role-to-region mapping can now change access without editing the policy body.
+- A table has one row access policy at a time; the replacement statement assumes the earlier `region_filter` is attached.
 
-[Reference: Using row access policies and mapping tables](https://docs.snowflake.com/en/user-guide/security-row-using)
+- [Reference: Using row access policies and mapping tables](https://docs.snowflake.com/en/user-guide/security-row-using)
 
-### Object tagging
+<a id="object-tagging"></a>
 
-A **tag** is metadata you assign to Snowflake objects or columns. Tags do not, by themselves, deny access. They help you classify, find, govern, audit, and sometimes automatically apply tag-based policies.
+### 2.2.4 Object tagging
 
-Common tag examples:
+- **Remember:** A tag alone labels an object; associated policies supply enforcement.
+
+- A **tag** is metadata you assign to Snowflake objects or columns.
+- Tags do not, by themselves, deny access.
+- They help you classify, find, govern, audit, and sometimes automatically apply tag-based policies.
+
+- Common tag examples:
 
 - `DATA_CLASSIFICATION = 'PII'`
 - `OWNER_TEAM = 'FINANCE'`
@@ -594,9 +784,11 @@ ALTER TABLE analytics.mart.customer
   SET TAG governance.tags.data_classification = 'PII';
 ```
 
-**Exam trap:** a tag labels an object; it does not automatically mask a column or filter rows. A tag can be connected to a tag-based policy when centralized, scalable enforcement is needed.
+- **Exam trap:** a tag labels an object; it does not automatically mask a column or filter rows.
+- A tag can be connected to a tag-based policy when centralized, scalable enforcement is needed.
 
-For column-level protection, a policy can be attached to a tag and the tag applied to sensitive columns. The policy's input/output type must match the protected column type.
+- For column-level protection, a policy can be attached to a tag and the tag applied to sensitive columns.
+- The policy's input/output type must match the protected column type.
 
 ```sql
 CREATE TAG governance.tags.sensitive_email;
@@ -607,7 +799,9 @@ ALTER TABLE analytics.mart.customer
   SET TAG governance.tags.sensitive_email = 'PII';
 ```
 
-This uses a separate column-specific tag. Attaching the same masking policy to a table-level classification tag could mask every matching-type descendant column. Use tag inheritance and propagation according to their documented rules, and inspect the resulting assignments and policy references.
+- This uses a separate column-specific tag.
+- Attaching the same masking policy to a table-level classification tag could mask every matching-type descendant column.
+- Use tag inheritance and propagation according to their documented rules, and inspect the resulting assignments and policy references.
 
 #### Limit tag values and inspect assignments
 
@@ -628,27 +822,39 @@ SELECT SYSTEM$GET_TAG(
 ) AS email_classification;
 ```
 
-The first lookup should return `PLATFORM`; the second should return `PII` after the earlier column-tag example. Allowed values help keep labels consistent. Tagging a warehouse does not set a credit limit.
+- The first lookup should return `PLATFORM`; the second should return `PII` after the earlier column-tag example.
+- Allowed values help keep labels consistent.
+- Tagging a warehouse does not set a credit limit.
 
-[References: CREATE TAG](https://docs.snowflake.com/en/sql-reference/sql/create-tag) · [SYSTEM$GET_TAG](https://docs.snowflake.com/en/sql-reference/functions/system_get_tag)
+- [References: CREATE TAG](https://docs.snowflake.com/en/sql-reference/sql/create-tag) · [SYSTEM$GET_TAG](https://docs.snowflake.com/en/sql-reference/functions/system_get_tag)
 
-### Privacy policies
+<a id="privacy-policies"></a>
 
-Snowflake **privacy policies** support differential privacy. A policy associates users with privacy budgets and can be assigned to tables or views.
+### 2.2.5 Privacy policies
 
-When an analyst runs a query against privacy-protected data, Snowflake evaluates whether the query would exceed that user's privacy budget. This helps reduce the risk of identifying an individual through repeated analytical queries.
+- **Remember:** Differential-privacy budget measures cumulative privacy loss, not warehouse credits.
 
-Do not confuse this with:
+- Snowflake **privacy policies** support differential privacy.
+- A policy associates users with privacy budgets and can be assigned to tables or views.
+
+- When an analyst runs a query against privacy-protected data, Snowflake evaluates whether the query would exceed that user's privacy budget.
+- This helps reduce the risk of identifying an individual through repeated analytical queries.
+
+- Do not confuse this with:
 
 - **Masking policy:** hides individual column values.
 - **Row access policy:** filters visible rows.
 - **Privacy policy:** controls privacy loss for aggregate analytical queries through differential privacy.
 
-Differential privacy adds controlled noise to protected analytical results and limits cumulative privacy loss through a budget. This budget measures privacy exposure, not Snowflake credit spend. Related features include aggregation policies (restrict small result groups), projection policies (restrict returning a column), and join policies (control required joins). These are supporting comparisons; the explicit C03 bullet is **privacy policies**.
+- Differential privacy adds controlled noise to protected analytical results and limits cumulative privacy loss through a budget.
+- This budget measures privacy exposure, not Snowflake credit spend.
+- Related features include aggregation policies (restrict small result groups), projection policies (restrict returning a column), and join policies (control required joins).
+- These are supporting comparisons; the explicit C03 bullet is **privacy policies**.
 
 #### Define and attach a privacy policy
 
-This independent example uses an existing test table `analytics.mart.customer_survey`, where `customer_id` identifies the person being protected. It requires Enterprise Edition or higher and appropriate privacy-policy privileges.
+- This independent example uses an existing test table `analytics.mart.customer_survey`, where `customer_id` identifies the person being protected.
+- It requires Enterprise Edition or higher and appropriate privacy-policy privileges.
 
 ```sql
 CREATE PRIVACY POLICY governance.policies.survey_privacy
@@ -660,19 +866,32 @@ ALTER TABLE analytics.mart.customer_survey
   ENTITY KEY (customer_id);
 ```
 
-This creates a shared named privacy budget using the defaults and attaches the policy. The entity key groups records belonging to the same person. This is the definition/attachment step; analytical queries also need suitable privacy domains for the columns they use. Follow the linked tutorial for that setup. A protected analyst cannot use an ordinary row-level `SELECT *` as though the table were unrestricted.
+- This creates a shared named privacy budget using the defaults and attaches the policy.
+- The entity key groups records belonging to the same person.
+- This is the definition/attachment step; analytical queries also need suitable privacy domains for the columns they use.
+- Follow the linked tutorial for that setup.
+- A protected analyst cannot use an ordinary row-level `SELECT *` as though the table were unrestricted.
 
-**Remember:** privacy budget = how much information queries may reveal; cost budget = how many credits you plan to spend.
+- **Remember:** privacy budget = how much information queries may reveal; cost budget = how many credits you plan to spend.
 
-[References: CREATE PRIVACY POLICY](https://docs.snowflake.com/en/sql-reference/sql/create-privacy-policy) · [Differential privacy tutorial](https://docs.snowflake.com/en/user-guide/tutorials/diff-privacy)
+- [References: CREATE PRIVACY POLICY](https://docs.snowflake.com/en/sql-reference/sql/create-privacy-policy) · [Differential privacy tutorial](https://docs.snowflake.com/en/user-guide/tutorials/diff-privacy)
 
-### Trust Center
+<a id="trust-center"></a>
 
-The **Trust Center** evaluates account configuration using scanners and presents findings and recommendations in Snowsight. It helps teams monitor and reduce security risks, such as insecure configuration or authentication posture.
+### 2.2.6 Trust Center
 
-Think of it as security-posture management—not a substitute for RBAC, network policies, or monitoring. Scanner use can incur serverless compute cost.
+- **Remember:** Scanners find security-posture issues; muting a finding does not remediate it.
 
-Administrators delegate viewing through `SNOWFLAKE.TRUST_CENTER_VIEWER` and management through `SNOWFLAKE.TRUST_CENTER_ADMIN` application roles. Review findings, apply appropriate remediation, and rerun the scanner to verify the issue is resolved. Muting a finding suppresses notifications; it does not fix the configuration. See [Trust Center](https://docs.snowflake.com/en/user-guide/trust-center/overview).
+- The **Trust Center** evaluates account configuration using scanners and presents findings and recommendations in Snowsight.
+- It helps teams monitor and reduce security risks, such as insecure configuration or authentication posture.
+
+- Think of it as security-posture management—not a substitute for RBAC, network policies, or monitoring.
+- Scanner use can incur serverless compute cost.
+
+- Administrators delegate viewing through `SNOWFLAKE.TRUST_CENTER_VIEWER` and management through `SNOWFLAKE.TRUST_CENTER_ADMIN` application roles.
+- Review findings, apply appropriate remediation, and rerun the scanner to verify the issue is resolved.
+- Muting a finding suppresses notifications; it does not fix the configuration.
+- See [Trust Center](https://docs.snowflake.com/en/user-guide/trust-center/overview).
 
 #### Delegate viewing without scanner administration
 
@@ -687,22 +906,34 @@ GRANT APPLICATION ROLE SNOWFLAKE.TRUST_CENTER_VIEWER
 GRANT ROLE security_reviewer TO USER REVIEWER_USER;
 ```
 
-The user can activate `SECURITY_REVIEWER` to view findings. Use the `TRUST_CENTER_ADMIN` application role only when scanner management is part of the job. The review and remediation workflow is in the Trust Center UI; an application-role grant does not itself run a scanner or fix a finding.
+- The user can activate `SECURITY_REVIEWER` to view findings.
+- Use the `TRUST_CENTER_ADMIN` application role only when scanner management is part of the job.
+- The review and remediation workflow is in the Trust Center UI; an application-role grant does not itself run a scanner or fix a finding.
 
-[Reference: Trust Center required roles](https://docs.snowflake.com/en/user-guide/trust-center/overview#required-roles)
+- [Reference: Trust Center required roles](https://docs.snowflake.com/en/user-guide/trust-center/overview#required-roles)
 
-### Encryption key management
+<a id="encryption-key-management"></a>
 
-Snowflake encrypts customer data by default and manages the normal encryption-key hierarchy.
+### 2.2.7 Encryption key management
 
-For extra customer control, **Tri-Secret Secure** combines:
+- **Remember:** Rotation, rekeying, and customer-managed key control are different mechanisms.
+
+- Snowflake encrypts customer data by default and manages the normal encryption-key hierarchy.
+
+- For extra customer control, **Tri-Secret Secure** combines:
 
 1. A Snowflake-maintained key.
 2. A customer-managed key in the cloud provider's key-management service.
 
-Together, they form a composite key that protects the account's encryption-key hierarchy. Tri-Secret Secure is a Business Critical feature.
+- Together, they form a composite key that protects the account's encryption-key hierarchy.
+- Tri-Secret Secure is a Business Critical feature.
 
-Distinguish **key rotation** from **rekeying**. Rotation replaces active key versions for new encryption; retired versions remain available to decrypt existing data. Optional periodic rekeying re-encrypts older data with new keys. Snowflake rotates its managed keys automatically; periodic rekeying is an Enterprise-or-higher option and may add storage cost. Revoking access to a customer-managed key can make the protected data unavailable. See [key management](https://docs.snowflake.com/en/user-guide/security-encryption-manage).
+- Distinguish **key rotation** from **rekeying**.
+- Rotation replaces active key versions for new encryption; retired versions remain available to decrypt existing data.
+- Optional periodic rekeying re-encrypts older data with new keys.
+- Snowflake rotates its managed keys automatically; periodic rekeying is an Enterprise-or-higher option and may add storage cost.
+- Revoking access to a customer-managed key can make the protected data unavailable.
+- See [key management](https://docs.snowflake.com/en/user-guide/security-encryption-manage).
 
 #### Inspect the periodic-rekeying setting
 
@@ -713,21 +944,28 @@ SHOW PARAMETERS LIKE 'PERIODIC_DATA_REKEYING' IN ACCOUNT;
 -- ALTER ACCOUNT SET PERIODIC_DATA_REKEYING = TRUE;
 ```
 
-Enabling that parameter changes periodic rekeying; it does not configure Tri-Secret Secure. Tri-Secret Secure additionally requires the supported cloud key-management and Snowflake setup described in the key-management guide.
+- Enabling that parameter changes periodic rekeying; it does not configure Tri-Secret Secure.
+- Tri-Secret Secure additionally requires the supported cloud key-management and Snowflake setup described in the key-management guide.
 
-[Reference: PERIODIC_DATA_REKEYING](https://docs.snowflake.com/en/sql-reference/parameters#periodic-data-rekeying)
+- [Reference: PERIODIC_DATA_REKEYING](https://docs.snowflake.com/en/sql-reference/parameters#periodic-data-rekeying)
 
-### Alerts and notifications
+<a id="alerts-and-notifications"></a>
 
-An **alert** is a schema object that evaluates a condition and performs an action when that condition is true. It can run on a schedule or, for an alert on new data, when new rows are available.
+### 2.2.8 Alerts and notifications
 
-Examples:
+- **Remember:** An alert evaluates a condition and acts; a notification integration configures supported message delivery.
+
+- An **alert** is a schema object that evaluates a condition and performs an action when that condition is true.
+- It can run on a schedule or, for an alert on new data, when new rows are available.
+
+- Examples:
 
 - Alert when a data-quality query finds invalid records.
 - Alert when warehouse credit usage crosses a chosen threshold.
 - Alert when application events show failures.
 
-An alert can send a notification, insert an audit record, or call other SQL logic. After creating an alert, remember to resume it.
+- An alert can send a notification, insert an audit record, or call other SQL logic.
+- After creating an alert, remember to resume it.
 
 ```sql
 -- Setup for the action target; requires the monitoring schema.
@@ -752,13 +990,22 @@ CREATE OR REPLACE ALERT analytics.monitoring.no_orders_alert
 ALTER ALERT analytics.monitoring.no_orders_alert RESUME;
 ```
 
-Alerts can use Snowflake-managed serverless compute or a specified virtual warehouse. A notification integration connects Snowflake with supported external destinations, such as email, webhooks, or cloud messaging services.
+- Alerts can use Snowflake-managed serverless compute or a specified virtual warehouse.
+- A notification integration connects Snowflake with supported external destinations, such as email, webhooks, or cloud messaging services.
 
-The setup creates `alert_log` if it is absent; an existing table must have compatible `event_time` and `message` columns. Alert conditions use `IF (EXISTS (...))`: return a row only when the condition is met. The aggregate above returns a row when today's order count is zero. Avoid a bare `COUNT(*)` without `HAVING`, which returns a row even when the count is zero.
+- The setup creates `alert_log` if it is absent; an existing table must have compatible `event_time` and `message` columns.
+- Alert conditions use `IF (EXISTS (...))`: return a row only when the condition is met.
+- The aggregate above returns a row when today's order count is zero.
+- Avoid a bare `COUNT(*)` without `HAVING`, which returns a row even when the count is zero.
 
-The owner needs `CREATE ALERT` on the schema, `EXECUTE ALERT` on the account, and access to referenced data and action targets. A serverless alert additionally requires `EXECUTE MANAGED ALERT`; a warehouse-backed alert requires warehouse `USAGE`. Use `ALERT_HISTORY` to investigate runs.
+- The owner needs `CREATE ALERT` on the schema, `EXECUTE ALERT` on the account, and access to referenced data and action targets.
+- A serverless alert additionally requires `EXECUTE MANAGED ALERT`; a warehouse-backed alert requires warehouse `USAGE`.
+- Use `ALERT_HISTORY` to investigate runs.
 
-For an email notification, create an email notification integration, configure eligible recipients, and call `SYSTEM$SEND_EMAIL`. Task/Snowpipe error integrations and general-purpose notification integrations have different supported destinations. Check the integration type instead of assuming every event can go to every destination. See [alert SQL](https://docs.snowflake.com/en/sql-reference/sql/create-alert) and [notifications](https://docs.snowflake.com/en/guides-overview-alerts).
+- For an email notification, create an email notification integration, configure eligible recipients, and call `SYSTEM$SEND_EMAIL`.
+- Task/Snowpipe error integrations and general-purpose notification integrations have different supported destinations.
+- Check the integration type instead of assuming every event can go to every destination.
+- See [alert SQL](https://docs.snowflake.com/en/sql-reference/sql/create-alert) and [notifications](https://docs.snowflake.com/en/guides-overview-alerts).
 
 #### Inspect alert runs and stop the test schedule
 
@@ -780,11 +1027,15 @@ ORDER BY event_time DESC;
 ALTER ALERT analytics.monitoring.no_orders_alert SUSPEND;
 ```
 
-History shows whether the condition/action ran successfully; the log table contains rows only when the action inserted them. Run the history function as the alert owner or an authorized administrator. Its alert-name argument uses the unqualified name, and its historical window is at most seven days.
+- History shows whether the condition/action ran successfully; the log table contains rows only when the action inserted them.
+- Run the history function as the alert owner or an authorized administrator.
+- Its alert-name argument uses the unqualified name, and its historical window is at most seven days.
 
 #### Create an email integration and send a test message
 
-Replace `verified_user@example.com` with a verified email belonging to a user in the current account. Creating the integration requires suitable account privileges; sending requires `USAGE` on it. The `CALL` below sends a real email when executed with valid configuration.
+- Replace `verified_user@example.com` with a verified email belonging to a user in the current account.
+- Creating the integration requires suitable account privileges; sending requires `USAGE` on it.
+- The `CALL` below sends a real email when executed with valid configuration.
 
 ```sql
 CREATE NOTIFICATION INTEGRATION study_email
@@ -800,27 +1051,40 @@ CALL SYSTEM$SEND_EMAIL(
 );
 ```
 
-The same call can be an alert's action instead of an `INSERT`. For a serverless alert, omit `WAREHOUSE` from its definition and ensure the owner has `EXECUTE MANAGED ALERT` as well as `EXECUTE ALERT` and the required data/action privileges.
+- The same call can be an alert's action instead of an `INSERT`.
+- For a serverless alert, omit `WAREHOUSE` from its definition and ensure the owner has `EXECUTE MANAGED ALERT` as well as `EXECUTE ALERT` and the required data/action privileges.
 
-[References: ALERT_HISTORY](https://docs.snowflake.com/en/sql-reference/functions/alert_history) · [Email integration](https://docs.snowflake.com/en/sql-reference/sql/create-notification-integration-email) · [SYSTEM$SEND_EMAIL](https://docs.snowflake.com/en/sql-reference/stored-procedures/system_send_email)
+- [References: ALERT_HISTORY](https://docs.snowflake.com/en/sql-reference/functions/alert_history) · [Email integration](https://docs.snowflake.com/en/sql-reference/sql/create-notification-integration-email) · [SYSTEM$SEND_EMAIL](https://docs.snowflake.com/en/sql-reference/stored-procedures/system_send_email)
 
-### Replication and failover
+<a id="replication-and-failover"></a>
 
-Replication copies supported Snowflake objects and data from a primary account to a secondary account. **Failover groups** support broader business-continuity and disaster-recovery designs by grouping objects that should fail over together.
+### 2.2.9 Replication and failover
+
+- **Remember:** Replication copies state; failover promotes a secondary to primary. Completed refreshes determine what data is available.
+
+- Replication copies supported Snowflake objects and data from a primary account to a secondary account.
+- **Failover groups** support broader business-continuity and disaster-recovery designs by grouping objects that should fail over together.
 
 - A secondary replica is read-only until promoted.
 - Replication supports cross-region and cross-cloud designs within a Snowflake organization.
 - Failover and failback require Business Critical Edition or higher.
 
-Replication groups synchronize a chosen set of supported objects; failover groups add promotion to a new primary. Database/share replication is available in all editions; replication of additional account objects and failover/failback require Business Critical or higher. Replicate the required roles and grants as well as the data when planning continuity.
+- Replication groups synchronize a chosen set of supported objects; failover groups add promotion to a new primary.
+- Database/share replication is available in all editions; replication of additional account objects and failover/failback require Business Critical or higher.
+- Replicate the required roles and grants as well as the data when planning continuity.
 
-Refreshes are asynchronous. **Recovery point objective (RPO)** is the acceptable amount of lost data; refresh frequency and completed refreshes affect it. **Recovery time objective (RTO)** is the acceptable time to restore service. Test client redirection, permissions, and failback; a replica alone does not prove the application can recover.
+- Refreshes are asynchronous.
+- **Recovery point objective (RPO)** is the acceptable amount of lost data; refresh frequency and completed refreshes affect it.
+- **Recovery time objective (RTO)** is the acceptable time to restore service.
+- Test client redirection, permissions, and failback; a replica alone does not prove the application can recover.
 
 #### A failover group across two accounts
 
-This requires two eligible accounts in the same organization, Business Critical or higher, replication enabled where required, and the necessary group/object privileges. Replace `MYORG`, `PRIMARY_ACCOUNT`, and `SECONDARY_ACCOUNT` with actual names. Use an otherwise unreplicated test database for this example.
+- This requires two eligible accounts in the same organization, Business Critical or higher, replication enabled where required, and the necessary group/object privileges.
+- Replace `MYORG`, `PRIMARY_ACCOUNT`, and `SECONDARY_ACCOUNT` with actual names.
+- Use an otherwise unreplicated test database for this example.
 
-On the **primary account**, define what may be copied:
+- On the **primary account**, define what may be copied:
 
 ```sql
 CREATE FAILOVER GROUP analytics_dr
@@ -830,7 +1094,7 @@ CREATE FAILOVER GROUP analytics_dr
   REPLICATION_SCHEDULE = '10 MINUTE';
 ```
 
-On the **secondary account**, create the replica and request a refresh:
+- On the **secondary account**, create the replica and request a refresh:
 
 ```sql
 CREATE FAILOVER GROUP analytics_dr
@@ -843,24 +1107,36 @@ SHOW FAILOVER GROUPS;
 -- ALTER FAILOVER GROUP analytics_dr PRIMARY;
 ```
 
-The database-only group above does not include users, roles, or warehouses. Plan those separately. A scheduled refresh is asynchronous; it does not guarantee exactly ten minutes of possible data loss. Promotion changes which copy is writable.
+- The database-only group above does not include users, roles, or warehouses.
+- Plan those separately.
+- A scheduled refresh is asynchronous; it does not guarantee exactly ten minutes of possible data loss.
+- Promotion changes which copy is writable.
 
-[References: CREATE FAILOVER GROUP](https://docs.snowflake.com/en/sql-reference/sql/create-failover-group) · [Replication setup and refresh](https://docs.snowflake.com/en/user-guide/account-replication-config)
+- [References: CREATE FAILOVER GROUP](https://docs.snowflake.com/en/sql-reference/sql/create-failover-group) · [Replication setup and refresh](https://docs.snowflake.com/en/user-guide/account-replication-config)
 
-See [replication and failover](https://docs.snowflake.com/en/user-guide/account-replication-intro) and the [storage course note](../../study-notes/9-Storage-Data-Protection-and-sharing/readme.md) for supporting examples. Folder numbers 7/8/9 refer to course chapters, not C03 exam domains.
+- See [replication and failover](https://docs.snowflake.com/en/user-guide/account-replication-intro) and the [storage course note](../../study-notes/9-Storage-Data-Protection-and-sharing/readme.md) for supporting examples.
+- Folder numbers 7/8/9 refer to course chapters, not C03 exam domains.
 
-### Data lineage
+<a id="data-lineage"></a>
 
-**Data lineage** shows how data moves from source to target objects and how objects depend on each other.
+### 2.2.10 Data lineage
 
-It captures two important relationships:
+- **Remember:** Trace upstream sources and downstream impact; data movement and object dependency are distinct relationships.
+
+- **Data lineage** shows how data moves from source to target objects and how objects depend on each other.
+
+- It captures two important relationships:
 
 1. **Data movement**, such as `CREATE TABLE AS SELECT`, `INSERT`, or `MERGE`.
 2. **Object dependency**, such as a view that references a table without copying its data.
 
-Use lineage for impact analysis: before changing a table, identify which downstream views, tables, and data products may be affected. Data lineage is available in Snowsight and programmatically through `GET_LINEAGE` (Enterprise Edition or higher).
+- Use lineage for impact analysis: before changing a table, identify which downstream views, tables, and data products may be affected.
+- Data lineage is available in Snowsight and programmatically through `GET_LINEAGE` (Enterprise Edition or higher).
 
-**Upstream** asks where data came from; **downstream** asks what may be affected by a change. Column lineage provides more precise impact analysis than an object-only graph. `ACCESS_HISTORY` supports investigation of data access, while `OBJECT_DEPENDENCIES` records supported dependency relationships. Visibility depends on privileges and supported objects; absence from a lineage graph is not proof that no external application depends on the data.
+- **Upstream** asks where data came from; **downstream** asks what may be affected by a change.
+- Column lineage provides more precise impact analysis than an object-only graph.
+- `ACCESS_HISTORY` supports investigation of data access, while `OBJECT_DEPENDENCIES` records supported dependency relationships.
+- Visibility depends on privileges and supported objects; absence from a lineage graph is not proof that no external application depends on the data.
 
 #### Ask what depends on a table
 
@@ -871,9 +1147,11 @@ FROM TABLE(SNOWFLAKE.CORE.GET_LINEAGE(
 ));
 ```
 
-This follows downstream relationships for up to two steps. Change `DOWNSTREAM` to `UPSTREAM` to ask where the table's data came from. The results require appropriate lineage visibility and supported, captured relationships.
+- This follows downstream relationships for up to two steps.
+- Change `DOWNSTREAM` to `UPSTREAM` to ask where the table's data came from.
+- The results require appropriate lineage visibility and supported, captured relationships.
 
-For a narrower dependency investigation:
+- For a narrower dependency investigation:
 
 ```sql
 SELECT referencing_database, referencing_schema,
@@ -884,25 +1162,32 @@ WHERE referenced_database = 'ANALYTICS'
   AND referenced_object_name = 'ORDERS';
 ```
 
-This identifies supported objects such as views that reference `ORDERS`; it is not a full replacement for data-movement lineage. Account Usage latency also applies.
+- This identifies supported objects such as views that reference `ORDERS`; it is not a full replacement for data-movement lineage.
+- Account Usage latency also applies.
 
-[References: GET_LINEAGE](https://docs.snowflake.com/en/sql-reference/functions/get_lineage-snowflake-core) · [OBJECT_DEPENDENCIES](https://docs.snowflake.com/en/sql-reference/account-usage/object_dependencies)
+- [References: GET_LINEAGE](https://docs.snowflake.com/en/sql-reference/functions/get_lineage-snowflake-core) · [OBJECT_DEPENDENCIES](https://docs.snowflake.com/en/sql-reference/account-usage/object_dependencies)
 
 ---
 
 ## 2.3 Monitoring and Cost Management
 
-### Resource monitors
+<a id="resource-monitors"></a>
 
-A **resource monitor** tracks virtual-warehouse credit usage against a credit quota and can take action at configured thresholds.
+### 2.3.1 Resource monitors
 
-Possible actions include:
+- **Remember:** Assign the monitor; suspension actions control warehouses, not every serverless service.
+
+- A **resource monitor** tracks virtual-warehouse credit usage against a credit quota and can take action at configured thresholds.
+
+- Possible actions include:
 
 - Notify.
 - Suspend assigned warehouses.
 - Suspend assigned warehouses immediately.
 
-`SUSPEND` lets running statements finish before suspending; `SUSPEND_IMMEDIATE` cancels running statements. Both can notify. A warehouse can have one warehouse-level monitor and also be covered by the account monitor; whichever applicable suspend threshold is reached can stop it.
+- `SUSPEND` lets running statements finish before suspending; `SUSPEND_IMMEDIATE` cancels running statements.
+- Both can notify.
+- A warehouse can have one warehouse-level monitor and also be covered by the account monitor; whichever applicable suspend threshold is reached can stop it.
 
 ```sql
 USE ROLE ACCOUNTADMIN;
@@ -919,20 +1204,25 @@ ALTER WAREHOUSE etl_wh
   SET RESOURCE_MONITOR = monthly_etl_limit;
 ```
 
-Important distinctions:
+- Important distinctions:
 
 - A monitor can be assigned to a warehouse or to the account.
 - An account can have only one account-level resource monitor.
 - Resource monitors apply to **virtual warehouses**. They do **not** control serverless-feature or AI-service costs; use the appropriate budgets/cost controls for those services.
 - A resource monitor is not a perfectly real-time hard spending cap. Consumption can exceed a threshold before the action is applied.
 
-The example uses the default schedule: immediate start with a reset at the beginning of each calendar month. A custom schedule requires both `FREQUENCY` and `START_TIMESTAMP`. Thresholds are percentages of the quota, not credit amounts. Supporting cloud-services consumption counts toward the quota before the daily billing adjustment, and suspending a warehouse does not stop all cloud-services charges.
+- The example uses the default schedule: immediate start with a reset at the beginning of each calendar month.
+- A custom schedule requires both `FREQUENCY` and `START_TIMESTAMP`.
+- Thresholds are percentages of the quota, not credit amounts.
+- Supporting cloud-services consumption counts toward the quota before the daily billing adjustment, and suspending a warehouse does not stop all cloud-services charges.
 
-Budgets monitor expected monthly spend for supported warehouse and serverless objects and can notify on projected overspend. A budget's spending limit does not itself provide the same warehouse-suspension behavior as a resource monitor.
+- Budgets monitor expected monthly spend for supported warehouse and serverless objects and can notify on projected overspend.
+- A budget's spending limit does not itself provide the same warehouse-suspension behavior as a resource monitor.
 
 #### Use an explicit weekly reset
 
-This is a separate monitor example. Creating resource monitors requires `ACCOUNTADMIN`; assignment also requires the appropriate monitor/warehouse authority.
+- This is a separate monitor example.
+- Creating resource monitors requires `ACCOUNTADMIN`; assignment also requires the appropriate monitor/warehouse authority.
 
 ```sql
 USE ROLE ACCOUNTADMIN;
@@ -952,22 +1242,28 @@ SHOW RESOURCE MONITORS;
 SHOW WAREHOUSES LIKE 'ETL_WH';
 ```
 
-The 50% notification threshold represents **10 credits**; 100% represents **20 credits**. Assigning this monitor replaces the warehouse-level assignment from the earlier monthly example. The explicit schedule resets weekly according to its start time, rather than using the default calendar-month reset. Notification delivery also requires configured, eligible notification recipients.
+- The 50% notification threshold represents **10 credits**; 100% represents **20 credits**.
+- Assigning this monitor replaces the warehouse-level assignment from the earlier monthly example.
+- The explicit schedule resets weekly according to its start time, rather than using the default calendar-month reset.
+- Notification delivery also requires configured, eligible notification recipients.
 
-An account assignment uses different SQL:
+- An account assignment uses different SQL:
 
 ```sql
 -- Account-level assignment example; use an existing suitable monitor.
 -- ALTER ACCOUNT SET RESOURCE_MONITOR = account_credit_limit;
 ```
 
-`SHOW RESOURCE MONITORS` lets you inspect quota, usage, thresholds, and assignment level. A monitor with no account/warehouse assignment is not monitoring warehouse usage.
+- `SHOW RESOURCE MONITORS` lets you inspect quota, usage, thresholds, and assignment level.
+- A monitor with no account/warehouse assignment is not monitoring warehouse usage.
 
-[References: CREATE RESOURCE MONITOR](https://docs.snowflake.com/en/sql-reference/sql/create-resource-monitor) · [SHOW RESOURCE MONITORS](https://docs.snowflake.com/en/sql-reference/sql/show-resource-monitors)
+- [References: CREATE RESOURCE MONITOR](https://docs.snowflake.com/en/sql-reference/sql/create-resource-monitor) · [SHOW RESOURCE MONITORS](https://docs.snowflake.com/en/sql-reference/sql/show-resource-monitors)
 
 #### Create a custom cost budget
 
-This example tracks an existing warehouse. It requires an existing `analytics.monitoring` schema, the relevant budget-creation privileges (including `SNOWFLAKE.BUDGET_CREATOR` and `CREATE SNOWFLAKE.CORE.BUDGET` on the schema), and `APPLYBUDGET` on the warehouse. The notification step uses the `STUDY_EMAIL` integration from 2.2 and a verified account user's email; replace the sample address.
+- This example tracks an existing warehouse.
+- It requires an existing `analytics.monitoring` schema, the relevant budget-creation privileges (including `SNOWFLAKE.BUDGET_CREATOR` and `CREATE SNOWFLAKE.CORE.BUDGET` on the schema), and `APPLYBUDGET` on the warehouse.
+- The notification step uses the `STUDY_EMAIL` integration from 2.2 and a verified account user's email; replace the sample address.
 
 ```sql
 CREATE SNOWFLAKE.CORE.BUDGET analytics.monitoring.etl_budget();
@@ -985,13 +1281,21 @@ CALL analytics.monitoring.etl_budget!SET_EMAIL_NOTIFICATIONS(
 SELECT SYSTEM$SHOW_BUDGETS_IN_ACCOUNT();
 ```
 
-The limit is **100 credits per month**, not dollars. The budget can notify on predicted overspend. This configuration does not automatically suspend the warehouse at 100 credits; a resource monitor has separate suspension actions. Budgets can have supported custom actions, but those require additional configuration. Budget monitoring itself can incur serverless cost.
+- The limit is **100 credits per month**, not dollars.
+- The budget can notify on predicted overspend.
+- This configuration does not automatically suspend the warehouse at 100 credits; a resource monitor has separate suspension actions.
+- Budgets can have supported custom actions, but those require additional configuration.
+- Budget monitoring itself can incur serverless cost.
 
-[References: Custom budgets](https://docs.snowflake.com/en/user-guide/budgets/custom-budget) · [Budget setup tutorial](https://docs.snowflake.com/en/user-guide/tutorials/budgets)
+- [References: Custom budgets](https://docs.snowflake.com/en/user-guide/budgets/custom-budget) · [Budget setup tutorial](https://docs.snowflake.com/en/user-guide/tutorials/budgets)
 
-### Warehouse monitoring and cost control
+<a id="warehouse-monitoring-and-cost-control"></a>
 
-Use these controls together:
+### 2.3.2 Warehouse monitoring and cost control
+
+- **Remember:** An idle timer, statement timeout, monitor threshold, and budget solve different problems.
+
+- Use these controls together:
 
 | Control | Main purpose |
 | --- | --- |
@@ -1002,11 +1306,14 @@ Use these controls together:
 | Resource monitor | Responds to a credit quota threshold. |
 | Query history and metering views | Diagnose which workloads and warehouses consume credits. |
 
-Do not choose a warehouse solely because it is small. A smaller warehouse can run much longer. Right-size it based on workload performance and total credits consumed.
+- Do not choose a warehouse solely because it is small.
+- A smaller warehouse can run much longer.
+- Right-size it based on workload performance and total credits consumed.
 
 #### Create a small warehouse with idle and query limits
 
-Run with `CREATE WAREHOUSE` authority. The warehouse starts suspended; running a query on it later can resume it and consume credits.
+- Run with `CREATE WAREHOUSE` authority.
+- The warehouse starts suspended; running a query on it later can resume it and consume credits.
 
 ```sql
 CREATE WAREHOUSE d2_practice_wh
@@ -1022,9 +1329,12 @@ ALTER WAREHOUSE d2_practice_wh SET
 SHOW WAREHOUSES LIKE 'D2_PRACTICE_WH';
 ```
 
-`AUTO_SUSPEND` targets idle time; the two statement timeouts limit statement/queue waiting time. A statement timeout is not a credit quota. Warehouse auto-suspend is checked periodically, so it is not a precise timer. Other applicable session or account timeout settings can also affect statements.
+- `AUTO_SUSPEND` targets idle time; the two statement timeouts limit statement/queue waiting time.
+- A statement timeout is not a credit quota.
+- Warehouse auto-suspend is checked periodically, so it is not a precise timer.
+- Other applicable session or account timeout settings can also affect statements.
 
-[Reference: Warehouse properties and parameters](https://docs.snowflake.com/en/sql-reference/sql/create-warehouse)
+- [Reference: Warehouse properties and parameters](https://docs.snowflake.com/en/sql-reference/sql/create-warehouse)
 
 #### Check what compute is on right now
 
@@ -1045,19 +1355,27 @@ SHOW SERVICES IN ACCOUNT
     FROM $1;
 ```
 
-`->>` passes a command's result to the following query; `$1` refers to that result. Double quotes are needed for the lowercase column names returned by `SHOW`.
+- `->>` passes a command's result to the following query; `$1` refers to that result.
+- Double quotes are needed for the lowercase column names returned by `SHOW`.
 
 - A warehouse can be `STARTED` with `running = 0`: it is on but executing no SQL statements at that moment.
 - A pool in `ACTIVE` has a service running or scheduled. `IDLE` means provisioned machines without scheduled services; `SUSPENDED` means no running machines.
 - Inspect service status and its pool to identify notebook/container workloads. A listed pool alone does not establish current billed consumption; use metering history for costs.
 
-Results depend on your privileges. These inventory commands do not require a running warehouse. For notebooks using a compute pool, suspending their query warehouse does not suspend the notebook service. Stop that service through the notebook's service controls when appropriate; other services may share the pool.
+- Results depend on your privileges.
+- These inventory commands do not require a running warehouse.
+- For notebooks using a compute pool, suspending their query warehouse does not suspend the notebook service.
+- Stop that service through the notebook's service controls when appropriate; other services may share the pool.
 
-[References: SHOW WAREHOUSES](https://docs.snowflake.com/en/sql-reference/sql/show-warehouses) · [SHOW COMPUTE POOLS](https://docs.snowflake.com/en/sql-reference/sql/show-compute-pools) · [SHOW SERVICES](https://docs.snowflake.com/en/sql-reference/sql/show-services) · [Notebook compute setup](https://docs.snowflake.com/en/user-guide/ui-snowsight/notebooks-in-workspaces/notebooks-in-workspaces-compute-setup)
+- [References: SHOW WAREHOUSES](https://docs.snowflake.com/en/sql-reference/sql/show-warehouses) · [SHOW COMPUTE POOLS](https://docs.snowflake.com/en/sql-reference/sql/show-compute-pools) · [SHOW SERVICES](https://docs.snowflake.com/en/sql-reference/sql/show-services) · [Notebook compute setup](https://docs.snowflake.com/en/user-guide/ui-snowsight/notebooks-in-workspaces/notebooks-in-workspaces-compute-setup)
 
-### Virtual warehouse credit usage
+<a id="virtual-warehouse-credit-usage"></a>
 
-For exam reasoning, use this approximation:
+### 2.3.3 Virtual warehouse credit usage
+
+- **Remember:** Use rate x actual running time x active clusters, with a minimum charge for each start/resume.
+
+- For exam reasoning, use this approximation:
 
 ```text
 Warehouse credits ≈ credit rate for warehouse size
@@ -1070,11 +1388,12 @@ Warehouse credits ≈ credit rate for warehouse size
 - Warehouses are billed by running time, including work performed after resume. Snowflake bills per second, with a 60-second minimum each time a warehouse starts.
 - Cloud-services credits are tracked separately from virtual-warehouse compute credits. Daily cloud-services use up to 10% of daily warehouse usage is not billed; usage above that allowance can be billed.
 
-**Exam trap:** “query ran for 20 seconds” does not always mean “only 20 seconds of warehouse cost.” Consider warehouse start-up, concurrent workload, and idle time before auto-suspend.
+- **Exam trap:** “query ran for 20 seconds” does not always mean “only 20 seconds of warehouse cost.” Consider warehouse start-up, concurrent workload, and idle time before auto-suspend.
 
 #### Credit calculation examples
 
-Use the credit rate supplied in the question or the current warehouse consumption table. For a standard warehouse, calculate each running interval and each cluster separately when they differ.
+- Use the credit rate supplied in the question or the current warehouse consumption table.
+- For a standard warehouse, calculate each running interval and each cluster separately when they differ.
 
 | Given | Calculation | Compute credits |
 | --- | --- | --- |
@@ -1082,11 +1401,14 @@ Use the credit rate supplied in the question or the current warehouse consumptio
 | Rate 4 credits/hour per cluster, two clusters for 15 minutes | `4 × 2 × 15 / 60` | `2` |
 | Rate 4 credits/hour, four separate 20-second runs, each followed by suspension | `4 × 4 × 60 / 3600` | Approximately `0.2667` because each start has a 60-second minimum. |
 
-If compute usage is 100 credits in a UTC billing day and cloud-services usage is 15, the 10-credit cloud-services allowance leaves 5 billable cloud-services credits. Dollar cost then depends on the applicable price per credit; storage and data transfer are separate cost categories. Savings are not guaranteed to scale linearly with warehouse size.
+- If compute usage is 100 credits in a UTC billing day and cloud-services usage is 15, the 10-credit cloud-services allowance leaves 5 billable cloud-services credits.
+- Dollar cost then depends on the applicable price per credit; storage and data transfer are separate cost categories.
+- Savings are not guaranteed to scale linearly with warehouse size.
 
 #### Reproduce the arithmetic in SQL
 
-The rate of 4 below is supplied for the exercise; it is not a universal rate for every warehouse type or generation. Each row assumes identical running intervals for its starts and clusters.
+- The rate of 4 below is supplied for the exercise; it is not a universal rate for every warehouse type or generation.
+- Each row assumes identical running intervals for its starts and clusters.
 
 ```sql
 WITH runs (scenario, hourly_rate, seconds_per_start, clusters, starts) AS (
@@ -1101,15 +1423,23 @@ SELECT scenario,
 FROM runs;
 ```
 
-Expected results are **2**, **2**, and approximately **0.2667** credits. Use the full running interval, including idle time, rather than just a query's execution time. Calculate intervals separately when cluster counts or rates change. For real usage, use metering records instead of this simplified exercise.
+- Expected results are **2**, **2**, and approximately **0.2667** credits.
+- Use the full running interval, including idle time, rather than just a query's execution time.
+- Calculate intervals separately when cluster counts or rates change.
+- For real usage, use metering records instead of this simplified exercise.
 
-[Reference: Understanding compute cost](https://docs.snowflake.com/en/user-guide/cost-understanding-compute)
+- [Reference: Understanding compute cost](https://docs.snowflake.com/en/user-guide/cost-understanding-compute)
 
-### `ACCOUNT_USAGE` schema
+<a id="account_usage-schema"></a>
 
-The shared `SNOWFLAKE` database contains `ACCOUNT_USAGE`, which provides historical account-monitoring and audit views. It is useful for trend analysis, chargeback/showback, and investigating account activity.
+### 2.3.4 `ACCOUNT_USAGE` schema
 
-Common views include:
+- **Remember:** Choose the view for the question and account for its visibility, retention, and latency.
+
+- The shared `SNOWFLAKE` database contains `ACCOUNT_USAGE`, which provides historical account-monitoring and audit views.
+- It is useful for trend analysis, chargeback/showback, and investigating account activity.
+
+- Common views include:
 
 | View | Use it for |
 | --- | --- |
@@ -1120,7 +1450,8 @@ Common views include:
 | `ACCESS_HISTORY` | Auditing data/object access where available. |
 | `SNOWPARK_CONTAINER_SERVICES_HISTORY` | Hourly compute-pool credits, separate from warehouse metering. |
 
-`ACCOUNT_USAGE` is historical, not real-time. Views have latency, so do not use it as the only control for an immediate incident response.
+- `ACCOUNT_USAGE` is historical, not real-time.
+- Views have latency, so do not use it as the only control for an immediate incident response.
 
 ```sql
 -- Find the virtual warehouses with the highest compute-credit use in the last 30 days.
@@ -1133,9 +1464,14 @@ GROUP BY warehouse_name
 ORDER BY compute_credits DESC;
 ```
 
-`CREDITS_USED` in `WAREHOUSE_METERING_HISTORY` includes compute and cloud-services usage. For the actual billed cloud-services adjustment, use the daily metering views rather than assuming hourly consumption equals the invoice.
+- `CREDITS_USED` in `WAREHOUSE_METERING_HISTORY` includes compute and cloud-services usage.
+- For the actual billed cloud-services adjustment, use the daily metering views rather than assuming hourly consumption equals the invoice.
 
-Access can be delegated through relevant `SNOWFLAKE` database roles such as `USAGE_VIEWER`, rather than using `ACCOUNTADMIN` for every report. `ACCOUNT_USAGE` historical views commonly retain a year of records, but latency and retention are view-specific. Information Schema functions often provide fresher, shorter-range results. `ACCESS_HISTORY` requires Enterprise or higher. Match the view to the question: login failure, query runtime, warehouse credits, and data access are different investigations.
+- Access can be delegated through relevant `SNOWFLAKE` database roles such as `USAGE_VIEWER`, rather than using `ACCOUNTADMIN` for every report.
+- `ACCOUNT_USAGE` historical views commonly retain a year of records, but latency and retention are view-specific.
+- Information Schema functions often provide fresher, shorter-range results.
+- `ACCESS_HISTORY` requires Enterprise or higher.
+- Match the view to the question: login failure, query runtime, warehouse credits, and data access are different investigations.
 
 #### Daily billed credits by service type
 
@@ -1155,9 +1491,13 @@ GROUP BY usage_date, service_type
 ORDER BY usage_date DESC, billed_credits DESC;
 ```
 
-The adjustment is typically negative. `CREDITS_BILLED` accounts for the adjustment, while consumed credits alone do not. Grouping by service type also exposes categories beyond warehouse compute. This is a credits report, not a complete dollar invoice including storage and transfer. The view can lag by up to three hours.
+- The adjustment is typically negative.
+- `CREDITS_BILLED` accounts for the adjustment, while consumed credits alone do not.
+- Grouping by service type also exposes categories beyond warehouse compute.
+- This is a credits report, not a complete dollar invoice including storage and transfer.
+- The view can lag by up to three hours.
 
-[Reference: METERING_DAILY_HISTORY](https://docs.snowflake.com/en/sql-reference/account-usage/metering_daily_history)
+- [Reference: METERING_DAILY_HISTORY](https://docs.snowflake.com/en/sql-reference/account-usage/metering_daily_history)
 
 #### Investigate slow queries and warehouse queuing
 
@@ -1174,13 +1514,17 @@ ORDER BY total_elapsed_time DESC
 LIMIT 20;
 ```
 
-The source timing columns use milliseconds. High overload queue time suggests concurrency pressure; long execution time calls for query/profile investigation. Neither number alone proves that resizing is the right fix. Do not treat query elapsed time as its exact share of warehouse credits: concurrent queries and idle time complicate attribution.
+- The source timing columns use milliseconds.
+- High overload queue time suggests concurrency pressure; long execution time calls for query/profile investigation.
+- Neither number alone proves that resizing is the right fix.
+- Do not treat query elapsed time as its exact share of warehouse credits: concurrent queries and idle time complicate attribution.
 
-[Reference: QUERY_HISTORY columns](https://docs.snowflake.com/en/sql-reference/account-usage/query_history)
+- [Reference: QUERY_HISTORY columns](https://docs.snowflake.com/en/sql-reference/account-usage/query_history)
 
 #### Find recent failed SQL statements
 
-For a fresher, shorter-range investigation, use an Information Schema function. This example needs access to the `analytics` database and visibility of the relevant queries:
+- For a fresher, shorter-range investigation, use an Information Schema function.
+- This example needs access to the `analytics` database and visibility of the relevant queries:
 
 ```sql
 SELECT query_id, user_name, start_time,
@@ -1194,9 +1538,12 @@ WHERE error_code IS NOT NULL
 ORDER BY start_time DESC;
 ```
 
-The function supports a seven-day window. The result limit is applied before the outer filter, so even `10000` can omit older matches in a busy account. Missing results can also reflect insufficient privileges. For authentication failures before a SQL session exists, use `LOGIN_HISTORY` instead.
+- The function supports a seven-day window.
+- The result limit is applied before the outer filter, so even `10000` can omit older matches in a busy account.
+- Missing results can also reflect insufficient privileges.
+- For authentication failures before a SQL session exists, use `LOGIN_HISTORY` instead.
 
-[Reference: QUERY_HISTORY table functions](https://docs.snowflake.com/en/sql-reference/functions/query_history)
+- [Reference: QUERY_HISTORY table functions](https://docs.snowflake.com/en/sql-reference/functions/query_history)
 
 #### Measure compute-pool credits separately
 
@@ -1209,9 +1556,12 @@ GROUP BY compute_pool_name
 ORDER BY compute_pool_credits DESC;
 ```
 
-Use this for pool-level consumption, including pools hosting notebook services. It does not separate every individual notebook's cost within a shared pool. The view can lag by up to three hours; use `SHOW COMPUTE POOLS` and `SHOW SERVICES` for current state. Warehouse and pool reports also do not cover every other serverless feature's cost.
+- Use this for pool-level consumption, including pools hosting notebook services.
+- It does not separate every individual notebook's cost within a shared pool.
+- The view can lag by up to three hours; use `SHOW COMPUTE POOLS` and `SHOW SERVICES` for current state.
+- Warehouse and pool reports also do not cover every other serverless feature's cost.
 
-[Reference: SNOWPARK_CONTAINER_SERVICES_HISTORY](https://docs.snowflake.com/en/sql-reference/account-usage/snowpark_container_services_history)
+- [Reference: SNOWPARK_CONTAINER_SERVICES_HISTORY](https://docs.snowflake.com/en/sql-reference/account-usage/snowpark_container_services_history)
 
 #### Delegate access to usage reports
 
@@ -1225,11 +1575,32 @@ GRANT DATABASE ROLE SNOWFLAKE.USAGE_VIEWER TO ROLE cost_reviewer;
 GRANT ROLE cost_reviewer TO USER REVIEWER_USER;
 ```
 
-Use `COST_REVIEWER` for the metering views exposed through `USAGE_VIEWER`. Other query/audit views may require different `SNOWFLAKE` database roles. Running report queries also requires warehouse `USAGE`. Access to all Snowsight cost-management screens can require additional application-role grants; the SQL grant above is for the database-role usage reports.
+- Use `COST_REVIEWER` for the metering views exposed through `USAGE_VIEWER`.
+- Other query/audit views may require different `SNOWFLAKE` database roles.
+- Running report queries also requires warehouse `USAGE`.
+- Access to all Snowsight cost-management screens can require additional application-role grants; the SQL grant above is for the database-role usage reports.
 
-[Reference: SNOWFLAKE database roles](https://docs.snowflake.com/en/sql-reference/snowflake-db-roles)
+- [Reference: SNOWFLAKE database roles](https://docs.snowflake.com/en/sql-reference/snowflake-db-roles)
 
 ---
+
+## Exercise checkpoints and troubleshooting
+
+| Exercise | Expected result | If it differs, check |
+| --- | --- | --- |
+| Role inheritance | Analyst can read 3 orders totaling 350. | Child-to-parent grant direction and warehouse/database/schema access. |
+| Future grants | New future-granted table is readable; earlier table needs backfill. | Whether ALL ran before creation, and whether another role supplies access. |
+| APAC policy test | 2 rows with masked emails. | Primary role, secondary roles NONE, policy attachment, inherited full-access roles. |
+| Full-access policy test | 3 rows with original synthetic emails. | The role name in IS_ROLE_IN_SESSION and source SELECT grants. |
+| Plain tag test | Removing the direct mask reveals the synthetic email in still-permitted rows. | A plain tag is only metadata; row access remains a separate control. |
+| Credit calculations | 3 credits for three 15-minute clusters at 4/hour; daily total 315 for the last scenario. | Units, active intervals, per-resume minimums, and warehouse-only cloud-services allowance. |
+| Recent monitoring | Current session queries appear when visible. | Actual client session and history latency; an empty ACCOUNT_USAGE result can be normal just after a run. |
+
+- **Do not diagnose a policy with ACCOUNTADMIN as your only test.** Use the intended reader role and account for inheritance.
+- **An EXISTS alert condition checks whether a row exists**, not whether a returned COUNT value is positive.
+- **One table has one row access policy**, which can combine multiple region/role conditions.
+- A directly attached column masking policy takes precedence over tag-based masking for that column under the documented rules.
+- Stop the lab and any optional scheduled/background services you enabled.
 
 ## Scenario Decision Guide
 
@@ -1248,7 +1619,9 @@ Use `COST_REVIEWER` for the metering views exposed through `USAGE_VIEWER`. Other
 
 ## What to Recall
 
-Try these closed-book before rereading the answers.
+
+
+- Try these closed-book before rereading the answers.
 
 1. What are the three privileges needed to select from `database.schema.table`?
 2. How do RBAC and DAC differ in Snowflake?
@@ -1282,8 +1655,60 @@ Try these closed-book before rereading the answers.
 30. Calculate credits for two clusters running 45 minutes at 8 credits/hour each. What happens if their run times differ?
 31. Which statement cancels active queries: `SUSPEND` or `SUSPEND_IMMEDIATE`?
 32. How do a resource-monitor quota, a cost budget, and a differential-privacy budget differ?
+33. How do ALL and FUTURE grants differ for existing versus newly created objects?
+34. How does CURRENT_ROLE differ from IS_ROLE_IN_SESSION in a policy?
+35. What must happen before dropping a masking policy attached to a column?
+36. Why can EXISTS(SELECT COUNT(*) ...) be true when the count is zero?
+37. Does creating a resource monitor automatically assign it, and can warehouses share its quota?
+38. Why can the total account bill exceed the credits shown for one warehouse?
+39. What does MFA_ENROLLMENT = REQUIRED_PASSWORD_ONLY mean?
+40. Which key stays in the application, and which key is registered on the Snowflake user?
 
----
+<details>
+<summary>Open the recall answer key</summary>
+
+1. USAGE on the database, USAGE on the schema, and SELECT on the table; warehouse-backed execution also needs warehouse USAGE.
+2. RBAC grants privileges through roles. DAC gives an object owner grant authority, subject to managed-access rules.
+3. It is broad administrative authority and should be restricted; use purpose-specific roles for ordinary work.
+4. Account roles can hold account-wide and database-object privileges; database roles are limited to their containing database.
+5. No. They cannot be selected as primary/secondary roles; these labs grant a database role to an account role.
+6. One primary role determines creation authority/ownership; active secondary roles can contribute to most other authorized operations.
+7. The primary role, using privileges it holds or inherits.
+8. Grant decisions: schema owner or MANAGE GRANTS role administers grants instead of individual object owners.
+9. For the applicable general precedence, security integration over user over account; token-flow exceptions are documented separately.
+10. A supported non-interactive method such as key-pair, configured OAuth, or workload identity federation; choose by the client and environment.
+11. Masking transforms returned column values; row access filters rows.
+12. It supplies classification/metadata; enforcement requires an associated policy or other configured control.
+13. They limit cumulative privacy exposure from analytical queries, using differential privacy and privacy budgets.
+14. Security-posture misconfigurations and remediation guidance through scanners; findings still require action.
+15. A customer-managed cloud key participates with Snowflake-managed key material in the composite protection hierarchy.
+16. Provide owner privileges and resume it for its schedule, or request a one-time EXECUTE ALERT run; creation leaves it suspended.
+17. An alert detects a condition and runs an action; an integration configures how a notification destination is reached.
+18. Warehouse compute and supporting cloud-services usage count toward monitor quotas before adjustment; it does not suspend Snowpipe, compute pools, AI, or all serverless services.
+19. Multiply the rate by each running interval and active cluster count; apply per-start minimums and sum unequal intervals separately.
+20. Views are historical and have view-specific ingestion latency and permissions; use fresher/live tools where required.
+21. Upward: parent inherits child. Child does not inherit parent.
+22. Role ownership administers the role; GRANT ROLE establishes privilege inheritance.
+23. USAGE on the warehouse, independently from data-object access.
+24. SSO federates identity; MFA adds another factor; OAuth presents an issued token; key pairs prove possession of the private key, which stays protected in the application.
+25. organization-account is the readable identifier. CURRENT_ACCOUNT returns an account locator; name functions return the names.
+26. Suitable LOG_LEVEL/TRACE_LEVEL and a configured active event table, with rights to emit/read telemetry; apply supported handler instrumentation.
+27. Rotation changes active key versions while retaining older decryption capability; periodic rekeying re-encrypts older data with newer keys.
+28. Replication groups synchronize supported state; failover groups also support promotion. RPO is tolerated data loss; RTO is tolerated recovery time.
+29. Upstream identifies sources; downstream identifies potentially affected consumers, covering supported dependency and data-movement relationships.
+30. 2 x 0.75 x 8 = 12 credits. If runtimes differ, calculate each cluster interval and sum.
+31. SUSPEND_IMMEDIATE cancels active statements; SUSPEND allows running statements to finish.
+32. Resource monitor: warehouse credit quota/actions. Cost budget: expected spend/notifications and configured custom actions. Privacy budget: cumulative privacy loss.
+33. ALL applies to current objects. FUTURE applies to later creations and does not backfill existing tables/views.
+34. CURRENT_ROLE reports the primary role name; IS_ROLE_IN_SESSION checks active role-hierarchy membership.
+35. Unset the column masking policy first. A tag without its own associated masking policy will not replace that protection.
+36. COUNT(*) returns one result row even when its value is zero. EXISTS sees that row; filter the count with HAVING or use SELECT 1 WHERE a qualifying source row exists.
+37. No. The monitor must be assigned; several warehouses can share its combined quota, and account-level coverage can also apply.
+38. Convert credits using the applicable contract price; add pool/serverless, storage, and transfer categories as applicable. One warehouse total is not the entire account bill.
+39. It requires MFA enrollment for human password users; it does not restrict all login methods to passwords.
+40. Register the public key with the user and protect the private key in the client. Named key-pair management is available alongside legacy RSA_PUBLIC_KEY slots.
+
+</details>
 
 ## Official References
 

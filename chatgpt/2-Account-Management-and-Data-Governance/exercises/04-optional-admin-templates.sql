@@ -1,0 +1,59 @@
+-- OPTIONAL TEMPLATES ONLY: every statement is commented intentionally.
+-- Choose and run one block after checking its prerequisites in the README.
+-- These are not a complete SSO/cloud/email/DR deployment or a run-all exercise.
+
+-- A. ACCOUNTADMIN: a resource monitor assigned ONLY to the lab warehouse.
+-- USE ROLE ACCOUNTADMIN;
+-- CREATE RESOURCE MONITOR D2_STUDY_LIMIT
+--   WITH CREDIT_QUOTA = 5 FREQUENCY = MONTHLY START_TIMESTAMP = IMMEDIATELY
+--   TRIGGERS ON 80 PERCENT DO NOTIFY ON 100 PERCENT DO SUSPEND;
+-- ALTER WAREHOUSE D2_STUDY_WH SET RESOURCE_MONITOR = D2_STUDY_LIMIT;
+-- SHOW RESOURCE MONITORS LIKE 'D2_STUDY_LIMIT';
+-- No account-level assignment; serverless features remain outside this monitor.
+-- Stop using the optional monitor when finished:
+-- ALTER WAREHOUSE D2_STUDY_WH UNSET RESOURCE_MONITOR;
+-- DROP RESOURCE MONITOR D2_STUDY_LIMIT;
+
+-- B. Schema-level authentication policy: CREATE/DESCRIBE without activation.
+-- Requires CREATE AUTHENTICATION POLICY on D2_STUDY.POLICIES.
+-- CREATE AUTHENTICATION POLICY D2_STUDY.POLICIES.PASSWORD_MFA
+--   MFA_ENROLLMENT = 'REQUIRED_PASSWORD_ONLY';
+-- DESCRIBE AUTHENTICATION POLICY D2_STUDY.POLICIES.PASSWORD_MFA;
+-- Creating a policy alone does not enforce it. Do not apply a test login policy
+-- to your administrator or account while following an unattended script.
+-- DROP AUTHENTICATION POLICY D2_STUDY.POLICIES.PASSWORD_MFA;
+
+-- C. Network policy definition using a DOCUMENTATION address, not a real IP.
+-- Requires authorized network-policy/rule administration. No assignment here.
+-- CREATE NETWORK RULE D2_STUDY.POLICIES.EXAMPLE_OFFICE
+--   MODE = INGRESS TYPE = IPV4 VALUE_LIST = ('203.0.113.0/24');
+-- CREATE NETWORK POLICY D2_STUDY_OFFICE
+--   ALLOWED_NETWORK_RULE_LIST = ('D2_STUDY.POLICIES.EXAMPLE_OFFICE');
+-- DESCRIBE NETWORK POLICY D2_STUDY_OFFICE;
+-- DROP NETWORK POLICY D2_STUDY_OFFICE;
+-- DROP NETWORK RULE D2_STUDY.POLICIES.EXAMPLE_OFFICE;
+
+-- D. A warehouse-backed alert that records a finding locally; no real email.
+-- Requires CREATE ALERT on schema, EXECUTE ALERT on account, warehouse/data
+-- privileges for its owner. Creation leaves the alert suspended.
+-- USE ROLE SYSADMIN;
+-- USE DATABASE D2_STUDY;
+-- USE SCHEMA LAB;
+-- CREATE TABLE ALERT_LOG (CHECKED_AT TIMESTAMP_LTZ, MESSAGE STRING);
+-- CREATE ALERT ORDERS_PRESENT
+--   WAREHOUSE = D2_STUDY_WH SCHEDULE = '5 MINUTE'
+--   IF (EXISTS(SELECT 1 FROM D2_STUDY.LAB.ORDERS WHERE AMOUNT > 150))
+--   THEN INSERT INTO D2_STUDY.LAB.ALERT_LOG
+--     SELECT CURRENT_TIMESTAMP(), 'An order exceeds 150';
+-- EXECUTE ALERT ORDERS_PRESENT;
+-- Inspect ALERT_HISTORY and ALERT_LOG after the one-time run completes.
+-- ALTER ALERT ORDERS_PRESENT SUSPEND;
+-- DROP ALERT ORDERS_PRESENT;
+-- A serverless alert omits WAREHOUSE and additionally needs EXECUTE MANAGED ALERT.
+
+-- E. Enterprise+ lineage inspection; captured lineage can lag.
+-- SELECT * FROM TABLE(SNOWFLAKE.CORE.GET_LINEAGE(
+--   'D2_STUDY.LAB.ORDERS','TABLE','DOWNSTREAM',2));
+-- No synthetic result is guaranteed until a supported downstream operation exists.
+-- See the note for separate replication, privacy, Trust Center, email, and
+-- customer-managed encryption setup. Those features need their real prerequisites.

@@ -1,0 +1,27 @@
+USE ROLE SYSADMIN;
+-- The basic labs do not enable paid background optimization services.
+-- If you enabled an optional feature, remove it before stopping compute:
+-- ALTER TABLE D4_STUDY.LAB.PERF_EVENTS DROP SEARCH OPTIMIZATION;
+-- ALTER TABLE D4_STUDY.LAB.PERF_EVENTS SUSPEND RECLUSTER;
+-- ALTER TABLE D4_STUDY.LAB.PERF_EVENTS DROP CLUSTERING KEY;
+-- DROP MATERIALIZED VIEW IF EXISTS D4_STUDY.LAB.REGIONAL_TOTAL_MV;
+-- Avoid edition-specific warehouse ALTER unless you enabled QAS yourself:
+-- ALTER WAREHOUSE D4_STUDY_WH SET ENABLE_QUERY_ACCELERATION = FALSE;
+-- Check state so this also works after idle auto-suspension.
+EXECUTE IMMEDIATE $$
+DECLARE
+  LAB_WH_STATE STRING;
+BEGIN
+  SHOW WAREHOUSES LIKE 'D4_STUDY_WH';
+  SELECT MAX("state") INTO :LAB_WH_STATE
+    FROM TABLE(RESULT_SCAN(LAST_QUERY_ID()));
+  IF (LAB_WH_STATE = 'STARTED') THEN
+    ALTER WAREHOUSE D4_STUDY_WH SUSPEND;
+  END IF;
+END;
+$$;
+ALTER SESSION UNSET USE_CACHED_RESULT;
+ALTER SESSION UNSET QUERY_TAG;
+-- The lab tables/files remain for review. Optional final deletion:
+-- DROP DATABASE D4_STUDY;
+-- DROP WAREHOUSE D4_STUDY_WH;
