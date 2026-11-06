@@ -156,13 +156,18 @@ COPY INTO D3_CLEAN_ORDERS
     SELECT
       f.$1::NUMBER,
       TRIM(f.$2),
-      UPPER(f.$3),
+      f.$3::STRING,
       TRY_TO_DECIMAL(f.$4, 12, 2),
       f.$5::DATE,
       METADATA$FILENAME
     FROM @D3_FILES/input/bad/ f
   )
   FILE_FORMAT = (FORMAT_NAME = 'D3_CSV_LOAD');
+
+-- UPPER is not supported inside a COPY load transformation.
+-- Apply it after loading, in a normal SQL statement.
+UPDATE D3_CLEAN_ORDERS
+SET REGION = UPPER(REGION);
 
 SELECT ORDER_ID, AMOUNT
 FROM D3_CLEAN_ORDERS

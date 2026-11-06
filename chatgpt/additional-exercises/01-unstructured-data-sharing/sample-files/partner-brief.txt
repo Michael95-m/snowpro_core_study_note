@@ -1,0 +1,6 @@
+Partner shipping brief
+
+The sample shipment arrives on Monday morning. The delivery team will bring
+two boxes of training materials to the front desk.
+
+This is synthetic data approved for the Snowflake sharing lab.

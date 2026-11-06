@@ -576,6 +576,9 @@ References: [COPY validation and error options](https://docs.snowflake.com/en/sq
   4. Extract fields from JSON.
   5. Add supported file metadata.
 - This is a **limited transformation query**, not a full SQL transformation pipeline.
+- Only supported functions can be used inside the load transformation:
+  - `TRIM` and `TRY_TO_DECIMAL` are supported.
+  - `UPPER` and `LOWER` are not supported; apply them after loading.
 - Do not use these inside the load transformation:
   - `JOIN`.
   - `GROUP BY` / aggregations.
@@ -601,13 +604,17 @@ COPY INTO orders_with_source
     SELECT
       f.$1::NUMBER,
       TRIM(f.$2),
-      UPPER(f.$3),
+      f.$3::STRING,
       TRY_TO_DECIMAL(f.$4, 12, 2),
       f.$5::DATE,
       METADATA$FILENAME
     FROM @orders_stage/incoming/ f
   )
   FILE_FORMAT = (FORMAT_NAME = 'csv_orders_format');
+
+-- Apply UPPER after loading, in a normal SQL statement.
+UPDATE orders_with_source
+SET region = UPPER(region);
 ```
 
 - `TRY_TO_DECIMAL` returns SQL `NULL` when conversion fails:

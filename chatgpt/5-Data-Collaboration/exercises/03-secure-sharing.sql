@@ -50,6 +50,21 @@ FROM D5_PARTNER_ORDERS_V;
 -- SELECT * FROM D5_IMPORTED_ORDERS.LAB.D5_PARTNER_ORDERS_V ORDER BY ORDER_ID;
 -- Expected: the same two approved rows.
 
+-- OPTIONAL EXTENSION. Share data from two provider databases in one direct share.
+-- Provider: use the existing D5_LAB_ORDERS_SHARE with USAGE on D5_STUDY and D5_STUDY.LAB.
+-- Substitute your approved source table if INTL_DB.PUBLIC.ORDERS is not set up.
+-- The example source must have ORDER_ID and AMOUNT columns.
+-- If the secure view already exists, start with the grants.
+-- CREATE SECURE VIEW D5_STUDY.LAB.D5_PARTNER_INTL_ORDERS_V AS
+-- SELECT ORDER_ID, AMOUNT
+-- FROM INTL_DB.PUBLIC.ORDERS;
+-- GRANT REFERENCE_USAGE ON DATABASE INTL_DB TO SHARE D5_LAB_ORDERS_SHARE;
+-- GRANT SELECT ON VIEW D5_STUDY.LAB.D5_PARTNER_INTL_ORDERS_V TO SHARE D5_LAB_ORDERS_SHARE;
+-- SHOW GRANTS TO SHARE D5_LAB_ORDERS_SHARE;
+
+-- Consumer: use the same imported database and query the new view.
+-- SELECT * FROM D5_IMPORTED_ORDERS.LAB.D5_PARTNER_INTL_ORDERS_V;
+
 -- OPTIONAL CLEANUP. Use the respective admin roles in the correct accounts.
 -- Consumer: DROP DATABASE IF EXISTS D5_IMPORTED_ORDERS;
 -- Provider: DROP SHARE IF EXISTS D5_LAB_ORDERS_SHARE;

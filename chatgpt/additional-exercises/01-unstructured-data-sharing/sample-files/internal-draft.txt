@@ -1,0 +1,6 @@
+Internal planning draft
+
+The training team is comparing two sample delivery schedules. This file is
+staged alongside the partner brief to demonstrate filtering.
+
+This is synthetic data reserved for the provider-side lab check.

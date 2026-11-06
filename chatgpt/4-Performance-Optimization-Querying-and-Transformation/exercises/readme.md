@@ -20,6 +20,8 @@
 
 ## A small lab is not a performance benchmark
 
+- For a larger comparison, use the [large-data performance lab](../../additional-exercises/02-large-data-performance/readme.md). It has a 100,000-row first run and a five-million-row run for Query Profile practice.
+
 1. Correctness checkpoints have known answers; compare those directly.
 2. Runtime, cache hits, spill, partitions scanned, and acceleration depend on the real plan and environment.
 3. The fixture may fit in very few micro-partitions, so weak/strong pruning differences may be too small to measure.

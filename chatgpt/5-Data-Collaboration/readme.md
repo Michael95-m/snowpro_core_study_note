@@ -2,7 +2,8 @@
 
 - **Exam scope.** The supplied [SnowPro Core C03 study guide](../../SnowProCoreStudyGuideC03.pdf) assigns Domain 5 **10%**. See pages 5 and 11.
 - **Study method.** Read a numbered topic, explain its **Remember** line aloud, then try the related SQL and check the expected result.
-- [SQL exercises and checkpoints](exercises/readme.md) · [Scenario decision guide](#scenario-decision-guide) · [What to Recall](#what-to-recall)
+- [SQL exercises and checkpoints](exercises/readme.md) · [Share data from multiple databases](#share-data-from-multiple-databases-in-one-direct-share) · [Scenario decision guide](#scenario-decision-guide) · [What to Recall](#what-to-recall)
+- [25-question Domain 5 quiz](practice/domain-5-qa.md) · [Additional lab on sharing unstructured files](../additional-exercises/01-unstructured-data-sharing/readme.md)
 
 | C03 objective | Topics covered |
 | --- | --- |
@@ -129,7 +130,49 @@ A reader account can help a customer who has no Snowflake account query the prov
 4. **Consumer user.** Run a query with a role that has both the shared data access and `USAGE` on a consumer warehouse. [Provider workflow](https://docs.snowflake.com/en/user-guide/data-sharing-provider) · [Consumer workflow](https://docs.snowflake.com/en/user-guide/data-share-consumers)
 
 - `SHOW SHARES` lets you inspect visible inbound or outbound shares. Delegated administrators need the applicable privileges to create shares, add targets, import databases, and grant access. [Share administration privileges](https://docs.snowflake.com/en/user-guide/security-access-privileges-shares)
-- For a secure view that references objects in another database, the provider may need to grant `REFERENCE_USAGE` on each additional referenced database before granting `SELECT` on the view to the share. Treat that as a separate setup from the one-database lab. [Grant privileges to a share](https://docs.snowflake.com/en/sql-reference/sql/grant-privilege-share)
+
+#### Share data from multiple databases in one direct share
+
+**Remember.** One direct share can expose data from several provider databases through secure views in one shared database. The consumer imports one database and queries those views from there.
+
+In this example, follow the data from the source table to the consumer's query.
+
+1. **`INTL_DB.PUBLIC.ORDERS`** holds the original rows in the provider account.
+2. **`D5_STUDY.LAB.D5_PARTNER_INTL_ORDERS_V`** is the secure view the provider adds to the existing share.
+3. **`D5_IMPORTED_ORDERS.LAB.D5_PARTNER_INTL_ORDERS_V`** is the same shared view as seen by the consumer.
+
+| Grant | Where it goes |
+| --- | --- |
+| `USAGE` | On the one database that contains the shared views, and on the schemas that contain them |
+| `REFERENCE_USAGE` | On each additional database that the views read from |
+| `SELECT` | On each cross-database secure view |
+
+Grant `REFERENCE_USAGE` directly to the share **before** granting `SELECT` on the view. Database roles are scoped to one database, so use direct grants to the share for cross-database views. [Snowflake's multi-database sharing guide](https://docs.snowflake.com/en/user-guide/data-sharing-multiple-db)
+
+**Provider account.** This example extends `D5_LAB_ORDERS_SHARE`, which already has `USAGE` on `D5_STUDY` and `D5_STUDY.LAB`. Assume `INTL_DB.PUBLIC.ORDERS` exists in the same provider account and has `ORDER_ID` and `AMOUNT` columns. Select only the columns and rows you intend to expose.
+
+If you already created the secure view, start with the grants. The [secure sharing SQL exercise](exercises/03-secure-sharing.sql) also includes these steps.
+
+~~~sql
+CREATE SECURE VIEW D5_STUDY.LAB.D5_PARTNER_INTL_ORDERS_V AS
+SELECT ORDER_ID, AMOUNT
+FROM INTL_DB.PUBLIC.ORDERS;
+
+GRANT REFERENCE_USAGE ON DATABASE INTL_DB
+  TO SHARE D5_LAB_ORDERS_SHARE;
+
+GRANT SELECT ON VIEW D5_STUDY.LAB.D5_PARTNER_INTL_ORDERS_V
+  TO SHARE D5_LAB_ORDERS_SHARE;
+
+SHOW GRANTS TO SHARE D5_LAB_ORDERS_SHARE;
+~~~
+
+**Consumer account.** In `SHARE_LAB`, use a role with access to the share and a consumer warehouse. Both views are available through the same imported database. Replace `D5_IMPORTED_ORDERS` if you chose a different name. [Consuming a direct share](https://docs.snowflake.com/en/user-guide/data-share-consumers)
+
+~~~sql
+SELECT * FROM D5_IMPORTED_ORDERS.LAB.D5_PARTNER_ORDERS_V;
+SELECT * FROM D5_IMPORTED_ORDERS.LAB.D5_PARTNER_INTL_ORDERS_V;
+~~~
 
 ### 5.2.3 Sharing versus resharing
 
@@ -189,6 +232,7 @@ A reader account can help a customer who has no Snowflake account query the prov
 | A second account needs a read-only copy of a database | Replication | A refresh updates the copy |
 | A standby account must become writable after an outage | Failover group | Promotion changes which group is primary |
 | An approved same-region partner needs a live read-only view | Direct share with a secure view | Provider controls the rows and columns exposed |
+| One share must expose approved data from two provider databases | Secure views in one shared database and `REFERENCE_USAGE` on the other | Consumer queries both views through one imported database |
 | A partner lacks its own Snowflake account | Reader account | Provider provisions it and pays for its compute |
 | Partners need audience overlap counts with controlled inputs and outputs | Data Clean Rooms | They need an approved joint analysis |
 | Selected customers in another region need a product | Private listing with supported auto-fulfillment | Distribution is targeted across regions |
@@ -213,13 +257,14 @@ A reader account can help a customer who has no Snowflake account query the prov
 10. When do you grant `IMPORTED PRIVILEGES` and when do you grant an imported database role?
 11. What can the consumer reshare from a direct share? How does a listing change that decision?
 12. How do you expose selected rows and columns to a partner? When is a clean room a better fit?
+13. How do you expose data from two provider databases through one direct share?
 
 ### 5.3 Marketplace, listings, and Native Apps
 
-13. When would you pick a private listing over a direct share or public listing?
-14. What does Cross-Cloud Auto-Fulfillment do?
-15. Which Native App object belongs to the provider, and what gets created on installation?
-16. What are the jobs of the manifest and setup script?
+14. When would you pick a private listing over a direct share or public listing?
+15. What does Cross-Cloud Auto-Fulfillment do?
+16. Which Native App object belongs to the provider, and what gets created on installation?
+17. What are the jobs of the manifest and setup script?
 
 <details>
 <summary>Answer key</summary>
@@ -236,9 +281,10 @@ A reader account can help a customer who has no Snowflake account query the prov
 10. Use `IMPORTED PRIVILEGES` for objects granted directly to the share. Use the shared database role when the provider published access through database roles.
 11. Under the current direct-share behavior, eligible data can be reshared through a secure view to accounts in the consumer's own organization and region. A listing needs provider-enabled resharing and can support other downstream targets depending on its configuration.
 12. Share a secure view for approved rows and columns. Use a clean room when participants need a controlled joint analysis, such as an approved overlap count.
-13. Pick a private listing for selected customers who need listing features. Pick a direct share for a direct same-region grant, or a public listing for broad Marketplace discovery.
-14. It fulfills an eligible listing's data product to consumer regions as needed.
-15. The provider creates and publishes an application package. Installation creates an application in the consumer account.
-16. The manifest describes configuration and identifies the setup script. The setup script creates or updates objects on installation or upgrade.
+13. Create the secure views in the shared database and grant `USAGE` on that database and their schemas. Grant `REFERENCE_USAGE` on each additional source database, then grant `SELECT` on the views directly to the share.
+14. Pick a private listing for selected customers who need listing features. Pick a direct share for a direct same-region grant, or a public listing for broad Marketplace discovery.
+15. It fulfills an eligible listing's data product to consumer regions as needed.
+16. The provider creates and publishes an application package. Installation creates an application in the consumer account.
+17. The manifest describes configuration and identifies the setup script. The setup script creates or updates objects on installation or upgrade.
 
 </details>
