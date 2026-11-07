@@ -154,3 +154,45 @@ SELECT * FROM D3_TASK_TARGET;
 ALTER TASK D3_PROCESS_NEW_ORDERS SUSPEND;
 -- A task already executing is not canceled merely by suspending its schedule.
 -- Check TASK_HISTORY before ending the session.
+
+-- 7. Prepare an upsert batch with repeated and out-of-order events.
+-- This separate example uses temporary tables to isolate the MERGE logic.
+-- EVENT_SEQ is the source's version for an order. LOAD_ID breaks ties
+-- between copies of the same event, which have identical amounts here.
+CREATE OR REPLACE TEMPORARY TABLE D3_EVENT_BATCH (
+  ORDER_ID NUMBER, EVENT_SEQ NUMBER, LOAD_ID NUMBER, AMOUNT NUMBER(12, 2)
+);
+CREATE OR REPLACE TEMPORARY TABLE D3_EVENT_TARGET (
+  ORDER_ID NUMBER, AMOUNT NUMBER(12, 2), LAST_EVENT_SEQ NUMBER
+);
+
+INSERT INTO D3_EVENT_TARGET VALUES (101, 100, 10), (102, 220, 20);
+INSERT INTO D3_EVENT_BATCH VALUES
+  (101, 12, 1001, 145), (101, 11, 1002, 130), (101, 12, 1003, 145),
+  (102, 19, 1004, 200), (103, 1, 1005, 30), (103, 1, 1006, 30);
+
+SELECT ORDER_ID, COUNT(*) AS INCOMING_ROWS
+FROM D3_EVENT_BATCH
+GROUP BY ORDER_ID
+HAVING COUNT(*) > 1
+ORDER BY ORDER_ID;
+-- Expected: 101 has 3 incoming rows; 103 has 2.
+
+MERGE INTO D3_EVENT_TARGET T
+USING (
+  SELECT ORDER_ID, EVENT_SEQ, AMOUNT
+  FROM D3_EVENT_BATCH
+  QUALIFY ROW_NUMBER() OVER (
+    PARTITION BY ORDER_ID ORDER BY EVENT_SEQ DESC, LOAD_ID DESC
+  ) = 1
+) S
+ON T.ORDER_ID = S.ORDER_ID
+WHEN MATCHED AND S.EVENT_SEQ > T.LAST_EVENT_SEQ THEN
+  UPDATE SET AMOUNT = S.AMOUNT, LAST_EVENT_SEQ = S.EVENT_SEQ
+WHEN NOT MATCHED THEN
+  INSERT (ORDER_ID, AMOUNT, LAST_EVENT_SEQ)
+  VALUES (S.ORDER_ID, S.AMOUNT, S.EVENT_SEQ);
+
+SELECT ORDER_ID, AMOUNT, LAST_EVENT_SEQ FROM D3_EVENT_TARGET ORDER BY ORDER_ID;
+-- Expected: (101, 145, 12), (102, 220, 20), (103, 30, 1).
+-- Run just the MERGE again to simulate a replay. The same three rows remain.

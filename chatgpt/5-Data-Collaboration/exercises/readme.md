@@ -12,7 +12,7 @@
 | --- | --- | --- |
 | 1 | [00-setup.sql](00-setup.sql) | Session uses `D5_STUDY.LAB` and `D5_STUDY_WH`. |
 | 2 | [01-time-travel-and-undrop.sql](01-time-travel-and-undrop.sql) | Before the delete, the table has 3 rows totaling **600**. The current and restored table has 2 rows totaling **400**. |
-| 3 | [02-zero-copy-cloning.sql](02-zero-copy-cloning.sql) | Both tables start at **300**. After independent writes, the source has 2 rows totaling **350** and the clone has 3 rows totaling **325**. |
+| 3 | [02-zero-copy-cloning.sql](02-zero-copy-cloning.sql) | After independent writes, the source totals **350** and the clone **325**. Then compare `SHOW GRANTS` on two new clones with and without `COPY GRANTS`. |
 | 4 | [03-secure-sharing.sql](03-secure-sharing.sql) | The private base has 3 rows. The secure view has orders **1 and 3**, exposes only approved columns, and totals **400**. |
 | 5 | [04-replication-and-collaboration.sql](04-replication-and-collaboration.sql) | Read your current account identity and work through which statements belong in each account. |
 | 6 | [99-stop-lab.sql](99-stop-lab.sql) | Warehouse is suspended. Study data stays available. |

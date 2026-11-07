@@ -13,8 +13,8 @@
 | 0 | [00-setup.sql](00-setup.sql) | `D4_STUDY.LAB`; 6 orders totaling 750; 100,000 inspection events. |
 | 1 | [01-query-diagnosis.sql](01-query-diagnosis.sql) | Cross join: 24 rows; duplicate-key join: 8 rows/900 total; correct join: 6 rows/750 total. |
 | 2 | [02-sql-and-optimization-choices.sql](02-sql-and-optimization-choices.sql) | Both date predicates return 3334 rows; UNION gives 1 APAC row, UNION ALL gives 3. |
-| 3 | [03-caching.sql](03-caching.sql) | Inspect final-result reuse separately from warehouse scan-cache metrics; timing/cache hits are observations, not guaranteed outcomes. |
-| 4 | [04-structured-and-semi-structured.sql](04-structured-and-semi-structured.sql) | 3 aggregate rows versus 6 window rows; latest IDs 2/4/5/6; FLATTEN 2 rows versus OUTER 3 rows. |
+| 3 | [03-caching.sql](03-caching.sql) | Use the query IDs to check the cache and partition details in Query Profile. |
+| 4 | [04-structured-and-semi-structured.sql](04-structured-and-semi-structured.sql) | 3 aggregate rows versus 6 window rows; July order counts 2/0/0 with the filter in ON; FLATTEN 2 rows versus OUTER 3 rows. |
 | 5 | [05-file-metadata-and-urls.sql](05-file-metadata-and-urls.sql) | One generated CSV inventory row and file-reference URLs; no document parsing. |
 | 99 | [99-stop-lab.sql](99-stop-lab.sql) | Warehouse suspended; session benchmark settings cleared. |
 
