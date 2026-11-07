@@ -71,7 +71,7 @@
 | --- | --- | --- |
 | [00-setup.sql](exercises/00-setup.sql) | A small warehouse, a lab database, a stage, and file formats. | Lab context is `D3_STUDY.LAB`. |
 | [01-file-loading-and-unloading.sql](exercises/01-file-loading-and-unloading.sql) | Generate sample files, validate, load, handle bad rows, transform, unload, and inspect file metadata. | Good load: 3 rows; partial bad-file load: 2 rows; skipped bad file: 0 rows. |
-| [02-streams-and-tasks.sql](exercises/02-streams-and-tasks.sql) | Stream offsets, updates/deletes, `MERGE`, rollback, and a triggered task. | `SELECT` keeps changes available; committed DML consumes them. |
+| [02-streams-and-tasks.sql](exercises/02-streams-and-tasks.sql) | Stream offsets, updates/deletes, rollback, a triggered task, and duplicate events in `MERGE`. | Committed DML consumes stream changes. The replay exercise keeps one current row per order. |
 | [03-dynamic-tables.sql](exercises/03-dynamic-tables.sql) | Create, inspect, suspend, and manually refresh a Dynamic Table. | APAC total changes from 150 to 175 after refresh. |
 | [04-schema-detection-and-evolution.sql](exercises/04-schema-detection-and-evolution.sql) | Infer a schema from CSV, then add a new column during loading. | The later file adds an `EMAIL` column. |
 | [99-stop-lab.sql](exercises/99-stop-lab.sql) | Stop lab scheduling and suspend the warehouse. | Lab data remains available for later review. |
@@ -1241,6 +1241,11 @@ WHERE METADATA$ACTION = 'INSERT';
 - Create **separate streams for independent consumers**:
   - One consumer's commit must not move another consumer's bookmark.
 
+**Worked example.** An incoming batch has two versions of order 101 and a retry of the newer event. Before `MERGE`, use `ROW_NUMBER()` with `QUALIFY` to keep one event per order, ordered by source version and then load ID. Compare the winning version with the version saved in the target. This prevents an older or repeated event from overwriting the current value.
+
+- Multiple source rows can produce a nondeterministic update when they match the same target row. Multiple unmatched source rows can each insert a copy.
+- In [exercise 02, step 7](exercises/02-streams-and-tasks.sql), predict what happens to orders 101, 102, and 103, then run just the `MERGE` again to check replay behavior. [Snowflake MERGE duplicate behavior](https://docs.snowflake.com/en/sql-reference/sql/merge)
+
 #### E. Staleness and checking for work
 
 - A stream needs source change history to interpret its offset.
@@ -2081,6 +2086,7 @@ Use these to check understanding after running the SQL yourself.
 - [ ] Committed `INSERT ... SELECT FROM stream` advances the offset.
 - [ ] I can identify the old/new records of a standard-stream update.
 - [ ] The exercise's `MERGE` leaves orders **1 = 125** and **3 = 300**.
+- [ ] The deduplicated batch updates **101 to 145**, keeps **102 at 220**, and inserts **103 once**. Replaying the batch leaves all three rows unchanged.
 - [ ] Rollback leaves order **4** available in the Stream.
 - [ ] A newly created Task is suspended.
 - [ ] I know which privilege is needed before the optional Task execution.

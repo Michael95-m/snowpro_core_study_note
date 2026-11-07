@@ -19,7 +19,7 @@ The [course chapter on storage, data protection, and sharing](../../study-notes/
 | --- | --- | --- |
 | [00-setup.sql](exercises/00-setup.sql) | Set up the lab database, schema, and X-Small warehouse | Context is `D5_STUDY.LAB` |
 | [01-time-travel-and-undrop.sql](exercises/01-time-travel-and-undrop.sql) | Query before a delete, then drop and recover a lab table | Historical total **600**. Current and restored totals **400** |
-| [02-zero-copy-cloning.sql](exercises/02-zero-copy-cloning.sql) | Clone a table and change each table independently | Source total **350**. Clone total **325** |
+| [02-zero-copy-cloning.sql](exercises/02-zero-copy-cloning.sql) | Clone a table, change it independently, and compare grants | Source total **350**. Clone total **325**. Each grant example produces a different reader |
 | [03-secure-sharing.sql](exercises/03-secure-sharing.sql) | Preview a restricted secure view and review the two-account sharing flow | View returns orders **1 and 3**, total **400** |
 | [04-replication-and-collaboration.sql](exercises/04-replication-and-collaboration.sql) | Inspect visible objects and walk through replication, failover, and Native App commands | Identify which commands run in the source and which run in the target |
 | [99-stop-lab.sql](exercises/99-stop-lab.sql) | Suspend the lab warehouse | Lab data stays available for review |
@@ -70,6 +70,15 @@ BEFORE (STATEMENT => '<query_id>');
 
 - Use a clone for a test environment or to inspect a past state before recovery. Ordinary changes to a standard table clone and its source create separate versions of the changed data. Shared micro-partitions may remain billed while a clone still references them. [CREATE CLONE](https://docs.snowflake.com/en/sql-reference/sql/create-clone) · [Storage for clones](https://docs.snowflake.com/en/user-guide/tables-storage-considerations)
 - For a new standalone table clone, `COPY GRANTS` carries explicit access grants from the source except `OWNERSHIP`. Without it, applicable future grants can apply. Database and schema cloning have separate rules for grants on the container and its children. Review external references and other object-specific behavior before using a clone as an isolated environment. [Clone grants and object behavior](https://docs.snowflake.com/en/user-guide/object-clone)
+
+**Worked example.** The source grants `SELECT` explicitly to `CLONE_SOURCE_READER`. The destination schema grants `SELECT` on future tables to `CLONE_FUTURE_READER`. Predict which of those roles can see each new clone's `SELECT` grant, then check with `SHOW GRANTS ON TABLE`.
+
+| New clone | Which of the two roles gets `SELECT` |
+| --- | --- |
+| `CLONE … COPY GRANTS` | `CLONE_SOURCE_READER`, from the source table |
+| `CLONE` without `COPY GRANTS` | `CLONE_FUTURE_READER`, from the destination schema |
+
+Run the grant comparison in [SQL exercise 02](exercises/02-zero-copy-cloning.sql). It uses database roles in the lab database. [Snowflake CREATE CLONE grant rules](https://docs.snowflake.com/en/sql-reference/sql/create-clone)
 
 ~~~sql
 CREATE TABLE D5_STUDY.LAB.D5_RECOVERY_SNAPSHOT
@@ -246,7 +255,7 @@ SELECT * FROM D5_IMPORTED_ORDERS.LAB.D5_PARTNER_INTL_ORDERS_V;
 2. When should you use `UNDROP`, and what happens if an active table already has the name?
 3. Which edition supports 30 days of Time Travel on a permanent table? Does an upgrade set the retention by itself?
 4. Which table types have Fail-safe? Who performs the recovery?
-5. What does a zero-copy clone share at creation? How do later writes behave?
+5. What does a zero-copy clone share at creation? How do later writes behave? How does `COPY GRANTS` change which grants a new table clone receives?
 6. How do `REFRESH` and `PRIMARY` differ? Which edition supports failover groups?
 7. If the last successful refresh captured source data through 10:00, what happens to later writes if the primary is lost at 10:08?
 
@@ -273,7 +282,7 @@ SELECT * FROM D5_IMPORTED_ORDERS.LAB.D5_PARTNER_INTL_ORDERS_V;
 2. Use it to restore a dropped object inside retention. Rename a same-named active table before restoring the dropped one.
 3. Enterprise or higher. Set the required retention on the permanent table or through the appropriate inherited configuration.
 4. Permanent table data has the 7-day Fail-safe period. Snowflake handles recovery. Transient and temporary tables have no Fail-safe.
-5. A standard table clone initially shares the existing micro-partitions. Writes to either table leave the other table's logical rows unchanged.
+5. A standard table clone initially shares the existing micro-partitions. Writes to either table leave the other table's logical rows unchanged. A new table clone with `COPY GRANTS` gets the source's explicit access grants except ownership. Omitting it allows the destination's applicable future grants to apply.
 6. `REFRESH` updates the read-only secondary. `PRIMARY` promotes a failover group. Failover groups require Business Critical or higher.
 7. Writes after the last captured point might be absent from the promoted target. That gap is relevant to RPO.
 8. Provider pays source storage, the standard consumer pays its own query compute, and the provider pays its reader account's query compute.

@@ -584,6 +584,16 @@ HAVING SUM(amount) > 1000;
 - The logical filtering order is **WHERE → GROUP BY / HAVING → window functions → QUALIFY**.
 - `QUALIFY` is particularly useful for selecting rows after calculating a window function.
 
+**Worked example.** A report must keep every customer and count their July orders. One customer placed two July orders, one ordered only in June, and one has never ordered.
+
+| Query choice | What the report shows |
+| --- | --- |
+| July filter in `LEFT JOIN … ON`, then `COUNT(o.order_id)` | Three customers with counts **2, 0, 0**. The unmatched rows have a `NULL` order ID. |
+| July filter in `LEFT JOIN … ON`, then `COUNT(*)` | Three customers with counts **2, 1, 1**. Each unmatched customer still contributes one joined row. |
+| July filter in `WHERE` after the `LEFT JOIN` | Only the customer with July orders appears. The date filter removes rows with a `NULL` order date and rows with June orders. |
+
+Run both versions in [SQL exercise 04](exercises/04-structured-and-semi-structured.sql). [Snowflake joins](https://docs.snowflake.com/en/user-guide/querying-joins) · [Snowflake COUNT](https://docs.snowflake.com/en/sql-reference/functions/count)
+
 <a id="ranking-deduplication-and-window-frames"></a>
 
 ### 4.4.4 Ranking, deduplication, and window frames
