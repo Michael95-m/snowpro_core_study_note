@@ -1,0 +1,5 @@
+profile.json
+*.p8
+*.pem
+*.pub
+__pycache__/

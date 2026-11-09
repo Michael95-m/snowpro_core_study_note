@@ -39,6 +39,7 @@
 - [Large-data performance lab](additional-exercises/02-large-data-performance/readme.md)
 - [Apache Iceberg query lab](additional-exercises/03-iceberg-query-lab/readme.md)
 - [Data Metric Functions practical test](additional-exercises/04-dmf-data-quality/readme.md)
+- [Snowpipe Streaming SDK and replay lab](additional-exercises/05-snowpipe-streaming-sdk/readme.md)
 
 ## Shared resources
 

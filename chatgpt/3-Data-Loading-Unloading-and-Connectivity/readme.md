@@ -76,6 +76,8 @@
 | [04-schema-detection-and-evolution.sql](exercises/04-schema-detection-and-evolution.sql) | Infer a schema from CSV, then add a new column during loading. | The later file adds an `EMAIL` column. |
 | [99-stop-lab.sql](exercises/99-stop-lab.sql) | Stop lab scheduling and suspend the warehouse. | Lab data remains available for later review. |
 
+- **Optional live SDK practice:** [bounded Snowpipe Streaming replay lab](../additional-exercises/05-snowpipe-streaming-sdk/readme.md). It uses a separate lab database, a private connection profile, and five source records; run it only after the basic SQL labs.
+
 ### 2. Know the exercise boundaries
 
 - Run the SQL yourself in a connected VS Code SQL editor or Snowsight.

@@ -16,6 +16,7 @@
 | 2 | [02-masking-row-access-and-tags.sql](02-masking-row-access-and-tags.sql) | **Enterprise+**; lab data and policy ownership. | APAC: 2 masked rows; full-access: 3 original rows; ordinary analyst: 0 rows. |
 | 3 | [03-monitoring-and-credit-math.sql](03-monitoring-and-credit-math.sql) | Setup; own-session history visibility. | 3 credits; 0.133333 credits for two short resumes at 4/hour; daily totals 105/100/210/315 for the named scenarios. |
 | Optional | [04-optional-admin-templates.sql](04-optional-admin-templates.sql) | Per-block privileges/features. | Commented templates for a lab monitor, unassigned policies, alert, and lineage. |
+| Optional | [05-data-lineage.sql](05-data-lineage.sql) | Enterprise+ and lineage visibility; setup. | Two CTAS steps form a movement chain; inspect downstream and upstream lineage after capture. |
 | 99 | [99-stop-lab.sql](99-stop-lab.sql) | Lab ownership. | Lab warehouse and optional alert are stopped; unrelated resources are untouched. |
 
 ## Read these distinctions before testing roles
@@ -37,6 +38,7 @@
 - **Replication/failover:** needs eligible real source/target accounts; read the note's two-account template.
 - **Trust Center, privacy domains, customer-managed keys, and SSO:** need their actual feature/account configuration; there is no fake local substitute.
 - **Historical views:** `ACCOUNT_USAGE` may lag or be hidden by privileges. Empty historical results are not a failed arithmetic checkpoint.
+- **Lineage lab:** the optional CTAS chain is runnable in the lab; `GET_LINEAGE` needs Enterprise+, `VIEW LINEAGE`, object access, and captured relationships. `VIEW LINEAGE` is granted to `PUBLIC` by default unless your administrator changed it. `OBJECT_DEPENDENCIES` is a narrower object-reference view and can lag.
 
 ## Stop and review
 
