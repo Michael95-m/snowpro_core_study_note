@@ -285,6 +285,7 @@ ALTER WAREHOUSE analytics_wh
 - QAS and search optimization can help the same query: search optimization reduces the partitions to read, then QAS can accelerate eligible remaining work.
 
 - QAS requires Enterprise or higher.
+- Snowflake enables QAS by default on Gen2 standard and multi-cluster warehouses; check the warehouse setting before treating `ALTER WAREHOUSE ... ENABLE_QUERY_ACCELERATION = TRUE` as a required setup step. [QAS documentation](https://docs.snowflake.com/en/user-guide/query-acceleration-service)
 - Set a finite `QUERY_ACCELERATION_MAX_SCALE_FACTOR` when testing; `0` means unlimited scale factor rather than disabled acceleration.
 - Eligibility and available service capacity determine benefit, so enabling QAS does not guarantee a speedup.
 
@@ -467,6 +468,7 @@ ALTER SESSION SET USE_CACHED_RESULT = TRUE;
 - Query-result caching is different from the warehouse data cache.
 
 - Result reuse can work across sessions and warehouses when all reuse and authorization conditions hold; suspending a warehouse does not clear persisted query results.
+- `RESULT_SCAN(query_id)` has a different access rule: for a manually run query, only the user who ran it can read that saved result, even after switching roles. A different user cannot fetch it with `RESULT_SCAN`, even with `ACCOUNTADMIN`. [RESULT_SCAN access rules](https://docs.snowflake.com/en/sql-reference/functions/result_scan)
 - Meeting the documented reuse conditions does not guarantee a cache hit. Non-deterministic functions such as `RANDOM()` and changes to underlying micro-partitions can prevent reuse.
 - `USE_CACHED_RESULT = FALSE` affects result reuse, not the warehouse's local data cache. Compare cold and warm runs separately when benchmarking.
 

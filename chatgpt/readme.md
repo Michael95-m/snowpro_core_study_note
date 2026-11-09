@@ -38,6 +38,7 @@
 - [Unstructured data sharing across two Snowflake accounts](additional-exercises/01-unstructured-data-sharing/readme.md)
 - [Large-data performance lab](additional-exercises/02-large-data-performance/readme.md)
 - [Apache Iceberg query lab](additional-exercises/03-iceberg-query-lab/readme.md)
+- [Data Metric Functions practical test](additional-exercises/04-dmf-data-quality/readme.md)
 
 ## Shared resources
 

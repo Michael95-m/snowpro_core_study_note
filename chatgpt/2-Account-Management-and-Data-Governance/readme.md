@@ -20,6 +20,7 @@
 - [2.1 Security Model and Principles](practice/01-security-model-and-principles-qa.md)
 - [2.2 Data Governance Features](practice/02-data-governance-features-qa.md)
 - [2.3 Monitoring and Cost Management](practice/03-monitoring-and-cost-management-qa.md)
+- [DMF hands-on test](../additional-exercises/04-dmf-data-quality/readme.md)
 
 ### The C03 coverage checklist
 
@@ -170,6 +171,7 @@ Object privileges → access roles → functional roles → users
 - Database roles cannot receive privileges on objects in a different database.
 - The common activation path used here grants the database role to an account role, which the user activates.
 - A database role cannot itself be selected by USE ROLE.
+- **Granting is different from activation:** the current `GRANT DATABASE ROLE` command reference allows `GRANT DATABASE ROLE analytics.mart_reader TO USER analyst_user`. The database role still cannot be selected with `USE ROLE` or `USE SECONDARY ROLES`. The account-role path below makes the session's authorization path explicit and is the recommended pattern for these labs. Some Snowflake guides still describe only that account-role path; the command reference is the source for current grant syntax. Test direct-user-grant behavior in your account before relying on it for access. [Grant syntax](https://docs.snowflake.com/en/sql-reference/sql/grant-database-role) · [Session role rules](https://docs.snowflake.com/en/user-guide/security-access-control-overview#authorization-through-primary-role-and-secondary-roles)
 
 <a id="role-inheritance-and-ownership"></a>
 

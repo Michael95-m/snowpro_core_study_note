@@ -1,0 +1,26 @@
+-- Use a role that can create lab objects. Replace COMPUTE_WH if needed.
+USE ROLE SYSADMIN;
+USE WAREHOUSE COMPUTE_WH;
+
+CREATE DATABASE IF NOT EXISTS D2_DMF_LAB;
+CREATE SCHEMA IF NOT EXISTS D2_DMF_LAB.LAB;
+
+-- Rerunning this statement resets only the lab table.
+CREATE OR REPLACE TABLE D2_DMF_LAB.LAB.CUSTOMERS (
+  CUSTOMER_ID NUMBER,
+  EMAIL VARCHAR,
+  REGION VARCHAR
+);
+
+INSERT INTO D2_DMF_LAB.LAB.CUSTOMERS (CUSTOMER_ID, EMAIL, REGION)
+VALUES
+  (1, 'a@example.com', 'APAC'),
+  (2, NULL, 'APAC'),
+  (3, 'c@example.com', 'EMEA'),
+  (3, 'd@example.com', 'EMEA'),
+  (5, NULL, 'APAC'),
+  (6, 'f@example.com', 'EMEA');
+
+SELECT *
+FROM D2_DMF_LAB.LAB.CUSTOMERS
+ORDER BY CUSTOMER_ID, EMAIL;
