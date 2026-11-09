@@ -107,6 +107,7 @@ apac_orders.show()  # Action: execute and display a small result.
   - Translation.
   - Text generation.
 - Exact function names and model availability can change.
+- For a staged PDF, `AI_PARSE_DOCUMENT` can extract its content from a `FILE` value. The [Domain 4 document example](../4-Performance-Optimization-Querying-and-Transformation/readme.md#read-the-contents-of-a-staged-document) shows how `DIRECTORY`, `TO_FILE`, and parsing fit together.
 
 ```sql
 -- Requires access to the relevant Cortex function/model in your account.
@@ -229,6 +230,7 @@ SELECT AI_COMPLETE('supported-model-name', 'Explain micro-partition pruning brie
 8. Which runtime, privileges, costs, and quality checks apply to the chosen workflow?
 9. How do semantic definitions and verified queries support Analyst development and evaluation?
 10. Does killing a notebook kernel prove that its service/compute pool stopped?
+11. Which function extracts content from a staged document, and what value type does it accept?
 
 <details>
 <summary>Open the recall answer key</summary>
@@ -243,6 +245,7 @@ SELECT AI_COMPLETE('supported-model-name', 'Explain micro-partition pruning brie
 8. Check selected runtime/compute, source/service/model privileges, ongoing charges, and output/model quality.
 9. Semantic definitions describe the business data; verified question/SQL pairs provide reviewed expected answers for guidance/evaluation.
 10. No. Check/stop the actual notebook service/runtime and independent compute resources, not just the kernel or SQL warehouse.
+11. `AI_PARSE_DOCUMENT` accepts a `FILE` value, which you can construct with `TO_FILE` from a stage path or file URL.
 
 </details>
 

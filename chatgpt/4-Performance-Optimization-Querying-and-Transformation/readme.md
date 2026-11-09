@@ -635,6 +635,22 @@ QUALIFY ROW_NUMBER() OVER (
 - From your loading course note: JSON keys are case-sensitive, while unquoted Snowflake column names are case-insensitive.
 - Extract a path from `VARIANT`, then cast it to the type you need.
 - Arrays use zero-based indexes.
+- Snowflake's two native path styles for traversing nested data are **dot notation** and **bracket notation**:
+  - Dot: `src:customer.name`. The colon starts the path from the `VARIANT` column; dots move through object keys.
+  - Bracket: `src['customer']['name']`. Brackets select keys or array positions, such as `src:items[0]`.
+  - You can mix them: `src:items[0].sku`. The colon is a path operator, not a third named notation. JSON key spelling and case matter. [Snowflake path syntax](https://docs.snowflake.com/en/user-guide/querying-semistructured#traversing-semi-structured-data)
+
+```sql
+WITH sample AS (
+  SELECT PARSE_JSON('{"customer":{"name":"Alice"},"items":[{"sku":"A"}]}') AS src
+)
+SELECT
+  src:customer.name::STRING AS dot_path,
+  src['customer']['name']::STRING AS bracket_path,
+  src:items[0].sku::STRING AS mixed_path
+FROM sample;
+-- All three expressions return Alice, Alice, and A respectively.
+```
 
 ```sql
 -- Extract and type JSON fields.
@@ -673,8 +689,7 @@ LATERAL FLATTEN(INPUT => s.src:items) AS f;
 - Use `OUTER => TRUE` when zero-row expansions should preserve a parent row, and nested lateral calls for nested arrays.
 - Flattening two independent arrays can multiply the output; confirm the intended grain before joining or aggregating.
 
-- Extracting selected fields into typed relational columns with CTAS or `INSERT ...
-- SELECT` is a common ELT pattern.
+- Extracting selected fields into typed relational columns with CTAS or `INSERT ... SELECT` is a common ELT pattern.
 - Frequently queried fields can then be validated and transformed without repeating every path expression.
 - A materialized view is another option for supported repeated patterns when its cost and definition restrictions fit.
 - For loading details, use the [loading course note](../../study-notes/7-Data-Loading-and-Unloading/readme.md).
@@ -718,6 +733,30 @@ ALTER STAGE images_stage REFRESH;
 - Generating a scoped URL directly requires stage access; an authorized view owner can expose selected scoped file references through a view.
 - A pre-signed URL grants temporary bearer access, so protect it like a temporary credential.
 - Check each function's authorization and expiration rules rather than treating the three URLs as interchangeable.
+
+#### Read the contents of a staged document
+
+- `DIRECTORY(@stage)` lists file metadata; it does **not** extract text.
+- `TO_FILE` turns a stage path or file URL into a `FILE` value that a supported function can read. It does **not** parse the document by itself.
+- `AI_PARSE_DOCUMENT` accepts a `FILE` value and extracts document content. Its result is a JSON-formatted string; use `PARSE_JSON` to access fields such as `content` in SQL.
+- This optional example needs an existing PDF on a stage with a refreshed directory table, stage access, the `SNOWFLAKE.CORTEX_USER` database role, supported regional availability, and AI inference credits. Replace the stage and filename before running it.
+
+```sql
+WITH document_file AS (
+  SELECT relative_path, TO_FILE(file_url) AS file_value
+  FROM DIRECTORY(@documents_stage)
+  WHERE relative_path = 'sample.pdf'
+), parsed AS (
+  SELECT
+    relative_path,
+    PARSE_JSON(AI_PARSE_DOCUMENT(file_value, {'mode': 'OCR'})) AS result
+  FROM document_file
+)
+SELECT relative_path, result:content::STRING AS extracted_text
+FROM parsed;
+```
+
+- **Practice clue:** directory metadata answers *which files exist*; `TO_FILE` identifies *which file to process*; `AI_PARSE_DOCUMENT` reads *what the document says*. The C03 outline names unstructured data, but does not name this particular function. [TO_FILE](https://docs.snowflake.com/en/sql-reference/functions/to_file) · [AI_PARSE_DOCUMENT](https://docs.snowflake.com/en/sql-reference/functions/ai_parse_document)
 
 <a id="course-extensions-approximate-functions-and-sampling"></a>
 
@@ -826,6 +865,8 @@ ALTER STAGE images_stage REFRESH;
 34. Why can flattening two independent arrays inflate the output row count?
 35. What does a directory table store, and what additional step processes file contents?
 36. How should you benchmark result-cache hits, warm warehouse-cache runs, and cold starts separately?
+37. Which two notations traverse nested semi-structured values, and what does the colon do?
+38. What do `DIRECTORY`, `TO_FILE`, and `AI_PARSE_DOCUMENT` each contribute to processing a staged PDF?
 
 <details>
 <summary>Open the recall answer key</summary>
@@ -866,6 +907,8 @@ ALTER STAGE images_stage REFRESH;
 34. Independent expansions can create combinations of elements; preserve the intended business grain and use correlation/aggregation as needed.
 35. A directory table stores file-level metadata. A separate supported parser/model/handler processes the actual bytes.
 36. Control persisted-result reuse explicitly, keep warehouse cache state known, capture query IDs/profiles, preserve input/role/warehouse conditions, and repeat representative measurements.
+37. Dot and bracket notation. The colon starts a path from the VARIANT column; dots or brackets then access nested keys or array positions.
+38. DIRECTORY lists staged-file metadata; TO_FILE creates a FILE reference; AI_PARSE_DOCUMENT extracts the document content as JSON-formatted text.
 
 </details>
 

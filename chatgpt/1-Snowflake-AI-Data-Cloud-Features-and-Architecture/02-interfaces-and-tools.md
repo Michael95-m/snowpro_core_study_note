@@ -75,9 +75,19 @@ snow sql -c learning -f exercise.sql
   3. Copy its query ID.
 - Do not assume the most recent ID always belongs to your SQL.
 
+<a id="partner-connect"></a>
+
+## 1.2.5 Partner Connect
+
+- **Exam answer:** Partner Connect helps you start a trial with a supported third-party service and connect that service to your Snowflake account. Think of a BI, data integration, or analytics tool that needs to use Snowflake data.
+- The connection process can create a partner-specific **user, role, warehouse, and database** in your Snowflake account. Review the access you grant to the partner before connecting.
+- This is a tool integration workflow. It does not mean Snowflake creates another account for your team or shares your database with another Snowflake consumer.
+- In Snowsight, Snowflake lists Partner Connect under **Admin**. Snowflake also documents current third-party SaaS trials through **Integrated SaaS listings** in Marketplace. The partner sets its own trial terms.
+- **References:** [Partner Connect navigation](https://docs.snowflake.com/en/user-guide/ui-snowsight-navigation) and [Integrated SaaS trials and created objects](https://docs.snowflake.com/en/collaboration/consumer-saas-trials).
+
 <a id="two-distinctions-to-remember-from-practice"></a>
 
-## 1.2.5 Two distinctions to remember from practice
+## 1.2.6 Two distinctions to remember from practice
 
 ### 1. Snowflake CLI versus SnowSQL
 
@@ -116,7 +126,7 @@ snow sql -c learning -f exercise.sql
 
 <a id="practical-workflow-and-exercise-checkpoints"></a>
 
-## 1.2.6 Practical workflow and exercise checkpoints
+## 1.2.7 Practical workflow and exercise checkpoints
 
 1. Connect using your chosen client.
 2. Inspect the selected role, database, schema, and warehouse.
@@ -141,7 +151,7 @@ snow sql -c learning -f "chatgpt/1-Snowflake-AI-Data-Cloud-Features-and-Architec
 
 - **Practice:** [01-architecture-and-context.sql](exercises/01-architecture-and-context.sql).
 - **Remember:** client = where you submit work; active roles and session context determine what that work can access.
-- **Exam clue:** browser administration -> Snowsight; repeatable terminal script -> CLI; SQL development beside code -> IDE integration.
+- **Exam clue:** browser administration -> Snowsight; repeatable terminal script -> CLI; SQL development beside code -> IDE integration; quick third-party trial setup -> Partner Connect.
 
 ## What to recall
 
@@ -152,6 +162,7 @@ snow sql -c learning -f "chatgpt/1-Snowflake-AI-Data-Cloud-Features-and-Architec
 3. What distinguishes a shell command from Snowflake SQL?
 4. Which client workflow uploads a local file to an internal stage?
 5. Does changing the client from Snowsight to VS Code grant additional table privileges?
+6. What does Partner Connect help you set up, and what Snowflake objects can the connection create?
 
 <details>
 <summary>Open the recall answer key</summary>
@@ -161,6 +172,7 @@ snow sql -c learning -f "chatgpt/1-Snowflake-AI-Data-Cloud-Features-and-Architec
 3. A shell command invokes a client such as snow; SQL is submitted to Snowflake by that client.
 4. Use PUT through a supported client to an internal stage, then COPY INTO to load rows.
 5. No. The client still needs authentication, role privileges, correct context, and query compute.
+6. A supported third-party service trial connected to Snowflake; setup can create a partner user, role, warehouse, and database. Review any access granted to the partner.
 
 </details>
 
@@ -170,3 +182,4 @@ snow sql -c learning -f "chatgpt/1-Snowflake-AI-Data-Cloud-Features-and-Architec
 - [Snowsight tour](https://docs.snowflake.com/en/user-guide/ui-snowsight-quick-tour)
 - [Snowflake CLI](https://docs.snowflake.com/en/developer-guide/snowflake-cli/index)
 - [VS Code extension](https://docs.snowflake.com/en/user-guide/vscode-ext)
+- [Partner Connect in Snowsight](https://docs.snowflake.com/en/user-guide/ui-snowsight-navigation)

@@ -491,3 +491,35 @@ Both are masking policies, but the direct column assignment overrides tag-based 
 [Reference: Direct and tag-based masking precedence](https://docs.snowflake.com/en/user-guide/tag-based-masking-policies)
 
 </details>
+
+## Question 26: Ongoing condition versus one-time event
+
+A security analyst reviewing Trust Center sees two Threat Intelligence findings: one flags a user account that has gone without MFA for months, and another flags a single login attempt from an unusual IP address last night. How does Trust Center categorize these two findings?
+
+<details>
+<summary>Correct answer and explanation</summary>
+
+**Answer: Missing MFA is a violation; the unusual login is a detection.**
+
+- A **violation** describes an ongoing configuration or state that remains until it is fixed.
+- A **detection** describes an event at a particular time. Investigate the login and address any risk it reveals; the past event itself cannot be undone.
+- Both findings can come from the Threat Intelligence package. The package name alone does not decide whether a finding is a violation or detection.
+
+[Reference: Trust Center findings and Threat Intelligence scanners](https://docs.snowflake.com/en/user-guide/trust-center/overview)
+
+</details>
+
+## Question 27: Inherited tag-based masking and a materialized view
+
+A table has a tag-based masking policy protecting one of its columns through a tag assigned at the database level. An analyst tries to create a materialized view from that table. What limitation applies?
+
+<details>
+<summary>Correct answer and explanation</summary>
+
+**Answer: Snowflake does not allow the materialized view to be created while the base table is protected by a tag-based masking policy.**
+
+The database-level tag is inherited, so the policy still protects the table's matching column. The tag does not need to be attached directly to the table or column for this restriction to apply. If a materialized view existed first and the tag-based policy was applied later, the view would become invalid for queries.
+
+[Reference: Tag-based masking policies, materialized-view considerations](https://docs.snowflake.com/en/user-guide/tag-based-masking-policies#considerations)
+
+</details>

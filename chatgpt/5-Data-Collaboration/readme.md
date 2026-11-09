@@ -9,9 +9,9 @@
 | --- | --- |
 | [5.1 Data collaboration and protection](#51-data-collaboration-and-protection) | Time Travel, Fail-safe, cloning, replication and failover, and the protection boundary of Secure Data Sharing |
 | [5.2 Snowflake data sharing capabilities](#52-snowflake-data-sharing-capabilities) | Providers, consumers, reader accounts, direct shares, access grants, resharing, and Data Clean Rooms |
-| [5.3 Marketplace, listings, and Native Apps](#53-marketplace-listings-and-native-apps) | Private and public listings, Cross-Cloud Auto-Fulfillment, and packaging and installing Native Apps |
+| [5.3 Marketplace, listings, and Native Apps](#53-marketplace-listings-and-native-apps) | Internal and external sharing, Data Exchange, listings, Cross-Cloud Auto-Fulfillment, and Native Apps |
 
-The [course chapter on storage, data protection, and sharing](../../study-notes/9-Storage-Data-Protection-and-sharing/readme.md) covers the same foundations and adds storage billing and Data Exchange. The [Domain 1 storage note](../1-Snowflake-AI-Data-Cloud-Features-and-Architecture/05-storage-tables-and-views.md) explains table types. The [Domain 2 governance note](../2-Account-Management-and-Data-Governance/readme.md) covers roles, policies, and access control.
+The [course chapter on storage, data protection, and sharing](../../study-notes/9-Storage-Data-Protection-and-sharing/readme.md) covers the same foundations and adds storage billing. The [Domain 1 storage note](../1-Snowflake-AI-Data-Cloud-Features-and-Architecture/05-storage-tables-and-views.md) explains table types. The [Domain 2 governance note](../2-Account-Management-and-Data-Governance/readme.md) covers roles, policies, and access control.
 
 ## Practice setup and exercise files
 
@@ -218,7 +218,24 @@ SELECT * FROM D5_IMPORTED_ORDERS.LAB.D5_PARTNER_INTL_ORDERS_V;
 - Listings can include descriptions, sample queries, and terms. Listings can be free, offer a trial, or be paid where supported. Visibility and price are separate decisions. [Listings and listing types](https://docs.snowflake.com/en/collaboration/collaboration-listings-about)
 - **Cross-Cloud Auto-Fulfillment** can replicate the product to eligible consumer regions as needed. Check supported regions, configuration, and fulfillment costs. This distribution workflow is separate from promoting a disaster-recovery account. [Cross-Cloud Auto-Fulfillment](https://docs.snowflake.com/en/collaboration/provider-listings-auto-fulfillment)
 
-### 5.3.2 Snowflake Native Apps
+### 5.3.2 Internal sharing, External sharing, and Data Exchange
+
+**Remember.** Internal and external describe who receives data. A Data Exchange is a managed hub for an invited group of Snowflake accounts. **External sharing** is also the name of a Snowsight page that shows several sharing methods.
+
+- The C03 guide names direct shares and listings under Domain 5. It does not list Data Exchange or these Snowsight menu names separately; learn them as useful sharing distinctions.
+
+1. **Same account, different users:** Grant access through roles. You do not need a share.
+2. **Internal sharing:** Share with another account in your organization. An **organizational listing** makes a data product discoverable in your organization's Internal Marketplace. You can also use a same-region direct share between two accounts in your organization.
+3. **External sharing:** Share with an account in another organization. A same-region direct share or a listing for selected consumers may fit. A listing can support cross-region delivery through auto-fulfillment.
+4. **Data Exchange:** An admin invites Snowflake accounts into a private hub and designates members as providers, consumers, or both. Providers publish listings for members to discover. The members can include internal departments and outside partners. Snowflake must enable Data Exchange for the account; contact Snowflake Support if you need it.
+5. **Snowsight menu:** **Data sharing → External sharing** shows direct shares, listings, and Data Exchange items. A direct share to an account in your own organization can appear there; the menu name does not tell you the recipient's organization.
+
+- **Data Exchange versus a private listing:** Use a private listing to target selected consumers with one data product. Consider a Data Exchange when an invited group needs a managed place where multiple members can publish or consume listings. Data Exchange is not required for a two-account direct share.
+
+**Your lab:** The [two-account direct-share exercise](exercises/readme.md#direct-share) can use your main account and `SHARE_LAB` in the same organization and region. It does not create a Data Exchange or organizational listing. [Snowflake sharing options](https://docs.snowflake.com/en/guides-overview-sharing) · [Organizational listings](https://docs.snowflake.com/en/user-guide/collaboration/listings/organizational/org-listing-about) · [Data Exchange](https://docs.snowflake.com/en/user-guide/data-exchange) · [External sharing page](https://docs.snowflake.com/en/user-guide/data-sharing-provider)
+- **Optional practice:** [Create an organizational listing for `SHARE_LAB`](exercises/readme.md#internal-marketplace-listing) to see the Internal Marketplace workflow.
+
+### 5.3.3 Snowflake Native Apps
 
 **Remember.** The provider publishes an **application package**. Installation creates an **application** in the consumer's account.
 
@@ -245,6 +262,7 @@ SELECT * FROM D5_IMPORTED_ORDERS.LAB.D5_PARTNER_INTL_ORDERS_V;
 | A partner lacks its own Snowflake account | Reader account | Provider provisions it and pays for its compute |
 | Partners need audience overlap counts with controlled inputs and outputs | Data Clean Rooms | They need an approved joint analysis |
 | Selected customers in another region need a product | Private listing with supported auto-fulfillment | Distribution is targeted across regions |
+| Several invited accounts need a managed hub where members can publish and consume listings | Data Exchange | The exchange admin manages membership and provider/consumer roles |
 | The product includes code and a UI installed in the customer's account | Native App | The customer installs an application |
 
 ## What to Recall
@@ -274,6 +292,8 @@ SELECT * FROM D5_IMPORTED_ORDERS.LAB.D5_PARTNER_INTL_ORDERS_V;
 15. What does Cross-Cloud Auto-Fulfillment do?
 16. Which Native App object belongs to the provider, and what gets created on installation?
 17. What are the jobs of the manifest and setup script?
+18. How does a Data Exchange differ from the External sharing page? Can a direct share to an account in your own organization appear on that page?
+19. When is a Data Exchange more useful than one private listing?
 
 <details>
 <summary>Answer key</summary>
@@ -295,5 +315,7 @@ SELECT * FROM D5_IMPORTED_ORDERS.LAB.D5_PARTNER_INTL_ORDERS_V;
 15. It fulfills an eligible listing's data product to consumer regions as needed.
 16. The provider creates and publishes an application package. Installation creates an application in the consumer account.
 17. The manifest describes configuration and identifies the setup script. The setup script creates or updates objects on installation or upgrade.
+18. A Data Exchange is a private hub with invited member accounts and provider/consumer roles. External sharing is a Snowsight page for direct shares, listings, and Data Exchange items. Yes, a direct share to an account in your organization can appear there.
+19. When an invited group needs ongoing membership and several providers/consumers publishing or discovering listings; one private listing can target selected consumers without creating an exchange.
 
 </details>

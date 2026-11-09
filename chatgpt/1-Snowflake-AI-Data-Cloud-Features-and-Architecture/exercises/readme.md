@@ -50,3 +50,5 @@
 References: [architecture](https://docs.snowflake.com/en/user-guide/intro-key-concepts), [CREATE WAREHOUSE](https://docs.snowflake.com/en/sql-reference/sql/create-warehouse), [SQL procedures](https://docs.snowflake.com/en/developer-guide/stored-procedure/stored-procedures-snowflake-scripting), [temporary tables](https://docs.snowflake.com/en/user-guide/tables-temp-transient), [Snowpark DataFrames](https://docs.snowflake.com/en/developer-guide/snowpark/python/working-with-dataframes).
 
 [Back to Domain 1](../readme.md)
+
+For hands-on Iceberg SQL, use the separate [Apache Iceberg query lab](../../additional-exercises/03-iceberg-query-lab/readme.md).

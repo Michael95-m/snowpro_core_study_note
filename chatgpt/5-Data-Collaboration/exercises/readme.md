@@ -30,6 +30,27 @@
 3. Connect to the consumer separately. Import the share into a new database. Grant `IMPORTED PRIVILEGES` to a local query role that can use a consumer warehouse.
 4. Query the view and compare it with the provider's preview. Clean up the lab share and imported database separately when finished. [Direct share provider setup](https://docs.snowflake.com/en/user-guide/data-sharing-provider) · [Consumer setup](https://docs.snowflake.com/en/user-guide/data-share-consumers)
 
+### Internal Marketplace listing
+
+This optional exercise uses the same two accounts to practice **internal sharing through an organizational listing**. It is separate from the direct-share steps above. Your organization needs the organizational-listing prerequisites and your provider role needs the required share and listing privileges. [Create an organizational listing](https://docs.snowflake.com/en/user-guide/collaboration/listings/organizational/org-listing-create)
+
+1. In the provider account, run `00-setup.sql` and `03-secure-sharing.sql` through the secure-view preview. Do not run the optional direct-share commands. Check that `D5_STUDY.LAB.D5_PARTNER_ORDERS_V` shows only orders **1 and 3**.
+2. In Snowsight, open **Data sharing → Internal sharing → Create Listing**. Select that secure view as the data product and generate the listing. Use a lab name such as `D5_INTERNAL_ORDERS`.
+3. In **Access Control**, choose **Selected accounts and roles** and select only your test consumer account, `SHARE_LAB`. Review the access settings and publish the listing. Avoid **Entire organization** for this lab.
+4. Sign in to `SHARE_LAB`. Open **Catalog → Internal Marketplace**, find the lab listing, and copy its **Uniform Listing Locator (ULL)**. Use a role allowed by the listing and an available consumer warehouse. Query the view by using the copied ULL in place of the database name:
+
+```sql
+-- Paste the exact ULL copied from the listing in place of <copied_ull>.
+SELECT ORDER_ID, REGION, AMOUNT
+FROM <copied_ull>.LAB.D5_PARTNER_ORDERS_V
+ORDER BY ORDER_ID;
+-- Expected: orders 1 and 3; no INTERNAL_NOTE column.
+```
+
+5. Compare the result with the provider's secure-view preview. When finished, **unpublish and delete** the lab listing from **Data sharing → Internal sharing**. Check the provider's generated share and any consumer database you mounted before removing the underlying lab data. [Query an organizational listing](https://docs.snowflake.com/en/user-guide/collaboration/listings/organizational/org-listing-query) · [Manage organizational listings](https://docs.snowflake.com/en/user-guide/collaboration/listings/organizational/org-listing-manage)
+
+- **What to explain afterward:** a direct share targets a known same-region account; an organizational listing also gives people in your organization a discoverable data product in the Internal Marketplace. Neither workflow requires a Data Exchange.
+
 ### Replication and failover
 
 1. Review exercise 04 with two accounts from the same organization, configured for replication. Use either the replication-group example or the failover-group example.

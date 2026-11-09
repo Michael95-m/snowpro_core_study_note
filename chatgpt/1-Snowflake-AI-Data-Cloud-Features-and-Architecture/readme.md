@@ -15,7 +15,7 @@
 | 1.2 Interfaces and tools | [Snowsight, CLI, and IDE integrations](02-interfaces-and-tools.md) |
 | 1.3 Object hierarchy, types, and context | [Objects, sessions, and parameters](03-objects-sessions-and-parameters.md) |
 | 1.4 Virtual warehouses | [Warehouse configuration and workload choices](04-virtual-warehouses.md) |
-| 1.5 Storage concepts | [Micro-partitions, clustering, table types, and views](05-storage-tables-and-views.md) |
+| 1.5 Storage concepts | [Micro-partitions, clustering, table types, views, and supplemental hybrid tables](05-storage-tables-and-views.md) |
 | 1.6 AI/ML and application development | [Notebooks, Streamlit, Snowpark, Cortex, and Snowflake ML](06-ai-ml-and-applications.md) |
 
 ## Practice setup and exercise files
@@ -39,6 +39,7 @@
 | Rebuildable table that survives sessions, without Fail-safe | Transient table. |
 | Repeated supported single-table result with maintenance cost justified | Materialized view. |
 | SQL-defined pipeline with a freshness target | Dynamic Table; target lag is a goal. |
+| Application needs fast point lookups and frequent small row updates | Hybrid table, where available; required enforced primary key and row-store indexing. |
 | Documents need relevant-passage retrieval | Cortex Search. |
 | Business users ask revenue questions in natural language | Cortex Analyst with semantic definitions and validation. |
 | Govern reusable ML inputs versus trained versions | Feature Store versus Model Registry. |

@@ -15,6 +15,12 @@
 4. Answer **What to Recall** without looking, then open its answer key.
 5. Check the official reference when a feature or prerequisite needs more detail.
 
+### Practice Q&A
+
+- [2.1 Security Model and Principles](practice/01-security-model-and-principles-qa.md)
+- [2.2 Data Governance Features](practice/02-data-governance-features-qa.md)
+- [2.3 Monitoring and Cost Management](practice/03-monitoring-and-cost-management-qa.md)
+
 ### The C03 coverage checklist
 
 | C03 objective | Coverage | Start |
@@ -550,24 +556,41 @@ my_organization-my_account
 
 <a id="logging-and-tracing"></a>
 
-### 2.1.13 Logging and tracing
+### 2.1.13 Telemetry: logs, traces, metrics, and event tables
 
-- **Remember:** Configure supported telemetry levels and its event-table destination; do not log secrets.
+- **Remember:** Telemetry tells you what happened *inside* a Snowflake workload. An event table stores it; the relevant telemetry level controls what Snowflake collects.
+- Use it to troubleshoot supported code and services, such as procedures, UDFs, tasks, and Snowpark Container Services.
 
-- Snowflake logging and tracing help diagnose application code and handlers, especially Snowpark procedures and UDFs.
+| Type | Simple meaning | Example question |
+| --- | --- | --- |
+| **Log message** | A written message about an event or error. | What warning did my procedure emit? |
+| **Trace** | A record of the steps and timing during execution. | Where did this operation spend time? |
+| **Metric** | A numeric measurement. | How much CPU or memory was used? |
 
-- **Logging** records events and messages.
-- **Tracing** records the path of work through an application.
-- **Metrics** measure numeric behavior, such as counts or durations.
-- Event data is stored in an **event table**. Snowflake provides a default event table, or you can configure your own.
+- Snowflake provides `SNOWFLAKE.TELEMETRY.EVENTS` as the default event table and `SNOWFLAKE.TELEMETRY.EVENTS_VIEW` as a view for reading it. You can configure a custom event table when needed.
+- To collect a type of telemetry, the account needs an active event table and a level that permits that type. Supported workloads may emit some data automatically; custom messages or traces can require code instrumentation.
+- `LOG_LEVEL` controls messages from logging APIs, `TRACE_LEVEL` controls traces, and `METRIC_LEVEL` controls metrics. `LOG_EVENT_LEVEL` separately controls supported Snowflake-generated events, such as task run events. `LOG_LEVEL` does not replace `LOG_EVENT_LEVEL`.
+- Levels can be set at an appropriate scope, such as the account or a supported object. Check the effective setting before assuming data will appear.
 
-- This is application observability.
-- It is different from `ACCOUNT_USAGE`, which is mainly historical account monitoring and audit data.
+```sql
+-- Read-only checks: these do not turn collection on.
+SHOW PARAMETERS LIKE 'LOG_LEVEL' IN ACCOUNT;
+SHOW PARAMETERS LIKE 'TRACE_LEVEL' IN ACCOUNT;
+SHOW PARAMETERS LIKE 'METRIC_LEVEL' IN ACCOUNT;
+SHOW PARAMETERS LIKE 'LOG_EVENT_LEVEL' IN ACCOUNT;
 
-- Configure the collection level (`LOG_LEVEL` / `TRACE_LEVEL`) and an active event table before expecting telemetry.
-- Collecting very verbose events can increase storage and processing cost; avoid writing credentials or sensitive values into logs.
-- Use `LOGIN_HISTORY` for authentication investigation, `QUERY_HISTORY` for SQL activity, and `ACCESS_HISTORY` for data-access auditing.
-- An event table is not a replacement for those audit views.
+-- Requires access to the default telemetry view and a running warehouse.
+SELECT TIMESTAMP, RECORD_TYPE, VALUE
+FROM SNOWFLAKE.TELEMETRY.EVENTS_VIEW
+ORDER BY TIMESTAMP DESC
+LIMIT 20;
+```
+
+- If the view query is denied, an administrator can grant the `SNOWFLAKE.EVENTS_VIEWER` application role to an account role used for viewing telemetry. Do not use `ACCOUNTADMIN` for routine inspection.
+- Telemetry ingestion can incur serverless credits and event-table storage. More verbose collection can increase cost; keep levels scoped and avoid logging secrets.
+- For a login attempt, use `LOGIN_HISTORY`; for SQL execution, use `QUERY_HISTORY`; for data-access auditing, use `ACCESS_HISTORY`. These historical audit views answer different questions from an event table.
+
+- [Reference: Enable telemetry collection](https://docs.snowflake.com/en/developer-guide/logging-tracing/logging-tracing-enabling) · [Reference: Event table and access roles](https://docs.snowflake.com/en/developer-guide/logging-tracing/event-table-setting-up) · [Reference: Telemetry levels](https://docs.snowflake.com/en/developer-guide/logging-tracing/telemetry-levels)
 
 ---
 
@@ -802,6 +825,8 @@ ALTER TABLE analytics.mart.customer
 - This uses a separate column-specific tag.
 - Attaching the same masking policy to a table-level classification tag could mask every matching-type descendant column.
 - Use tag inheritance and propagation according to their documented rules, and inspect the resulting assignments and policy references.
+- **Materialized-view limit:** If a base table is protected by a tag-based masking policy, Snowflake does not allow creating a materialized view on that table, even when the protection comes from a tag inherited from the database. If the materialized view already exists and the tag-based policy is added later, the view becomes invalid for queries. Check the effective policy on the base table, not only tags attached directly to its columns.
+- [Reference: Tag-based masking and materialized views](https://docs.snowflake.com/en/user-guide/tag-based-masking-policies#considerations)
 
 #### Limit tag values and inspect assignments
 
@@ -876,14 +901,78 @@ ALTER TABLE analytics.mart.customer_survey
 
 - [References: CREATE PRIVACY POLICY](https://docs.snowflake.com/en/sql-reference/sql/create-privacy-policy) · [Differential privacy tutorial](https://docs.snowflake.com/en/user-guide/tutorials/diff-privacy)
 
+#### Aggregation versus projection policies (supplemental depth)
+
+- **Aggregation policy:** Limits a table or view to queries that aggregate records into groups meeting a minimum size. Think **"show a safe group, not an individual row."**
+- **Projection policy:** Controls whether a particular column can appear in the final query output. Think **"you may use this column in a filter or join, but cannot show its value."** The policy can reject projection or return `NULL`, depending on its definition.
+- These can be attached to the same table. A query must satisfy **both** policies. A projection-constrained column cannot be used as an argument to `COUNT` on an aggregation-constrained table; `COUNT(*)` is a different expression.
+- **Enforcement order to recall:** masking is applied before aggregation, and projection is enforced after aggregation. Aggregation therefore works on masked values where a masked column is involved.
+- A **privacy policy** is a separate differential-privacy feature with a privacy budget. Do not treat it as another name for an aggregation policy.
+- **Exam scope:** the supplied C03 guide names privacy policies, not aggregation or projection policies. This comparison helps answer related scenarios without treating them as equally weighted objectives.
+
+```sql
+-- Optional Enterprise+ pattern. Run once in a separate writable lab with
+-- the privileges needed to create and attach policies.
+CREATE TABLE D2_STUDY.LAB.POLICY_DEMO (
+  ID NUMBER,
+  REGION STRING,
+  SECRET STRING
+);
+
+INSERT INTO D2_STUDY.LAB.POLICY_DEMO VALUES
+  (1, 'APAC', 'A'), (2, 'APAC', 'B'),
+  (3, 'EMEA', 'C'), (4, 'EMEA', 'D');
+
+CREATE AGGREGATION POLICY D2_STUDY.LAB.MIN_TWO_ROWS
+  AS () RETURNS AGGREGATION_CONSTRAINT ->
+    AGGREGATION_CONSTRAINT(MIN_GROUP_SIZE => 2);
+
+ALTER TABLE D2_STUDY.LAB.POLICY_DEMO
+  SET AGGREGATION POLICY D2_STUDY.LAB.MIN_TWO_ROWS;
+
+CREATE PROJECTION POLICY D2_STUDY.LAB.HIDE_SECRET
+  AS () RETURNS PROJECTION_CONSTRAINT ->
+    PROJECTION_CONSTRAINT(ALLOW => FALSE);
+
+ALTER TABLE D2_STUDY.LAB.POLICY_DEMO
+  MODIFY COLUMN SECRET
+  SET PROJECTION POLICY D2_STUDY.LAB.HIDE_SECRET;
+
+-- A suitable grouped query can return results without projecting SECRET:
+SELECT REGION, COUNT(*)
+FROM D2_STUDY.LAB.POLICY_DEMO
+GROUP BY REGION;
+-- Expected: APAC = 2 and EMEA = 2; SECRET is not shown.
+
+-- Cleanup after the exercise:
+ALTER TABLE D2_STUDY.LAB.POLICY_DEMO
+  MODIFY COLUMN SECRET UNSET PROJECTION POLICY;
+ALTER TABLE D2_STUDY.LAB.POLICY_DEMO UNSET AGGREGATION POLICY;
+DROP TABLE D2_STUDY.LAB.POLICY_DEMO;
+DROP PROJECTION POLICY D2_STUDY.LAB.HIDE_SECRET;
+DROP AGGREGATION POLICY D2_STUDY.LAB.MIN_TWO_ROWS;
+```
+
+- Each returned group must meet the minimum of two rows. This uses a separate table from the privacy-protected `CUSTOMER_SURVEY` example above.
+- [References: Aggregation policies](https://docs.snowflake.com/en/user-guide/aggregation-policies) · [Projection policies](https://docs.snowflake.com/en/user-guide/projection-policies) · [Enforcement order](https://docs.snowflake.com/en/user-guide/aggregation-policies-entity-privacy#about-minimum-group-sizes)
+
 <a id="trust-center"></a>
 
 ### 2.2.6 Trust Center
 
-- **Remember:** Scanners find security-posture issues; muting a finding does not remediate it.
+- **Remember:** A **violation** is an ongoing condition; a **detection** is a specific event. Muting a violation does not remediate it.
 
 - The **Trust Center** evaluates account configuration using scanners and presents findings and recommendations in Snowsight.
 - It helps teams monitor and reduce security risks, such as insecure configuration or authentication posture.
+
+| Finding | What it means | Example |
+| --- | --- | --- |
+| **Violation** | A condition that remains until the underlying configuration is fixed. | A user has no MFA configured. |
+| **Detection** | A distinct event that happened at a particular time. | A login attempt came from an unusual IP address last night. |
+
+**Exam scenario:** A user has gone without MFA for months, while one login attempt came from an unusual IP last night. The missing MFA is a **violation**; the unusual login is a **detection**. Both can come from the Threat Intelligence scanner package. A violation is checked again until remediated; investigate a detection and take action to prevent similar events.
+
+- Finding type and scanner timing are separate ideas: a scheduled scanner can report a violation, while an event-driven scanner can report a detection. Do not use the scanner package name alone to decide the finding type.
 
 - Think of it as security-posture management—not a substitute for RBAC, network policies, or monitoring.
 - Scanner use can incur serverless compute cost.
@@ -1494,10 +1583,12 @@ ORDER BY usage_date DESC, billed_credits DESC;
 - The adjustment is typically negative.
 - `CREDITS_BILLED` accounts for the adjustment, while consumed credits alone do not.
 - Grouping by service type also exposes categories beyond warehouse compute.
+- `TELEMETRY_DATA_INGEST` is the service type to look for when investigating credits for ingesting telemetry into an event table. It is separate from `WAREHOUSE_METERING` and `SNOWPARK_CONTAINER_SERVICES`.
 - This is a credits report, not a complete dollar invoice including storage and transfer.
 - The view can lag by up to three hours.
 
 - [Reference: METERING_DAILY_HISTORY](https://docs.snowflake.com/en/sql-reference/account-usage/metering_daily_history)
+- [Reference: Telemetry collection costs](https://docs.snowflake.com/en/developer-guide/logging-tracing/logging-tracing-billing)
 
 #### Investigate slow queries and warehouse queuing
 
@@ -1636,7 +1727,7 @@ GRANT ROLE cost_reviewer TO USER REVIEWER_USER;
 11. What is the difference between a masking policy and a row access policy?
 12. What can a tag do by itself, and what can it not do by itself?
 13. What problem do privacy policies solve?
-14. What does the Trust Center help you find?
+14. What does the Trust Center help you find? How does a violation differ from a detection?
 15. What extra control does Tri-Secret Secure add to normal Snowflake encryption?
 16. What must you do after creating an alert before it can run?
 17. What is the difference between an alert and a notification integration?
@@ -1648,7 +1739,7 @@ GRANT ROLE cost_reviewer TO USER REVIEWER_USER;
 23. Which separate warehouse privilege is needed to execute a table query?
 24. How do SSO, MFA, OAuth, and key pairs differ, and where must a private key be stored?
 25. What is the preferred account identifier, and how does it differ from an account locator?
-26. Which telemetry settings and storage destination are needed for logging and tracing?
+26. How do logs, traces, and metrics differ? Which settings and destination are needed to collect them?
 27. What is the difference between key rotation and periodic rekeying?
 28. How do replication groups and failover groups differ? What do RPO and RTO measure?
 29. How does lineage help with upstream tracing and downstream impact analysis?
@@ -1663,6 +1754,8 @@ GRANT ROLE cost_reviewer TO USER REVIEWER_USER;
 38. Why can the total account bill exceed the credits shown for one warehouse?
 39. What does MFA_ENROLLMENT = REQUIRED_PASSWORD_ONLY mean?
 40. Which key stays in the application, and which key is registered on the Snowflake user?
+41. How do aggregation and projection policies restrict different parts of a query, and which is enforced first?
+42. Can a materialized view be created from a table protected by a tag-based masking policy inherited from its database?
 
 <details>
 <summary>Open the recall answer key</summary>
@@ -1680,7 +1773,7 @@ GRANT ROLE cost_reviewer TO USER REVIEWER_USER;
 11. Masking transforms returned column values; row access filters rows.
 12. It supplies classification/metadata; enforcement requires an associated policy or other configured control.
 13. They limit cumulative privacy exposure from analytical queries, using differential privacy and privacy budgets.
-14. Security-posture misconfigurations and remediation guidance through scanners; findings still require action.
+14. Trust Center scanners find security risks. A violation is an ongoing condition, such as missing MFA; a detection is a one-time event, such as a login from an unusual IP. Investigate and address the underlying risk.
 15. A customer-managed cloud key participates with Snowflake-managed key material in the composite protection hierarchy.
 16. Provide owner privileges and resume it for its schedule, or request a one-time EXECUTE ALERT run; creation leaves it suspended.
 17. An alert detects a condition and runs an action; an integration configures how a notification destination is reached.
@@ -1692,7 +1785,7 @@ GRANT ROLE cost_reviewer TO USER REVIEWER_USER;
 23. USAGE on the warehouse, independently from data-object access.
 24. SSO federates identity; MFA adds another factor; OAuth presents an issued token; key pairs prove possession of the private key, which stays protected in the application.
 25. organization-account is the readable identifier. CURRENT_ACCOUNT returns an account locator; name functions return the names.
-26. Suitable LOG_LEVEL/TRACE_LEVEL and a configured active event table, with rights to emit/read telemetry; apply supported handler instrumentation.
+26. Logs are messages, traces show execution steps/timing, and metrics are numeric measurements. Use an active event table plus the relevant LOG_LEVEL, TRACE_LEVEL, or METRIC_LEVEL. Supported custom messages/traces also need handler instrumentation; LOG_EVENT_LEVEL controls supported Snowflake-generated events separately.
 27. Rotation changes active key versions while retaining older decryption capability; periodic rekeying re-encrypts older data with newer keys.
 28. Replication groups synchronize supported state; failover groups also support promotion. RPO is tolerated data loss; RTO is tolerated recovery time.
 29. Upstream identifies sources; downstream identifies potentially affected consumers, covering supported dependency and data-movement relationships.
@@ -1707,6 +1800,8 @@ GRANT ROLE cost_reviewer TO USER REVIEWER_USER;
 38. Convert credits using the applicable contract price; add pool/serverless, storage, and transfer categories as applicable. One warehouse total is not the entire account bill.
 39. It requires MFA enrollment for human password users; it does not restrict all login methods to passwords.
 40. Register the public key with the user and protect the private key in the client. Named key-pair management is available alongside legacy RSA_PUBLIC_KEY slots.
+41. Aggregation requires sufficiently large groups; projection controls whether a column may appear in the final result. Aggregation is enforced before projection; masking is applied before aggregation.
+42. No. An inherited tag-based masking policy still protects the base table and blocks materialized-view creation on it. Adding the policy after the materialized view exists invalidates the view for queries.
 
 </details>
 

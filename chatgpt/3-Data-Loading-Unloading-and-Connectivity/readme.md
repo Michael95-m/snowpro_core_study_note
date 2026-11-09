@@ -162,6 +162,17 @@ Reference: [Overview of data loading](https://docs.snowflake.com/en/user-guide/d
 - A reusable file format is a **schema-level object**.
 - You can also put format options directly inside a `COPY` statement.
 
+| Format | Recognize it by | Load into Snowflake? | Unload from Snowflake? |
+| --- | --- | --- | --- |
+| `CSV` | Delimited plain-text rows; the delimiter can be a tab or another supported character. | Yes | Yes |
+| `JSON` | Text containing objects or arrays; flexible fields and nesting. | Yes | Yes; Snowflake writes newline-delimited JSON. |
+| `PARQUET` | Binary, column-oriented file format with a schema. | Yes | Yes |
+| `AVRO` | Binary file format with a schema. | Yes | No |
+| `ORC` | Binary, column-oriented file format. | Yes | No |
+| `XML` | Text with nested elements and attributes. | Yes | No |
+
+- **Exam clue:** `COPY INTO <location>` supports unloading as CSV, JSON, or Parquet. Do not choose Avro, ORC, or XML as a Snowflake unload format. [CREATE FILE FORMAT](https://docs.snowflake.com/en/sql-reference/sql/create-file-format)
+
 #### B. CSV options: learn the reason for each one
 
 | Option | Simple meaning | Typical problem it solves |
@@ -2114,7 +2125,7 @@ Use these to check understanding after running the SQL yourself.
 ### 3.1 Loading, unloading, stages, and errors
 
 1. What is the difference between staging a file, loading a table, and unloading a query result?
-2. What does a file format describe? How do `SKIP_HEADER` and `PARSE_HEADER` differ?
+2. What does a file format describe? How do `SKIP_HEADER` and `PARSE_HEADER` differ? Which three formats can Snowflake unload?
 3. What are the references for a user stage, table stage, and named stage?
 4. Does creating an external stage copy the external files into Snowflake?
 5. How do `REMOVE` and `DROP STAGE` differ for an external stage?
@@ -2172,7 +2183,7 @@ Use these to check understanding after running the SQL yourself.
 <summary>Answer check: 3.1 loading and unloading</summary>
 
 1. Staging makes files available; loading inserts file data into tables; unloading writes table/query results to files.
-2. A file format describes parsing/output rules. `SKIP_HEADER` skips lines; `PARSE_HEADER` reads column names for supported inference/name matching.
+2. A file format describes parsing/output rules. `SKIP_HEADER` skips lines; `PARSE_HEADER` reads column names for supported inference/name matching. Snowflake can unload CSV, JSON, and Parquet.
 3. `@~`, `@%table_name`, and `@stage_name`.
 4. No. It references the cloud location.
 5. `REMOVE` can delete cloud objects if authorized. `DROP STAGE` removes the external stage object while leaving those objects.

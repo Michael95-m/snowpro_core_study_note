@@ -173,6 +173,45 @@ CREATE SECURE VIEW study_public_customers AS
 - **Remember:** lifetime, file format/catalog ownership, and refresh behavior are different axes of table design.
 - **Exam clue:** `SECURE` protects view behavior/definition; it does not decide whether the result is materialized.
 
+<a id="hybrid-tables"></a>
+
+## 1.5.6 Hybrid tables (supplemental table-type depth)
+
+- **Remember:** Use a hybrid table for an application that needs many fast reads and small writes by key, such as looking up and updating one order's status.
+- Hybrid tables use a **row store** as primary storage, with indexes and row locking for concurrent transactional work. Snowflake also copies data asynchronously to columnar object storage for larger analytical scans.
+- A **primary key is required and enforced**. This differs from standard Snowflake tables, whose primary key declaration is generally informational.
+- Unique and foreign key constraints can also be enforced on hybrid tables.
+- Queries still use a virtual warehouse; hybrid row storage has its own charge and can cost more than standard table storage.
+- Choose a standard table for a typical large analytical scan. A hybrid table is for low-latency point lookups and frequent row-level changes; it is not a faster replacement for every standard table.
+- Current limitations include no clustering keys, Snowpipe or Snowpipe Streaming ingestion, data sharing, or Fail-safe for hybrid tables. Check current availability and limits before planning a real deployment.
+- **Exam scope:** the supplied C03 guide lists table types but does not name hybrid tables. Learn this feature-selection distinction as supplemental depth.
+
+```sql
+-- Optional: run only in an account/region where hybrid tables are available.
+-- Trial accounts do not support them. Use a running warehouse and a writable lab schema.
+USE WAREHOUSE D1_STUDY_WH;
+
+CREATE HYBRID TABLE D1_STUDY.LAB.HYBRID_ORDER_STATUS (
+  ORDER_ID NUMBER PRIMARY KEY,
+  STATUS VARCHAR(20) NOT NULL
+);
+
+INSERT INTO D1_STUDY.LAB.HYBRID_ORDER_STATUS
+  VALUES (101, 'NEW');
+
+UPDATE D1_STUDY.LAB.HYBRID_ORDER_STATUS
+  SET STATUS = 'SHIPPED'
+  WHERE ORDER_ID = 101;
+
+SELECT * FROM D1_STUDY.LAB.HYBRID_ORDER_STATUS
+  WHERE ORDER_ID = 101;
+-- Expected: one row, status SHIPPED. A second ORDER_ID = 101 is rejected.
+
+DROP TABLE D1_STUDY.LAB.HYBRID_ORDER_STATUS;
+```
+
+- [References: Hybrid tables](https://docs.snowflake.com/en/user-guide/tables-hybrid) · [Create hybrid tables](https://docs.snowflake.com/en/user-guide/tables-hybrid-create) · [Current limitations](https://docs.snowflake.com/en/user-guide/tables-hybrid-limitations)
+
 ## What to recall
 
 
@@ -186,6 +225,7 @@ CREATE SECURE VIEW study_public_customers AS
 7. Why does a ten-minute target lag not mean a refresh exactly every ten minutes?
 8. How do secure, materialized, and standard views differ?
 9. How do an external volume and a catalog integration have different jobs?
+10. When would you choose a hybrid table, and what is special about its primary key?
 
 <details>
 <summary>Open the recall answer key</summary>
@@ -199,6 +239,7 @@ CREATE SECURE VIEW study_public_customers AS
 7. Target lag guides freshness scheduling and can be exceeded; it is not a fixed ten-minute timer.
 8. Standard stores a query; materialized stores maintained results; SECURE protects view behavior/definition and can apply to either.
 9. An external volume configures supported external Iceberg storage access; a catalog integration connects supported catalog/metadata sources.
+10. Choose it for fast point lookups and frequent small row changes. Its primary key is required and enforced, unlike the generally informational primary key on a standard Snowflake table.
 
 </details>
 
@@ -211,3 +252,4 @@ CREATE SECURE VIEW study_public_customers AS
 - [Dynamic-table target lag](https://docs.snowflake.com/en/user-guide/dynamic-tables/target-lag)
 - [Materialized views](https://docs.snowflake.com/en/user-guide/views-materialized)
 - [Secure views](https://docs.snowflake.com/en/user-guide/views-secure)
+- [Hybrid tables](https://docs.snowflake.com/en/user-guide/tables-hybrid)
