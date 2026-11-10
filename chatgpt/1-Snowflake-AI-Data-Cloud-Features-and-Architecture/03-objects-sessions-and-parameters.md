@@ -54,6 +54,13 @@ Organization
 - **Shares and app distribution:** [sharing note](../../study-notes/9-Storage-Data-Protection-and-sharing/readme.md).
 - **Grants and ownership:** [Domain 2](../2-Account-Management-and-Data-Governance/readme.md).
 
+#### A missing schema between two dots
+
+- `mydb..orders` means **`mydb.PUBLIC.orders`**. Snowflake fills the empty schema segment with `PUBLIC` for compatibility with other SQL systems.
+- It does **not** search every schema in `mydb`, and it does not use your current schema for that empty segment.
+- Prefer the explicit `mydb.PUBLIC.orders` in new SQL. Compare it with `orders`, which uses the session's current database and schema.
+- [Official name-resolution rule](https://docs.snowflake.com/en/sql-reference/name-resolution#resolution-when-schema-omitted-double-dot-notation)
+
 <a id="example-objects"></a>
 
 ## 1.3.3 Example objects
@@ -190,6 +197,7 @@ FROM TABLE(GENERATOR(ROWCOUNT => 3));
 7. Which session-parameter level wins, and what does `UNSET` do?
 8. What are the scopes of a storage integration and a Git repository object?
 9. What does a table function return, and does TABLE(...) create permanent storage?
+10. What object does `mydb..orders` name? Does it search schemas or use the current schema?
 
 <details>
 <summary>Open the recall answer key</summary>
@@ -203,6 +211,7 @@ FROM TABLE(GENERATOR(ROWCOUNT => 3));
 7. An explicit session value wins over user/account defaults for a session parameter. UNSET removes the override so inheritance/defaults can apply.
 8. Storage integration: account-level. Git repository clone: schema-level. The clone is separate from its API integration.
 9. Rows and columns that can be queried with FROM TABLE(...); it does not create a permanent table.
+10. `mydb.PUBLIC.orders`; the empty schema segment resolves specifically to PUBLIC.
 
 </details>
 
@@ -213,3 +222,4 @@ FROM TABLE(GENERATOR(ROWCOUNT => 3));
 - [SQL variables](https://docs.snowflake.com/en/sql-reference/session-variables)
 - [Procedures versus UDFs](https://docs.snowflake.com/en/developer-guide/stored-procedures-vs-udfs)
 - [Sequences](https://docs.snowflake.com/en/user-guide/querying-sequences)
+- [Object name resolution](https://docs.snowflake.com/en/sql-reference/name-resolution)

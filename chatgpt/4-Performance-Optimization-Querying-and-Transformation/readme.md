@@ -282,6 +282,8 @@ ALTER WAREHOUSE analytics_wh
 - QAS is enabled at the warehouse level, but additional serverless compute is used only for eligible work.
 - It consumes credits separately from the warehouse. The scale factor limits the extra consumption rate.
 - Use `QUERY_ACCELERATION_ELIGIBLE` and `SYSTEM$ESTIMATE_QUERY_ACCELERATION` before enabling it broadly.
+- `SNOWFLAKE.ACCOUNT_USAGE.QUERY_ACCELERATION_ELIGIBLE` identifies **past eligible queries that have not already been accelerated** and their eligible execution time. For a specific query ID, `SYSTEM$ESTIMATE_QUERY_ACCELERATION` reports eligibility and estimated run times at different scale factors.
+- The estimate function accepts a query ID from the last **14 days**. Its estimates are planning evidence, not guaranteed speedups; they do not include concurrency effects. QAS is enabled per warehouse, not by one account-wide switch.
 - QAS and search optimization can help the same query: search optimization reduces the partitions to read, then QAS can accelerate eligible remaining work.
 
 - QAS requires Enterprise or higher.
@@ -466,6 +468,8 @@ ALTER SESSION SET USE_CACHED_RESULT = TRUE;
 - Same logical query is not enough: even changing letter case or adding an alias can prevent exact result reuse.
 - A cached result is not a security bypass; the role still needs the required access.
 - Query-result caching is different from the warehouse data cache.
+- A query that calls an **external function** is excluded from automatic persisted-result reuse, even with identical SQL, identical arguments, and unchanged tables. Identical arguments do not create a reusable persisted query result across executions.
+- An external function can be declared `IMMUTABLE` when the remote service truly returns the same output for the same input. That can enable other optimizations, but it **does not remove** the persisted-result exclusion. Do not equate this exclusion with a claim that every external function is nondeterministic. [Persisted-result rules](https://docs.snowflake.com/en/user-guide/querying-persisted-results#retrieval-optimization) · [External function volatility](https://docs.snowflake.com/en/sql-reference/sql/create-external-function)
 
 - Result reuse can work across sessions and warehouses when all reuse and authorization conditions hold; suspending a warehouse does not clear persisted query results.
 - `RESULT_SCAN(query_id)` has a different access rule: for a manually run query, only the user who ran it can read that saved result, even after switching roles. A different user cannot fetch it with `RESULT_SCAN`, even with `ACCOUNTADMIN`. [RESULT_SCAN access rules](https://docs.snowflake.com/en/sql-reference/functions/result_scan)
@@ -869,6 +873,8 @@ FROM parsed;
 36. How should you benchmark result-cache hits, warm warehouse-cache runs, and cold starts separately?
 37. Which two notations traverse nested semi-structured values, and what does the colon do?
 38. What do `DIRECTORY`, `TO_FILE`, and `AI_PARSE_DOCUMENT` each contribute to processing a staged PDF?
+39. Which tool estimates QAS benefits for a particular past query ID, and what are two limits of its estimate?
+40. Can an identical query that calls an `IMMUTABLE` external function automatically reuse the prior persisted result?
 
 <details>
 <summary>Open the recall answer key</summary>
@@ -911,6 +917,8 @@ FROM parsed;
 36. Control persisted-result reuse explicitly, keep warehouse cache state known, capture query IDs/profiles, preserve input/role/warehouse conditions, and repeat representative measurements.
 37. Dot and bracket notation. The colon starts a path from the VARIANT column; dots or brackets then access nested keys or array positions.
 38. DIRECTORY lists staged-file metadata; TO_FILE creates a FILE reference; AI_PARSE_DOCUMENT extracts the document content as JSON-formatted text.
+39. `SYSTEM$ESTIMATE_QUERY_ACCELERATION`; query IDs must be from the last 14 days, and estimated times are not guaranteed or concurrency-aware.
+40. No. Queries containing external functions are excluded from automatic persisted-result reuse, even when the function is declared IMMUTABLE.
 
 </details>
 

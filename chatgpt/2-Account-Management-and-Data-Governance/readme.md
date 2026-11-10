@@ -906,6 +906,9 @@ ALTER TABLE analytics.mart.customer_survey
 #### Aggregation versus projection policies (supplemental depth)
 
 - **Aggregation policy:** Limits a table or view to queries that aggregate records into groups meeting a minimum size. Think **"show a safe group, not an individual row."**
+- **Without an entity key,** `MIN_GROUP_SIZE` counts rows in each group.
+- **With an entity key,** it counts distinct entities identified by that key in each group. For `ENTITY KEY (customer_id)` and `MIN_GROUP_SIZE => 10`, each `GROUP BY region` result needs at least **10 different customers in that region**. Twenty rows from eight customers do not qualify as a separate region result.
+- The entity key does not have to appear in the consumer's `SELECT` or `GROUP BY`; Snowflake still checks it. Groups below the threshold can be combined into a remainder group with a `NULL` region instead of being shown separately.
 - **Projection policy:** Controls whether a particular column can appear in the final query output. Think **"you may use this column in a filter or join, but cannot show its value."** The policy can reject projection or return `NULL`, depending on its definition.
 - These can be attached to the same table. A query must satisfy **both** policies. A projection-constrained column cannot be used as an argument to `COUNT` on an aggregation-constrained table; `COUNT(*)` is a different expression.
 - **Enforcement order to recall:** masking is applied before aggregation, and projection is enforced after aggregation. Aggregation therefore works on masked values where a masked column is involved.
@@ -957,6 +960,7 @@ DROP AGGREGATION POLICY D2_STUDY.LAB.MIN_TWO_ROWS;
 
 - Each returned group must meet the minimum of two rows. This uses a separate table from the privacy-protected `CUSTOMER_SURVEY` example above.
 - [References: Aggregation policies](https://docs.snowflake.com/en/user-guide/aggregation-policies) · [Projection policies](https://docs.snowflake.com/en/user-guide/projection-policies) · [Enforcement order](https://docs.snowflake.com/en/user-guide/aggregation-policies-entity-privacy#about-minimum-group-sizes)
+- [Entity-level minimum-group rules](https://docs.snowflake.com/en/user-guide/aggregation-policies-entity-privacy#about-minimum-group-sizes)
 
 <a id="trust-center"></a>
 
@@ -979,7 +983,14 @@ DROP AGGREGATION POLICY D2_STUDY.LAB.MIN_TWO_ROWS;
 - Think of it as security-posture management—not a substitute for RBAC, network policies, or monitoring.
 - Scanner use can incur serverless compute cost.
 
-- Administrators delegate viewing through `SNOWFLAKE.TRUST_CENTER_VIEWER` and management through `SNOWFLAKE.TRUST_CENTER_ADMIN` application roles.
+- **Trust Center role map:**
+
+| Job | Application role to grant to the team's account role |
+| --- | --- |
+| View findings from enabled scanner packages | `SNOWFLAKE.TRUST_CENTER_VIEWER` |
+| Enable/disable scanners, change supported schedules, and manage findings | `SNOWFLAKE.TRUST_CENTER_ADMIN` |
+
+- These are **application roles**, not the `SNOWFLAKE.SECURITY_VIEWER` database role used for some `ACCOUNT_USAGE` views. `TRUST_CENTER_ADMIN` can also view findings. Event-driven scanners and the Security Essentials package do not have adjustable schedules.
 - Review findings, apply appropriate remediation, and rerun the scanner to verify the issue is resolved.
 - Muting a finding suppresses notifications; it does not fix the configuration.
 - See [Trust Center](https://docs.snowflake.com/en/user-guide/trust-center/overview).
@@ -993,12 +1004,15 @@ CREATE ROLE IF NOT EXISTS security_reviewer;
 GRANT APPLICATION ROLE SNOWFLAKE.TRUST_CENTER_VIEWER
   TO ROLE security_reviewer;
 
+CREATE ROLE IF NOT EXISTS security_scanner_admin;
+GRANT APPLICATION ROLE SNOWFLAKE.TRUST_CENTER_ADMIN
+  TO ROLE security_scanner_admin;
+
 -- Replace REVIEWER_USER with an existing user.
 GRANT ROLE security_reviewer TO USER REVIEWER_USER;
 ```
 
-- The user can activate `SECURITY_REVIEWER` to view findings.
-- Use the `TRUST_CENTER_ADMIN` application role only when scanner management is part of the job.
+- The user can activate `SECURITY_REVIEWER` to view findings. Assign `SECURITY_SCANNER_ADMIN` separately to the people who manage scanners.
 - The review and remediation workflow is in the Trust Center UI; an application-role grant does not itself run a scanner or fix a finding.
 
 - [Reference: Trust Center required roles](https://docs.snowflake.com/en/user-guide/trust-center/overview#required-roles)
@@ -1477,6 +1491,7 @@ Warehouse credits ≈ credit rate for warehouse size
 - Larger warehouses consume credits at a higher hourly rate.
 - Multi-cluster warehouses consume for each running cluster.
 - Warehouses are billed by running time, including work performed after resume. Snowflake bills per second, with a 60-second minimum each time a warehouse starts.
+- **Live upsize:** resizing a running warehouse to a larger size provisions additional compute. Only that **new capacity** starts its own 60-second minimum at the resize; the capacity already running keeps its existing per-second accrual. A live resize does not restart the 60-second minimum for all existing compute.
 - Cloud-services credits are tracked separately from virtual-warehouse compute credits. Daily cloud-services use up to 10% of daily warehouse usage is not billed; usage above that allowance can be billed.
 
 - **Exam trap:** “query ran for 20 seconds” does not always mean “only 20 seconds of warehouse cost.” Consider warehouse start-up, concurrent workload, and idle time before auto-suspend.
@@ -1491,6 +1506,9 @@ Warehouse credits ≈ credit rate for warehouse size
 | Rate 4 credits/hour, one cluster, 30 minutes | `4 × 30 / 60` | `2` |
 | Rate 4 credits/hour per cluster, two clusters for 15 minutes | `4 × 2 × 15 / 60` | `2` |
 | Rate 4 credits/hour, four separate 20-second runs, each followed by suspension | `4 × 4 × 60 / 3600` | Approximately `0.2667` because each start has a 60-second minimum. |
+| Live upsize from 4 to 8 credits/hour; added capacity runs only 20 seconds | `(8 − 4) × 60 / 3600` | Approximately `0.0667` **additional** credits for the new capacity's minimum, plus normal billing for the existing capacity. |
+
+- For the live-resize example, use the rates supplied in the question. If the added capacity runs longer than 60 seconds, bill its actual running seconds after that first minute. [Snowflake compute billing](https://docs.snowflake.com/en/user-guide/cost-understanding-compute)
 
 - If compute usage is 100 credits in a UTC billing day and cloud-services usage is 15, the 10-credit cloud-services allowance leaves 5 billable cloud-services credits.
 - Dollar cost then depends on the applicable price per credit; storage and data transfer are separate cost categories.
@@ -1558,11 +1576,28 @@ ORDER BY compute_credits DESC;
 - `CREDITS_USED` in `WAREHOUSE_METERING_HISTORY` includes compute and cloud-services usage.
 - For the actual billed cloud-services adjustment, use the daily metering views rather than assuming hourly consumption equals the invoice.
 
-- Access can be delegated through relevant `SNOWFLAKE` database roles such as `USAGE_VIEWER`, rather than using `ACCOUNTADMIN` for every report.
+- **Access is view-specific:** `USAGE` on a business database, or having run the query, does not grant access to `SNOWFLAKE.ACCOUNT_USAGE`.
+
+| Account Usage view | Snowflake database role that grants access |
+| --- | --- |
+| `QUERY_HISTORY` | `SNOWFLAKE.GOVERNANCE_VIEWER` |
+| `WAREHOUSE_METERING_HISTORY` | `SNOWFLAKE.USAGE_VIEWER` |
+| `LOGIN_HISTORY` | `SNOWFLAKE.SECURITY_VIEWER` |
+
+- `USAGE_VIEWER` alone is **not** the role for `QUERY_HISTORY`. An account administrator can grant the needed database role to an account role:
+
+```sql
+USE ROLE ACCOUNTADMIN;
+-- Replace ANALYST_ROLE with an existing account role.
+GRANT DATABASE ROLE SNOWFLAKE.GOVERNANCE_VIEWER TO ROLE ANALYST_ROLE;
+```
+
+- `GRANT IMPORTED PRIVILEGES ON DATABASE SNOWFLAKE` is a broader alternative. Choose a specific Snowflake database role when the team needs only selected Account Usage views.
 - `ACCOUNT_USAGE` historical views commonly retain a year of records, but latency and retention are view-specific.
 - Information Schema functions often provide fresher, shorter-range results.
 - `ACCESS_HISTORY` requires Enterprise or higher.
 - Match the view to the question: login failure, query runtime, warehouse credits, and data access are different investigations.
+- [Reference: Account Usage database-role mapping](https://docs.snowflake.com/en/sql-reference/account-usage#database-role-required-to-access-account-usage-views)
 
 #### Daily billed credits by service type
 
@@ -1758,6 +1793,10 @@ GRANT ROLE cost_reviewer TO USER REVIEWER_USER;
 40. Which key stays in the application, and which key is registered on the Snowflake user?
 41. How do aggregation and projection policies restrict different parts of a query, and which is enforced first?
 42. Can a materialized view be created from a table protected by a tag-based masking policy inherited from its database?
+43. A region has 20 rows from eight customers. Does `MIN_GROUP_SIZE => 10` pass when the aggregation policy has `ENTITY KEY (customer_id)`?
+44. Which Trust Center application role only views findings, and which manages scanners and schedules?
+45. A role ran a query but cannot select from `SNOWFLAKE.ACCOUNT_USAGE.QUERY_HISTORY`. Which Snowflake database role grants access to that view?
+46. A running warehouse grows from 4 to 8 credits/hour and suspends 20 seconds later. Which capacity receives a new 60-second minimum?
 
 <details>
 <summary>Open the recall answer key</summary>
@@ -1804,6 +1843,10 @@ GRANT ROLE cost_reviewer TO USER REVIEWER_USER;
 40. Register the public key with the user and protect the private key in the client. Named key-pair management is available alongside legacy RSA_PUBLIC_KEY slots.
 41. Aggregation requires sufficiently large groups; projection controls whether a column may appear in the final result. Aggregation is enforced before projection; masking is applied before aggregation.
 42. No. An inherited tag-based masking policy still protects the base table and blocks materialized-view creation on it. Adding the policy after the materialized view exists invalidates the view for queries.
+43. No. With an entity key, the threshold counts distinct customers per region, not rows. The region needs at least 10 customers to appear as its own group; the key is checked even if the query does not display it.
+44. `SNOWFLAKE.TRUST_CENTER_VIEWER` views findings; `SNOWFLAKE.TRUST_CENTER_ADMIN` manages scanners and supported schedules. Grant these application roles to account roles.
+45. `SNOWFLAKE.GOVERNANCE_VIEWER`, granted to an account role by an administrator. Running the query and having USAGE on another database do not grant Account Usage access.
+46. Only the added 4-credits/hour capacity: `4 × 60 / 3600 ≈ 0.0667` extra credits. Existing compute continues under its own running-time charge.
 
 </details>
 

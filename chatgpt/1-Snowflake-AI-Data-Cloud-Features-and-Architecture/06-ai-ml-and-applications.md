@@ -135,6 +135,22 @@ SELECT AI_COMPLETE('supported-model-name', 'Explain micro-partition pruning brie
   - Support articles.
 - It is often the retrieval step in **RAG**.
 - Maintaining and serving the search service has costs.
+- The service refreshes as its source query's data changes; a suitable `TARGET_LAG` is a freshness target, not an exact refresh timer.
+- An optional **Cortex Search primary key** identifies each source-query row. Its columns must be text and the key values must be unique per row.
+  - This is a key configured on the **search service**; it does not create an enforced primary-key constraint on the source table.
+  - With a primary key, Snowflake can use an optimized refresh path that processes changed rows instead of re-embedding all unchanged documents on every refresh.
+  - The service can still periodically rebuild its search index; that does not mean it must re-embed unchanged data.
+- During development, test a service from SQL with `SNOWFLAKE.CORTEX.SEARCH_PREVIEW`. It accepts the service name and a JSON string containing the search request. It is intended for testing; use the API for a low-latency application.
+
+```sql
+-- Illustrative: replace the name with a Cortex Search service you created.
+SELECT SNOWFLAKE.CORTEX.SEARCH_PREVIEW(
+  'D1_STUDY.LAB.DOC_SEARCH',
+  '{"query":"device fails to boot","limit":3}'
+);
+```
+
+- [Cortex Search refresh and primary keys](https://docs.snowflake.com/en/user-guide/snowflake-cortex/cortex-search/cortex-search-overview#refreshes) · [SEARCH_PREVIEW](https://docs.snowflake.com/en/sql-reference/functions/search_preview-snowflake-cortex)
 - Design service access carefully:
   - Cortex Search uses **owner's rights**.
   - Service access can expose indexed content even when the caller lacks direct source-table access.
@@ -231,6 +247,7 @@ SELECT AI_COMPLETE('supported-model-name', 'Explain micro-partition pruning brie
 9. How do semantic definitions and verified queries support Analyst development and evaluation?
 10. Does killing a notebook kernel prove that its service/compute pool stopped?
 11. Which function extracts content from a staged document, and what value type does it accept?
+12. How can a Cortex Search primary key reduce refresh work, and which SQL function tests the service during development?
 
 <details>
 <summary>Open the recall answer key</summary>
@@ -246,6 +263,7 @@ SELECT AI_COMPLETE('supported-model-name', 'Explain micro-partition pruning brie
 9. Semantic definitions describe the business data; verified question/SQL pairs provide reviewed expected answers for guidance/evaluation.
 10. No. Check/stop the actual notebook service/runtime and independent compute resources, not just the kernel or SQL warehouse.
 11. `AI_PARSE_DOCUMENT` accepts a `FILE` value, which you can construct with `TO_FILE` from a stage path or file URL.
+12. A unique text primary key lets the service use an optimized path for changed rows; test with `SNOWFLAKE.CORTEX.SEARCH_PREVIEW`.
 
 </details>
 

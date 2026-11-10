@@ -81,6 +81,15 @@ CREATE TRANSIENT TABLE study_rebuildable (id NUMBER)
 | Apache Iceberg | Uses the open Iceberg table format with catalog metadata and data files. | Catalog ownership and storage location affect management and supported operations. |
 | Dynamic | Stores the result of a query and refreshes it to pursue a target freshness. | Declare the query and target lag instead of writing every pipeline step manually. |
 
+#### Read-only table types versus writable tables
+
+- A standard Snowflake table accepts authorized `INSERT`, `UPDATE`, and `DELETE`. Temporary and transient tables also hold rows you can change while they exist.
+- An **external table is read-only**: it lets Snowflake query files in an external stage, but `INSERT`, `UPDATE`, and `DELETE` against the external table are unsupported. This remains true whether the files are CSV, Parquet, or another supported format.
+- To change external-table data, change the source files outside Snowflake and refresh the external table's **file metadata** when needed. `ALTER EXTERNAL TABLE ... REFRESH` registers file changes; it is not row-level DML.
+- A **dynamic table** is also read-only to users: Snowflake refreshes its stored query result. Change its source tables or definition rather than updating its output rows directly.
+- Iceberg DML capabilities depend on whether Snowflake or an external catalog manages the table and on the supported configuration. Check the specific table setup before choosing a write operation.
+- [External table DML rule](https://docs.snowflake.com/en/user-guide/tables-external-intro) · [Dynamic table DML rule](https://docs.snowflake.com/en/user-guide/dynamic-tables/decision-guide)
+
 - For **Iceberg**, check the catalog and storage choices separately.
 - **Catalog:**
   - Snowflake-managed catalog.
@@ -226,6 +235,7 @@ DROP TABLE D1_STUDY.LAB.HYBRID_ORDER_STATUS;
 8. How do secure, materialized, and standard views differ?
 9. How do an external volume and a catalog integration have different jobs?
 10. When would you choose a hybrid table, and what is special about its primary key?
+11. Why does `UPDATE external_csv_table ...` fail even when the CSV values are valid?
 
 <details>
 <summary>Open the recall answer key</summary>
@@ -240,6 +250,7 @@ DROP TABLE D1_STUDY.LAB.HYBRID_ORDER_STATUS;
 8. Standard stores a query; materialized stores maintained results; SECURE protects view behavior/definition and can apply to either.
 9. An external volume configures supported external Iceberg storage access; a catalog integration connects supported catalog/metadata sources.
 10. Choose it for fast point lookups and frequent small row changes. Its primary key is required and enforced, unlike the generally informational primary key on a standard Snowflake table.
+11. External tables are read-only regardless of file format; change the files at their source and refresh file metadata as needed.
 
 </details>
 

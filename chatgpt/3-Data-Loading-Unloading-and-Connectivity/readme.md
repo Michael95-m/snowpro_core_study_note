@@ -981,7 +981,7 @@ AS
   COPY INTO orders
     FROM @orders_external_stage/incoming/
     FILE_FORMAT = (FORMAT_NAME = 'csv_orders_format')
-    ON_ERROR = CONTINUE;
+    ON_ERROR = SKIP_FILE;
 
 SHOW PIPES LIKE 'ORDERS_PIPE';
 DESCRIBE PIPE orders_pipe;
@@ -994,8 +994,12 @@ DESCRIBE PIPE orders_pipe;
   - Pipe source: `@stage/incoming/`.
   - Effective location: `s3://bucket/orders/incoming/`.
 - Existing files do not become a complete backfill merely because a new pipe exists.
-- Current Snowflake also has provider-specific internal-stage auto-ingest support in preview:
-  - Do not treat a newer preview example as the universal cloud-event setup.
+- `ON_ERROR = SKIP_FILE` rejects an entire bad file and lets other files proceed. It is Snowpipe's default if omitted.
+- `ON_ERROR = CONTINUE` instead keeps valid rows from a bad file. That creates a **partial load** you must account for before replaying a correction.
+- A configured Snowpipe error notification reports failed files, but a partial load under `ON_ERROR = CONTINUE` normally does not trigger one. Check `COPY_HISTORY` for `Partially loaded`.
+- A file-based pipe cannot use every bulk `COPY` option. In particular, do not put `FORCE`, `FILES`, `VALIDATION_MODE`, `PURGE`, or `RETURN_FAILED_ONLY` inside its definition.
+- Snowpipe does not remove staged files after loading. Clean them up only after confirming their load status.
+- Auto-ingest from a named internal stage is currently in **public preview for AWS-hosted Snowflake accounts**. Do not assume the same setup works in every account.
 
 #### C. Notify through the Snowpipe REST API
 
@@ -1005,7 +1009,8 @@ DESCRIBE PIPE orders_pipe;
   - It does not upload local file bytes.
   - It is not the same API as row-based Snowpipe Streaming.
 - Supported staging choices include named internal stages and external stages.
-- Authentication and the relevant stage/table/pipe privileges are still required.
+- The REST client needs authentication, `USAGE` on the pipe's database/schema, and `OPERATE` on the pipe for `insertFiles`.
+- The **pipe owner's role** needs the required access to the stage and target table. The REST caller does not need direct stage or target-table privileges just to submit filenames.
 
 References: [Snowpipe overview](https://docs.snowflake.com/en/user-guide/data-load-snowpipe-intro), [Automating Snowpipe](https://docs.snowflake.com/en/user-guide/data-load-snowpipe-auto), [Snowpipe REST API](https://docs.snowflake.com/en/user-guide/data-load-snowpipe-rest-overview), [CREATE PIPE](https://docs.snowflake.com/en/sql-reference/sql/create-pipe).
 
@@ -1032,6 +1037,12 @@ FROM TABLE(D3_STUDY.INFORMATION_SCHEMA.VALIDATE_PIPE_LOAD(
 - A growing queue is a symptom:
   - Check pipe state, event delivery, cloud access, parsing, and target conversion.
   - Increasing your BI warehouse does not add Snowpipe compute.
+- Diagnose a missing file in this order:
+  1. `LIST` the effective stage path: is the file actually there?
+  2. Check `SYSTEM$PIPE_STATUS`: is the pipe running, and are files queued?
+  3. Check `COPY_HISTORY`: is this file loaded, partially loaded, or failed?
+  4. If it is absent from history and the queue, check the cloud notification route and pipe path.
+  5. If it failed, inspect `FIRST_ERROR_MESSAGE` and then `VALIDATE_PIPE_LOAD` when supported.
 - Validation functions have restrictions for transformed pipe definitions:
   - Do not assume `VALIDATE_PIPE_LOAD` can evaluate every transformation.
 - Pausing prevents new file loads from starting:
@@ -1044,6 +1055,7 @@ FROM TABLE(D3_STUDY.INFORMATION_SCHEMA.VALIDATE_PIPE_LOAD(
 - During that period, reusing the same file path/name can be ignored:
   - Even if the contents were corrected.
   - This can also affect previously failed files.
+- The record belongs to the **pipe**, not to the target table. `TRUNCATE TABLE` does not reset it.
 - Prefer unique filenames for new deliveries.
 - Treat replay/backfill as planned operations, not random retries.
 - `ALTER PIPE ... REFRESH`:
@@ -1056,10 +1068,32 @@ FROM TABLE(D3_STUDY.INFORMATION_SCHEMA.VALIDATE_PIPE_LOAD(
   - Force-resuming does not restore files/events that have expired from the queue.
 - Recreating a pipe removes its previous pipe-load metadata:
   - A broad refresh afterward can reload old files and duplicate data.
+- If an already processed file needs correction:
+  1. Check whether the original load inserted rows, including a partial load.
+  2. Remove or replace those original rows using a known key or saved source filename; otherwise a reload adds duplicates.
+  3. Upload the correction with a **new path/name** so Snowpipe can receive a new notification, or load only that file manually with warehouse-backed `COPY INTO`.
+  4. Do not expect `ALTER PIPE ... REFRESH` to retry the same path/name while the pipe remembers it.
+- Manual `COPY INTO` and Snowpipe keep separate load metadata. A manual `COPY` can load a file already processed by Snowpipe; select the intended file explicitly.
 
 ```sql
 -- Recovery example: use a narrow prefix for the intended recent files.
 ALTER PIPE orders_pipe REFRESH PREFIX = 'recovery_batch/';
+
+-- Inspect recent per-file results, including partial and failed loads.
+SELECT FILE_NAME, STATUS, ROW_COUNT, ERROR_COUNT, FIRST_ERROR_MESSAGE
+FROM TABLE(D3_STUDY.INFORMATION_SCHEMA.COPY_HISTORY(
+  TABLE_NAME => 'D3_STUDY.LAB.ORDERS',
+  START_TIME => DATEADD('hour', -24, CURRENT_TIMESTAMP())
+));
+
+-- Illustrative deliberate reload: create the stage/table/format first, and
+-- use the same file format/options as the pipe.
+-- Reconcile the original rows first, or this can duplicate them.
+COPY INTO D3_STUDY.LAB.ORDERS
+  FROM @D3_STUDY.LAB.ORDERS_EXTERNAL_STAGE
+  FILES = ('incoming/orders_2026_09_10.csv')
+  FILE_FORMAT = (FORMAT_NAME = 'D3_STUDY.LAB.CSV_ORDERS_FORMAT')
+  ON_ERROR = SKIP_FILE;
 
 -- Only after investigating a stale pipe and planning missed-file recovery:
 -- SELECT SYSTEM$PIPE_FORCE_RESUME(
@@ -1095,6 +1129,7 @@ References: [Troubleshooting Snowpipe](https://docs.snowflake.com/en/user-guide/
   - IoT measurements.
   - Kafka messages.
   - Source CDC records delivered by an upstream system.
+- Streaming ingestion **inserts** rows. If CDC records describe updates/deletes, land them as raw records and apply the changes downstream with a Stream/Task and `MERGE` or another suitable pipeline.
 - Snowflake manages ingestion compute.
 - Seconds-level query availability is a design goal, not an unconditional latency promise.
 
@@ -1104,21 +1139,24 @@ Application/Kafka -> streaming SDK or REST API -> Snowflake table
 
 #### B. Channels, ordering, and recovery
 
-- A **Named Channel** identifies a stream of submitted rows.
-- Ordering is associated with the channel:
-  - Do not assume one global order across all channels.
-- An **offset token** records a source position associated with committed ingestion.
-- For reliable recovery:
-  1. Keep source records in a durable source such as Kafka.
-  2. Read the last committed offset token.
-  3. Resume at the next uncommitted source position.
-  4. Handle retryable errors and validate progress.
-- Exactly-once delivery requires correct client/source offset handling:
-  - Snowflake does not make every repeated business event unique.
-  - Losing the client's uncommitted in-memory buffer is not fixed by an offset token alone.
-- Different channel types/architectures can have different guarantees:
-  - Learn the Named Channel/offset idea.
-  - Check the SDK/API contract used by a real implementation.
+- A **channel** is a logical route for submitted rows through a streaming pipe. It is not another table.
+- Choose the channel type according to delivery requirements:
+
+| Channel type | Ordering and recovery | Typical decision |
+| --- | --- | --- |
+| **Named Channel** | Preserves order **within that channel**. A client-supplied offset token tracks committed source progress for exactly-once recovery when the client replays correctly. | CDC/Kafka partitions when order and duplicate-free recovery matter. |
+| **Elastic Channel** | No ordering guarantee; at-least-once delivery. An uncertain retry can duplicate rows. | Many producers when order is unnecessary and duplicates are acceptable or handled downstream. |
+
+- Different Named Channels do **not** create one global order. Map each independent source partition to a stable channel name.
+- An **offset token** is a source position, such as Kafka partition offset `100`. Snowflake stores it when the submitted rows commit.
+- The token is a **checkpoint, not a uniqueness constraint**: Snowflake does not compare business IDs and automatically reject repeated events.
+- Recovery example after a client crash:
+  1. Source records `100` through `105` exist durably. The client submits them on channel `sensor_partition_0`.
+  2. The client crashes before knowing which rows committed. It reopens the **same** Named Channel and reads committed offset `102`.
+  3. The client replays retained source records starting at `103`, with their original offsets and order.
+  4. If it replays `102` again, it may insert a duplicate; if it starts at `104`, it can lose `103`.
+- Keep uncommitted source records in Kafka or another durable source. An offset token cannot recover data that existed only in the crashed process's memory.
+- Inactive Named Channels and their offsets are removed after **30 days**; do not use their state as the only long-term source checkpoint.
 
 #### C. Classic versus high-performance architecture
 
@@ -1128,6 +1166,11 @@ Application/Kafka -> streaming SDK or REST API -> Snowflake table
   - Volume-based ingestion billing.
   - Custom streaming pipes for supported in-flight transformations.
   - Supported schema-evolution options.
+- A **default streaming pipe** is created on demand for a target table when the client first uses it:
+  - Name pattern: `<TABLE_NAME>-STREAMING`.
+  - No manual `CREATE PIPE` is needed for straightforward column matching.
+  - It does **not** perform in-flight transformations; create a custom streaming pipe for those.
+- Choosing a default/custom pipe is separate from choosing a Named/Elastic Channel.
 - Do not assume every Classic SDK option or every bulk `COPY` option applies unchanged.
 - Deep SDK installation/version details are implementation work; the central exam distinction is **files versus rows**.
 
@@ -1160,7 +1203,29 @@ AS
 - Use ordinary `SELECT` to verify rows after the client commits ingestion.
 - **Remember:** Snowpipe = staged files; Snowpipe Streaming = direct row ingestion.
 
-References: [Snowpipe Streaming](https://docs.snowflake.com/en/user-guide/snowpipe-streaming/data-load-snowpipe-streaming-overview), [Streaming CREATE PIPE](https://docs.snowflake.com/en/sql-reference/sql/create-pipe#pipes-for-snowpipe-streaming-with-high-performance-architecture), [High-performance best practices](https://docs.snowflake.com/en/user-guide/snowpipe-streaming/snowpipe-streaming-high-performance-best-practices), [Streaming error handling and offsets](https://docs.snowflake.com/en/user-guide/snowpipe-streaming/snowpipe-streaming-high-performance-error-handling).
+#### E. Check progress and errors
+
+```sql
+-- After a streaming client has opened a channel:
+SHOW CHANNELS IN PIPE streaming_events_pipe;
+
+-- Historical activity (ACCOUNT_USAGE can have reporting latency).
+SELECT CREATED_ON, CHANNEL_NAME, PIPE_NAME, ROWS_INSERTED, ROW_ERROR_COUNT
+FROM SNOWFLAKE.ACCOUNT_USAGE.SNOWPIPE_STREAMING_CHANNEL_HISTORY
+WHERE TABLE_DATABASE_NAME = 'D3_STUDY'
+  AND TABLE_SCHEMA_NAME = 'LAB'
+ORDER BY CREATED_ON DESC
+LIMIT 20;
+```
+
+- For live recovery, the client should inspect its channel status and **last committed offset**. `SHOW CHANNELS` and history help investigation; a table row count is not a source checkpoint.
+- The history query requires access to `SNOWFLAKE.ACCOUNT_USAGE`, and this view covers high-performance streaming rather than Classic.
+- Watch rejected-row counts and the last error. In high-performance streaming, valid rows can load while bad rows are skipped.
+- To retain the original payload of rejected rows for investigation, enable error logging on the **target table** (when supported): `ALTER TABLE streaming_events SET ERROR_LOGGING = TRUE;`.
+- An invalid channel may need to be reopened and replayed from its committed offset. A `401`/`403` permission problem needs the access issue fixed first.
+- For a small hands-on run, use the [Snowpipe Streaming SDK replay lab](../additional-exercises/05-snowpipe-streaming-sdk/readme.md).
+
+References: [Snowpipe Streaming](https://docs.snowflake.com/en/user-guide/snowpipe-streaming/data-load-snowpipe-streaming-overview), [Table support and insert-only operations](https://docs.snowflake.com/en/user-guide/snowpipe-streaming/snowpipe-streaming-table-support), [Streaming pipe object](https://docs.snowflake.com/en/user-guide/snowpipe-streaming/snowpipe-streaming-pipe-object), [Channel types](https://docs.snowflake.com/en/user-guide/snowpipe-streaming/snowpipe-streaming-choosing-channel-type), [Named Channel offsets](https://docs.snowflake.com/en/user-guide/snowpipe-streaming/snowpipe-streaming-channels), [Streaming error handling](https://docs.snowflake.com/en/user-guide/snowpipe-streaming/snowpipe-streaming-high-performance-error-handling), [Channel operations](https://docs.snowflake.com/en/user-guide/snowpipe-streaming/snowpipe-streaming-operations), [Error tables](https://docs.snowflake.com/en/user-guide/snowpipe-streaming/snowpipe-streaming-error-tables).
 
 ### 3.2.4 Streams: remember a processing position
 
@@ -2155,6 +2220,15 @@ Use these to check understanding after running the SQL yourself.
 24. How does current Snowpipe pricing differ from older per-file/per-compute pricing?
 25. How does Snowpipe Streaming differ from file-based Snowpipe?
 26. Why do channels and committed offset tokens matter for streaming recovery?
+
+Quick scenario checks:
+
+- A CSV file partially loads through Snowpipe. Why might an error notification not arrive, and where can you check the partial result?
+- A corrected file keeps its original path/name. Why does `ALTER PIPE ... REFRESH` not reload it, and what are two deliberate recovery routes?
+- A streaming producer crashes after submitting offsets `100`-`105`; the last committed offset is `102`. Where should it resume?
+- When would you choose a Named Channel instead of an Elastic Channel? Does the default streaming pipe decide that choice?
+- Can Snowpipe Streaming apply an incoming CDC delete directly to the target table?
+
 27. Does a Stream store a second copy of the source table?
 28. What happens to a Stream offset after `SELECT`, committed DML, and rolled-back DML?
 29. How can a standard Stream represent an update? Why is it not a full event audit log?
@@ -2216,6 +2290,15 @@ Use these to check understanding after running the SQL yourself.
 24. Current billing is by loaded data volume, not a per-file fee or user-sized warehouse time. Text uses uncompressed size; binary uses observed size.
 25. Snowpipe loads staged files; Streaming submits rows without intermediate staged files.
 26. They define source progress and recovery boundaries. Correct replay from committed offsets is required; business-event uniqueness is not automatic.
+
+Quick scenario checks:
+
+- `ON_ERROR = CONTINUE` can leave valid rows in a partially loaded file without a failed-file notification. Check `COPY_HISTORY` for `Partially loaded`.
+- Pipe metadata remembers the path/name. Use a new path/name with a new event, or use a targeted manual `COPY INTO`; reconcile original rows first.
+- Resume at `103` from a durable source, using the same Named Channel and original offsets.
+- Choose Named for per-channel ordering and offset-based recovery; Elastic is at-least-once without that ordering. The default/custom pipe choice is separate.
+- No. Streaming inserts raw CDC records; process deletes downstream.
+
 27. No. It stores an offset and uses source change tracking/version history.
 28. SELECT leaves it; committed consumption advances it; rollback preserves it.
 29. An update can appear as an old-value DELETE and new-value INSERT, both marked as updates. Net changes can collapse intermediate actions.
