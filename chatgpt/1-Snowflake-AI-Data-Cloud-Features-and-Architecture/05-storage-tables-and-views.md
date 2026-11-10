@@ -10,6 +10,8 @@
 
 ## 1.5.1 Micro-partitions and natural clustering
 
+### Micro-partitions and pruning
+
 - For standard Snowflake tables, Snowflake automatically organizes rows into **micro-partitions**.
 - These are:
   - Immutable.
@@ -29,6 +31,8 @@
 - A candidate partition can contain rows outside the filter.
 - **Pruning** selects which partitions must be scanned.
 - The query still checks which rows match.
+
+### Natural clustering and clustering keys
 
 - **Natural clustering** comes from the order in which data is loaded or inserted.
 - Pruning can become less effective when frequently filtered values are scattered across many overlapping micro-partitions.
@@ -69,11 +73,7 @@ CREATE TRANSIENT TABLE study_rebuildable (id NUMBER)
 
 ## 1.5.3 External, Iceberg, and dynamic tables
 
-- External, Iceberg, and Dynamic Tables describe:
-  - Data access.
-  - Data format.
-  - Refresh behavior.
-- They are not simply alternative lifetimes for every table type listed above.
+- These specialized table types differ in storage, catalog, and refresh behavior. Permanent, temporary, and transient describe table lifetimes.
 
 | Table | What it does | Key distinction |
 | --- | --- | --- |
@@ -81,16 +81,18 @@ CREATE TRANSIENT TABLE study_rebuildable (id NUMBER)
 | Apache Iceberg | Uses the open Iceberg table format with catalog metadata and data files. | Catalog ownership and storage location affect management and supported operations. |
 | Dynamic | Stores the result of a query and refreshes it to pursue a target freshness. | Declare the query and target lag instead of writing every pipeline step manually. |
 
-#### Read-only table types versus writable tables
+- For comparison, a standard Snowflake table accepts authorized `INSERT`, `UPDATE`, and `DELETE`. Temporary and transient tables also hold rows you can change while they exist.
 
-- A standard Snowflake table accepts authorized `INSERT`, `UPDATE`, and `DELETE`. Temporary and transient tables also hold rows you can change while they exist.
-- An **external table is read-only**: it lets Snowflake query files in an external stage, but `INSERT`, `UPDATE`, and `DELETE` against the external table are unsupported. This remains true whether the files are CSV, Parquet, or another supported format.
-- To change external-table data, change the source files outside Snowflake and refresh the external table's **file metadata** when needed. `ALTER EXTERNAL TABLE ... REFRESH` registers file changes; it is not row-level DML.
-- A **dynamic table** is also read-only to users: Snowflake refreshes its stored query result. Change its source tables or definition rather than updating its output rows directly.
-- Iceberg DML capabilities depend on whether Snowflake or an external catalog manages the table and on the supported configuration. Check the specific table setup before choosing a write operation.
-- [External table DML rule](https://docs.snowflake.com/en/user-guide/tables-external-intro) · [Dynamic table DML rule](https://docs.snowflake.com/en/user-guide/dynamic-tables/decision-guide)
+### External tables
 
-- For **Iceberg**, check the catalog and storage choices separately.
+- An external table lets Snowflake query files in an external stage. The files remain in external cloud storage.
+- It is **read-only**: `INSERT`, `UPDATE`, and `DELETE` against the external table are unsupported, whether the files are CSV, Parquet, or another supported format.
+- To change the data, change the source files outside Snowflake. Refresh the table's **file metadata** when needed with `ALTER EXTERNAL TABLE ... REFRESH`; this registers file changes, not row-level updates.
+- [External table guide](https://docs.snowflake.com/en/user-guide/tables-external-intro).
+
+### Apache Iceberg tables
+
+- Check the catalog and storage choices separately.
 - **Catalog:**
   - Snowflake-managed catalog.
   - External catalog.
@@ -102,7 +104,13 @@ CREATE TRANSIENT TABLE study_rebuildable (id NUMBER)
   - Is read-only.
   - Is externally stored.
   - Follows standard-table Fail-safe rules.
-- Check the actual catalog and storage setup.
+- Iceberg DML capabilities depend on the catalog owner and supported configuration. Check the actual setup before choosing a write operation.
+
+### Dynamic tables
+
+- A dynamic table stores the result of a query. Snowflake refreshes that result from its source tables.
+- It is **read-only to users**: change the source tables or the definition instead of updating its output rows directly.
+- [Dynamic table DML rule](https://docs.snowflake.com/en/user-guide/dynamic-tables/decision-guide).
 
 ```sql
 -- Existing source table and refresh warehouse required.
@@ -121,7 +129,6 @@ AS
 - Snowflake schedules refresh work to pursue the target.
 - Incremental/full refresh support depends on the query and mode.
 - Refreshing the stored result consumes compute.
-- Ordinary direct DML is not how you maintain Dynamic Table results.
 
 <a id="view-types"></a>
 
@@ -186,6 +193,8 @@ CREATE SECURE VIEW study_public_customers AS
 
 ## 1.5.6 Hybrid tables (supplemental table-type depth)
 
+### What makes a hybrid table different
+
 - **Remember:** Use a hybrid table for an application that needs many fast reads and small writes by key, such as looking up and updating one order's status.
 - Hybrid tables use a **row store** as primary storage, with indexes and row locking for concurrent transactional work. Snowflake also copies data asynchronously to columnar object storage for larger analytical scans.
 - A **primary key is required and enforced**. This differs from standard Snowflake tables, whose primary key declaration is generally informational.
@@ -194,6 +203,8 @@ CREATE SECURE VIEW study_public_customers AS
 - Choose a standard table for a typical large analytical scan. A hybrid table is for low-latency point lookups and frequent row-level changes; it is not a faster replacement for every standard table.
 - Current limitations include no clustering keys, Snowpipe or Snowpipe Streaming ingestion, data sharing, or Fail-safe for hybrid tables. Check current availability and limits before planning a real deployment.
 - **Exam scope:** the supplied C03 guide lists table types but does not name hybrid tables. Learn this feature-selection distinction as supplemental depth.
+
+### Optional SQL exercise
 
 ```sql
 -- Optional: run only in an account/region where hybrid tables are available.

@@ -183,6 +183,8 @@ JOIN customers c
 
 - **Remember:** Attribution is query-level compute accounting, not the whole warehouse/account invoice.
 
+#### Choose a history view
+
 - The shared `SNOWFLAKE` database provides historical views for monitoring.
 
 | View | Use it for | Important limitation |
@@ -200,6 +202,8 @@ JOIN customers c
 - QAS credits are in a separate column; sum them with attributed compute to include acceleration.
 - Cloud services, storage, and transfer are outside this combined query-compute figure.
 - See [query attribution](https://docs.snowflake.com/en/sql-reference/account-usage/query_attribution_history).
+
+#### Find slow and expensive queries
 
 ```sql
 -- Find recent queries with the most remote spill or overload queue time.
@@ -638,6 +642,8 @@ QUALIFY ROW_NUMBER() OVER (
 
 - **Remember:** Extract a path, cast it, and FLATTEN arrays only when the desired output grain needs expansion.
 
+#### Read JSON paths and cast values
+
 - From your loading course note: JSON keys are case-sensitive, while unquoted Snowflake column names are case-insensitive.
 - Extract a path from `VARIANT`, then cast it to the type you need.
 - Arrays use zero-based indexes.
@@ -664,7 +670,14 @@ SELECT
   src:customer.id::NUMBER AS customer_id,
   src:customer.name::STRING AS customer_name
 FROM analytics.raw.events;
+```
 
+- `PARSE_JSON` converts valid JSON text into a `VARIANT`; `TRY_PARSE_JSON` returns SQL NULL rather than raising a parsing error for invalid input.
+- Missing JSON paths and explicit JSON `null` are different: use `IS_NULL_VALUE` when you must distinguish a JSON null from SQL NULL.
+
+#### Expand arrays with FLATTEN
+
+```sql
 -- Turn one array element into one row while keeping the original row context.
 SELECT
   e.src:customer.id::NUMBER AS customer_id,
@@ -672,9 +685,6 @@ SELECT
 FROM analytics.raw.events AS e,
 LATERAL FLATTEN(INPUT => e.src:products) AS f;
 ```
-
-- `PARSE_JSON` converts valid JSON text into a `VARIANT`; `TRY_PARSE_JSON` returns SQL NULL rather than raising a parsing error for invalid input.
-- Missing JSON paths and explicit JSON `null` are different: use `IS_NULL_VALUE` when you must distinguish a JSON null from SQL NULL.
 
 ```sql
 -- Self-contained query: no source table required.
@@ -695,6 +705,8 @@ LATERAL FLATTEN(INPUT => s.src:items) AS f;
 - Use `OUTER => TRUE` when zero-row expansions should preserve a parent row, and nested lateral calls for nested arrays.
 - Flattening two independent arrays can multiply the output; confirm the intended grain before joining or aggregating.
 
+#### Store frequently used fields
+
 - Extracting selected fields into typed relational columns with CTAS or `INSERT ... SELECT` is a common ELT pattern.
 - Frequently queried fields can then be validated and transformed without repeating every path expression.
 - A materialized view is another option for supported repeated patterns when its cost and definition restrictions fit.
@@ -705,6 +717,8 @@ LATERAL FLATTEN(INPUT => s.src:items) AS f;
 ### 4.4.6 Unstructured data: staged files and secure URLs
 
 - **Remember:** A file URL and directory metadata reference bytes; they do not parse document contents.
+
+#### File URLs and directory metadata
 
 - Unstructured data has no relational schema.
 - It must be stored on an internal or external stage before Snowflake can access or process it.

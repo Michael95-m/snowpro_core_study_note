@@ -582,6 +582,8 @@ References: [COPY validation and error options](https://docs.snowflake.com/en/sq
 
 ### 3.1.10 Transform data during a load
 
+#### What a COPY transformation can do
+
 - A `SELECT` inside `COPY INTO <table>` can:
   1. Select or reorder columns.
   2. Cast values.
@@ -589,6 +591,9 @@ References: [COPY validation and error options](https://docs.snowflake.com/en/sq
   4. Extract fields from JSON.
   5. Add supported file metadata.
 - This is a **limited transformation query**, not a full SQL transformation pipeline.
+
+#### Limits on functions and SQL clauses
+
 - Only supported functions can be used inside the load transformation:
   - `TRIM` and `TRY_TO_DECIMAL` are supported.
   - `UPPER` and `LOWER` are not supported; apply them after loading.
@@ -601,6 +606,8 @@ References: [COPY validation and error options](https://docs.snowflake.com/en/sq
 - Do not combine the transforming `SELECT` with:
   - `MATCH_BY_COLUMN_NAME`.
   - `VALIDATION_MODE`.
+
+#### Example: clean fields during and after loading
 
 ```sql
 CREATE TABLE orders_with_source (
@@ -629,6 +636,8 @@ COPY INTO orders_with_source
 UPDATE orders_with_source
 SET region = UPPER(region);
 ```
+
+#### Check conversion results
 
 - `TRY_TO_DECIMAL` returns SQL `NULL` when conversion fails:
   - Decide whether that is acceptable.

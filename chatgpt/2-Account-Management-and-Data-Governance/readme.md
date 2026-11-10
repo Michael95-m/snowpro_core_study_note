@@ -903,17 +903,25 @@ ALTER TABLE analytics.mart.customer_survey
 
 - [References: CREATE PRIVACY POLICY](https://docs.snowflake.com/en/sql-reference/sql/create-privacy-policy) · [Differential privacy tutorial](https://docs.snowflake.com/en/user-guide/tutorials/diff-privacy)
 
-#### Aggregation versus projection policies (supplemental depth)
+#### Aggregation policies (supplemental depth)
 
 - **Aggregation policy:** Limits a table or view to queries that aggregate records into groups meeting a minimum size. Think **"show a safe group, not an individual row."**
 - **Without an entity key,** `MIN_GROUP_SIZE` counts rows in each group.
 - **With an entity key,** it counts distinct entities identified by that key in each group. For `ENTITY KEY (customer_id)` and `MIN_GROUP_SIZE => 10`, each `GROUP BY region` result needs at least **10 different customers in that region**. Twenty rows from eight customers do not qualify as a separate region result.
 - The entity key does not have to appear in the consumer's `SELECT` or `GROUP BY`; Snowflake still checks it. Groups below the threshold can be combined into a remainder group with a `NULL` region instead of being shown separately.
+
+#### Projection policies (supplemental depth)
+
 - **Projection policy:** Controls whether a particular column can appear in the final query output. Think **"you may use this column in a filter or join, but cannot show its value."** The policy can reject projection or return `NULL`, depending on its definition.
+
+#### How these policies work together
+
 - These can be attached to the same table. A query must satisfy **both** policies. A projection-constrained column cannot be used as an argument to `COUNT` on an aggregation-constrained table; `COUNT(*)` is a different expression.
 - **Enforcement order to recall:** masking is applied before aggregation, and projection is enforced after aggregation. Aggregation therefore works on masked values where a masked column is involved.
 - A **privacy policy** is a separate differential-privacy feature with a privacy budget. Do not treat it as another name for an aggregation policy.
 - **Exam scope:** the supplied C03 guide names privacy policies, not aggregation or projection policies. This comparison helps answer related scenarios without treating them as equally weighted objectives.
+
+#### Practice SQL: aggregation and projection together
 
 ```sql
 -- Optional Enterprise+ pattern. Run once in a separate writable lab with
@@ -1060,17 +1068,20 @@ SHOW PARAMETERS LIKE 'PERIODIC_DATA_REKEYING' IN ACCOUNT;
 
 - **Remember:** An alert evaluates a condition and acts; a notification integration configures supported message delivery.
 
+#### Alerts: condition and action
+
 - An **alert** is a schema object that evaluates a condition and performs an action when that condition is true.
 - It can run on a schedule or, for an alert on new data, when new rows are available.
 
-- Examples:
-
-- Alert when a data-quality query finds invalid records.
-- Alert when warehouse credit usage crosses a chosen threshold.
-- Alert when application events show failures.
+- Examples include:
+  - A data-quality query finds invalid records.
+  - Warehouse credit usage crosses a chosen threshold.
+  - Application events show failures.
 
 - An alert can send a notification, insert an audit record, or call other SQL logic.
 - After creating an alert, remember to resume it.
+
+#### Example: log when no orders arrive
 
 ```sql
 -- Setup for the action target; requires the monitoring schema.
@@ -1094,6 +1105,8 @@ CREATE OR REPLACE ALERT analytics.monitoring.no_orders_alert
 
 ALTER ALERT analytics.monitoring.no_orders_alert RESUME;
 ```
+
+#### Compute, permissions, and notifications
 
 - Alerts can use Snowflake-managed serverless compute or a specified virtual warehouse.
 - A notification integration connects Snowflake with supported external destinations, such as email, webhooks, or cloud messaging services.
@@ -1545,6 +1558,8 @@ FROM runs;
 
 - **Remember:** Choose the view for the question and account for its visibility, retention, and latency.
 
+#### Choose the historical view
+
 - The shared `SNOWFLAKE` database contains `ACCOUNT_USAGE`, which provides historical account-monitoring and audit views.
 - It is useful for trend analysis, chargeback/showback, and investigating account activity.
 
@@ -1575,6 +1590,8 @@ ORDER BY compute_credits DESC;
 
 - `CREDITS_USED` in `WAREHOUSE_METERING_HISTORY` includes compute and cloud-services usage.
 - For the actual billed cloud-services adjustment, use the daily metering views rather than assuming hourly consumption equals the invoice.
+
+#### Grant access to the right Account Usage view
 
 - **Access is view-specific:** `USAGE` on a business database, or having run the query, does not grant access to `SNOWFLAKE.ACCOUNT_USAGE`.
 

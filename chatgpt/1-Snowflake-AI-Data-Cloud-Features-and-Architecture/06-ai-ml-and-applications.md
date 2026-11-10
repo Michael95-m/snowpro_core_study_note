@@ -129,6 +129,8 @@ SELECT AI_COMPLETE('supported-model-name', 'Explain micro-partition pruning brie
 
 ## 1.6.6 Cortex Search versus Cortex Analyst
 
+### Cortex Search: retrieve relevant content
+
 - **Cortex Search** combines vector/semantic and keyword retrieval over indexed content.
 - Use it to retrieve relevant:
   - Documentation passages.
@@ -155,22 +157,22 @@ SELECT SNOWFLAKE.CORTEX.SEARCH_PREVIEW(
   - Cortex Search uses **owner's rights**.
   - Service access can expose indexed content even when the caller lacks direct source-table access.
 
+### Cortex Analyst: answer questions about structured data
+
 - **Cortex Analyst** helps turn natural-language questions into SQL over structured data.
 - It uses a semantic model/view containing:
   - Business definitions.
   - Relationships.
   - Metrics.
-- Compare these needs:
-  - **“Revenue by region last quarter”** needs trusted metric definitions and SQL execution.
-  - **“Find the manual's warranty clause”** is a text-retrieval problem.
-
 - Current documentation recommends **semantic views** for new Analyst implementations.
 - Legacy **YAML semantic models** remain supported.
 - Recognize both terms in course material.
 - Choose the current supported approach for new work.
 
-- **Search:** retrieves relevant content.
-- **Analyst:** supports structured business analysis.
+### Choose between Search and Analyst
+
+- **“Revenue by region last quarter”** needs trusted metric definitions and SQL execution: use Cortex Analyst.
+- **“Find the manual's warranty clause”** is a text-retrieval problem: use Cortex Search.
 - Do not assume either will return correct results without the appropriate:
   - Data preparation.
   - Semantic definitions.
