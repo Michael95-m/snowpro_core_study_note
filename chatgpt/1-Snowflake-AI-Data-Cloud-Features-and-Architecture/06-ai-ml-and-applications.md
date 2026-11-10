@@ -28,14 +28,9 @@
   - SQL cells.
   - Python cells.
   - Markdown cells.
-- Use them for exploration and experimentation.
-- They keep code, results, and explanations together.
-- The current experience includes **Notebooks in Workspaces**.
-- Older course demonstrations may show **Legacy Notebooks**.
+- Use notebooks for exploration and experiments that keep code, results, and explanations together. Current Snowflake materials include **Notebooks in Workspaces**; older course demonstrations may show **Legacy Notebooks**.
 
-- A notebook needs a configured runtime/compute environment.
-- SQL and Python execution requirements depend on that environment.
-- These do not always use the same compute resource:
+- A notebook needs a configured runtime. SQL and Python can use different compute resources, depending on that environment:
   - Local Python work in the notebook.
   - Warehouse SQL.
   - Container/GPU workloads.
@@ -88,12 +83,8 @@ apac_orders = (
 apac_orders.show()  # Action: execute and display a small result.
 ```
 
-- Use supported operations to push work to Snowflake.
-- Avoid retrieving an entire table to local Python when the work can run in Snowflake.
-- `collect()` transfers results to the client.
-- It can be unsuitable for very large outputs.
-- **Snowpark-optimized** compute is a workload choice.
-- It is not mandatory for every Snowpark program.
+- Use supported operations to process data in Snowflake before bringing results into local Python. `collect()` transfers results to the client and can be unsuitable for very large outputs.
+- **Snowpark-optimized** compute is a workload choice, not a requirement for every Snowpark program.
 
 <a id="cortex-ai-sql-functions"></a>
 
@@ -159,15 +150,8 @@ SELECT SNOWFLAKE.CORTEX.SEARCH_PREVIEW(
 
 ### Cortex Analyst: answer questions about structured data
 
-- **Cortex Analyst** helps turn natural-language questions into SQL over structured data.
-- It uses a semantic model/view containing:
-  - Business definitions.
-  - Relationships.
-  - Metrics.
-- Current documentation recommends **semantic views** for new Analyst implementations.
-- Legacy **YAML semantic models** remain supported.
-- Recognize both terms in course material.
-- Choose the current supported approach for new work.
+- **Cortex Analyst** helps turn natural-language questions into SQL over structured data. It uses a semantic model or view with business definitions, relationships, and metrics.
+- Current documentation recommends **semantic views** for new implementations. Legacy **YAML semantic models** remain supported, so recognize both terms in course material.
 
 ### Choose between Search and Analyst
 
@@ -227,8 +211,7 @@ SELECT SNOWFLAKE.CORTEX.SEARCH_PREVIEW(
 
 - **Feature Store:** governed reusable inputs, such as 30-day spend and purchase frequency, used in training/inference.
 - **Model Registry:** trained model artifacts, versions, metadata, and supported callable methods.
-- Reusing a feature definition helps keep training and prediction inputs consistent.
-- Registering a model does not itself prove quality, retrain it, or grant every user prediction access.
+- Reusing a feature definition helps keep training and prediction inputs consistent. Registering a model does not itself prove quality, retrain it, or grant every user prediction access.
 - **Practice:** [05-ai-and-applications.sql](exercises/05-ai-and-applications.sql), then optional [06-snowpark.py](exercises/06-snowpark.py).
 - **Checkpoint:** aggregate in Snowflake, then Python receives only **3 regional summary rows**.
 - **Remember:** killing a Python kernel is not proof the notebook service/compute pool stopped. Inspect its runtime/service controls and current compute state.

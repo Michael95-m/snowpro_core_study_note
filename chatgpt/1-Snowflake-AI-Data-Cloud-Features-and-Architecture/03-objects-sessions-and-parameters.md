@@ -22,11 +22,8 @@ Organization
 
 <p align="center"><img src="../../img/object_model.png" alt="Snowflake object hierarchy from the course notes" width="600"></p>
 
-- A **container** organizes child objects.
-- A **securable object** can have privileges granted on it.
-- The C03 list groups many objects together for study.
-- A **share is account-level**, not a child of a database schema.
-- A Native App **application** is also an account-level installed object with its own contents.
+- A **container** organizes child objects, while a **securable object** can have privileges granted on it. The C03 guide groups many object types together for study.
+- A **share** is account-level rather than a child of a schema. An installed Native App **application** is also an account-level object with its own contents.
 
 <a id="object-comparison"></a>
 
@@ -105,10 +102,8 @@ USE SCHEMA LAB;
 SELECT CURRENT_ROLE(), CURRENT_WAREHOUSE(), CURRENT_DATABASE(), CURRENT_SCHEMA();
 ```
 
-- With this context, `orders` resolves to `D1_STUDY.LAB.ORDERS`.
-- Fully qualified names reduce ambiguity.
-- **Quoted identifiers** are case-sensitive.
-- **Unquoted identifiers** normally resolve in uppercase.
+- With this context, `orders` resolves to `D1_STUDY.LAB.ORDERS`. Fully qualified names make the database and schema explicit.
+- **Quoted identifiers** are case-sensitive; **unquoted identifiers** normally resolve in uppercase.
 
 <a id="variables-versus-parameters"></a>
 
@@ -140,20 +135,9 @@ SHOW PARAMETERS LIKE 'TIMEZONE' IN SESSION;
   3. Account default.
   4. System default, if none of the above is explicitly set.
 
-- For **object parameters**, inheritance depends on the parameter and its supported containers.
-- Example: table retention can be set at these levels:
-  - Account.
-  - Database.
-  - Schema.
-  - Table.
-- A specific table setting takes precedence over a parent default.
-- **Account-only parameters** cannot be overridden in a session.
-- Do not apply one universal precedence rule to every parameter.
+**Object parameters** inherit only through the levels each parameter supports. For example, table retention can be set at the account, database, schema, or table level; an explicit table setting takes precedence over a parent default. **Account-only parameters** cannot be overridden in a session, so check each parameter's supported scope rather than applying one rule to every setting.
 
-- `SHOW PARAMETERS` displays the value and level.
-- `UNSET` removes an explicit override.
-- The inherited or default value can then apply.
-- `UNSET` does not necessarily set the parameter to zero or false.
+`SHOW PARAMETERS` displays the effective value and level. `UNSET` removes an explicit override so an inherited or default value can apply; it does not necessarily set the value to zero or false.
 
 <a id="more-object-distinctions-and-exercise-checkpoints"></a>
 

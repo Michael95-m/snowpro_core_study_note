@@ -72,10 +72,8 @@
 4. Check whether the problem is one query, a repeated query pattern, or warehouse concurrency.
 5. Apply the smallest suitable fix, then compare the same workload again.
 
-- Record the query ID, row count, warehouse size, elapsed time, bytes scanned, spill, and queue time.
-- Separate compilation, provisioning/startup wait, execution, and client/network time.
-- A slower end-to-end result does not always mean slower SQL execution.
-- Use representative data and repeated measurements; preserve result correctness while optimizing.
+- Record the query ID, row count, warehouse size, elapsed time, bytes scanned, spill, and queue time. Separate compilation, startup wait, execution, and client/network time: a slower end-to-end result does not always mean slower SQL execution.
+- Use representative data and repeated measurements, and preserve result correctness while optimizing.
 
 <a id="query-profile-and-query-insights"></a>
 
@@ -85,9 +83,7 @@
 
 <p align="center"><img src="../../img/domain4-query-diagnosis.png" alt="Query diagnosis guide: distinguish overload, provisioning, and blocking; investigate memory for large spill, selectivity for weak pruning, and join keys and grain for exploding joins." width="760"></p>
 
-- The Query Profile shows how Snowflake executed a query.
-- It helps you find expensive scan, join, aggregate, sort, and data-transfer operations.
-- Query Insights flags recognized performance problems and suggests a next step.
+- The Query Profile shows how Snowflake executed a query, including costly scans, joins, aggregates, sorts, and data transfers. Query Insights flags recognized performance problems and suggests a next step.
 
 | Signal | What it means | First response |
 | --- | --- | --- |
@@ -119,11 +115,7 @@
 
 #### Inefficient pruning
 
-- Snowflake uses micro-partition metadata to skip partitions that cannot satisfy a filter.
-- In the profile, compare **partitions scanned** with **partitions total**.
-
-- A small scanned-to-total ratio usually means pruning worked well.
-- A large ratio means the filter did not eliminate much data or the relevant values are scattered across partitions.
+- Snowflake uses micro-partition metadata to skip partitions that cannot match a filter. In Query Profile, compare **partitions scanned** with **partitions total**: a small ratio usually means pruning worked, while a large ratio may mean the filter is broad or matching values are scattered.
 
 - Start with a selective filter expressed so Snowflake can use the stored column values directly.
 - Only add a cluster key when the table is very large and the filter/join/aggregation pattern is frequent enough to justify maintenance cost.
@@ -157,8 +149,7 @@ JOIN customers c
 
 #### Queuing
 
-- Queue time is not the same as query execution time.
-- A query can be well written but still wait because too many queries compete for the warehouse.
+- Queue time is separate from execution time. Even a well-written query can wait when too many queries compete for a warehouse.
 
 - Group similar workloads where possible:
 
@@ -168,14 +159,10 @@ JOIN customers c
 | ETL / ELT | Often uses large scans and long transformations that can delay BI queries. |
 | Ad hoc exploration | Can be unpredictable and should not disrupt scheduled production work. |
 
-- Use dedicated warehouses where the performance requirement or workload behavior is meaningfully different.
-- Use multi-cluster warehouses for concurrency, not to make a single poorly written query faster.
+- Use dedicated warehouses when workloads have different performance needs. Multi-cluster warehouses address concurrency, not the speed of one poorly written query.
 
 - Distinguish `QUEUED_OVERLOAD_TIME` (capacity/concurrency wait) from `QUEUED_PROVISIONING_TIME` (warehouse provisioning or resume) and `TRANSACTION_BLOCKED_TIME` (transaction blocking).
-- More clusters may address overloaded concurrency; transaction contention requires investigation of the conflicting work.
-- **Scale up** increases resources per cluster.
-- **Scale out** adds clusters, primarily to run more queries concurrently.
-- Multi-cluster warehouses require Enterprise or higher.
+- More clusters may relieve overloaded concurrency, while transaction blocking requires investigation of the conflicting work. **Scale up** adds resources per cluster; **scale out** adds clusters to run more queries concurrently. Multi-cluster warehouses require Enterprise or higher.
 
 <a id="account_usage-for-query-analysis-and-attribution"></a>
 
@@ -329,13 +316,8 @@ ALTER TABLE analytics.raw.events
   ADD SEARCH OPTIMIZATION ON EQUALITY(src:user.uuid);
 ```
 
-- Snowflake decides automatically whether to use the search access path for a query.
-- Adding it is not a guarantee that every query becomes faster, so measure a representative workload and review ongoing cost.
-
-- Search optimization incurs both storage and serverless maintenance cost.
-- Its initial build takes time: check `SEARCH_OPTIMIZATION_PROGRESS` in `SHOW TABLES` before benchmarking.
-- Targeting selected columns/methods avoids unnecessary maintenance.
-- Its effectiveness depends on supported predicates and selectivity, not simply on table size.
+- Snowflake decides whether to use the search access path for each query. Adding it does not guarantee a speedup, so measure representative queries and review ongoing storage and serverless maintenance cost.
+- The initial build takes time; check `SEARCH_OPTIMIZATION_PROGRESS` in `SHOW TABLES` before benchmarking. Targeting selected columns and methods avoids unnecessary maintenance, and effectiveness depends on supported predicates and selectivity rather than table size alone.
 
 <a id="clustering-keys"></a>
 
@@ -358,9 +340,7 @@ ALTER TABLE analytics.mart.orders
 - Queries repeatedly filter, join, or aggregate on the same columns.
 - Query Profile shows weak pruning because values are broadly overlapping across micro-partitions.
 
-- Do not add one just because a table is large.
-- It adds compute and storage cost from reclustering and can increase Fail-safe storage.
-- A highly unique lookup key is more often a Search Optimization Service candidate than a clustering-key candidate.
+- Do not add a clustering key just because a table is large. Reclustering adds compute and storage cost, including possible Fail-safe storage; a highly unique lookup key is more often a Search Optimization Service candidate.
 
 - Prefer a small set of expressions aligned with common predicates.
 - For a high-cardinality timestamp, a date expression can preserve useful ordering without clustering by every unique instant.
@@ -370,9 +350,7 @@ ALTER TABLE analytics.mart.orders
 SELECT SYSTEM$CLUSTERING_INFORMATION('ANALYTICS.MART.ORDERS');
 ```
 
-- Clustering depth/overlap describe data organization.
-- Lower overlap can improve pruning, but there is no universal “good depth” independent of the table and workload.
-- Automatic Clustering maintains an explicitly defined key with serverless compute; natural clustering exists even when no key is specified.
+- Clustering depth and overlap describe data organization. Lower overlap can improve pruning, but there is no universal “good depth” across all workloads. Automatic Clustering maintains an explicit key with serverless compute; natural clustering exists without a key.
 
 <a id="materialized-views"></a>
 
@@ -380,8 +358,7 @@ SELECT SYSTEM$CLUSTERING_INFORMATION('ANALYTICS.MART.ORDERS');
 
 - **Remember:** Maintain a supported precomputed result from one base table; storage/maintenance are separate from ordinary result caching.
 
-- A materialized view stores a precomputed result from a `SELECT` statement on a **single base table**.
-- Snowflake maintains it automatically as the base table changes.
+- A materialized view stores a precomputed `SELECT` result from a **single base table**. Snowflake maintains it automatically as that table changes.
 
 ```sql
 CREATE OR REPLACE MATERIALIZED VIEW analytics.mart.daily_sales_mv
@@ -396,14 +373,10 @@ CREATE OR REPLACE MATERIALIZED VIEW analytics.mart.daily_sales_mv
 
 - Use a materialized view for a repeated, expensive pattern that returns a small subset of the source table, such as an aggregation, a range query, or frequently flattened semi-structured data.
 
-- It has storage and automatic-maintenance compute cost.
-- You cannot insert, update, merge, or delete directly in a materialized view.
-- It is not a replacement for a general-purpose transformation model or a multi-table join result.
+- A materialized view adds storage and automatic-maintenance compute cost. You cannot insert, update, merge, or delete directly in it, and it is not a general-purpose transformation model or multi-table join result.
 
-- Materialized views require Enterprise or higher.
-- The optimizer can rewrite eligible base-table queries to use one; users do not always need to name the view explicitly.
-- Definitions have restrictions beyond the single-table rule, including unsupported window functions and non-deterministic expressions.
-- Check the definition before choosing one for a transformation.
+- Materialized views require Enterprise or higher. The optimizer can rewrite eligible base-table queries to use one even when the query does not name it.
+- Definitions have restrictions beyond the single-table rule, including unsupported window functions and non-deterministic expressions. Check them before using a materialized view for a transformation.
 - A normal view stores SQL, a materialized view stores maintained results, and a result-cache entry is a temporary result of a particular query.
 
 <a id="sql-changes-before-feature-changes"></a>
@@ -469,9 +442,7 @@ ALTER SESSION SET USE_CACHED_RESULT = TRUE;
 
 - **Exam traps:**
 
-- Same logical query is not enough: even changing letter case or adding an alias can prevent exact result reuse.
-- A cached result is not a security bypass; the role still needs the required access.
-- Query-result caching is different from the warehouse data cache.
+- The same logical query is not enough for exact result reuse: changing letter case or adding an alias can prevent it. Reuse still requires authorization, and the persisted result is different from the warehouse data cache.
 - A query that calls an **external function** is excluded from automatic persisted-result reuse, even with identical SQL, identical arguments, and unchanged tables. Identical arguments do not create a reusable persisted query result across executions.
 - An external function can be declared `IMMUTABLE` when the remote service truly returns the same output for the same input. That can enable other optimizations, but it **does not remove** the persisted-result exclusion. Do not equate this exclusion with a claim that every external function is nondeterministic. [Persisted-result rules](https://docs.snowflake.com/en/user-guide/querying-persisted-results#retrieval-optimization) · [External function volatility](https://docs.snowflake.com/en/sql-reference/sql/create-external-function)
 
@@ -486,13 +457,8 @@ ALTER SESSION SET USE_CACHED_RESULT = TRUE;
 
 - **Remember:** Local table-data cache belongs to a running warehouse and is lost on suspension.
 
-- A running virtual warehouse keeps recently accessed table data in a local cache.
-- Repeating similar queries on the **same running warehouse** can be faster because fewer remote reads are needed.
-
-- A longer auto-suspend setting keeps the cache warm but can cost more during idle time.
-- Suspending a warehouse clears its cache.
-- Mixing unrelated large workloads can evict useful data from the cache.
-- Dedicated BI warehouses can help preserve a warm cache for dashboards.
+- A running warehouse keeps recently accessed table data in a local cache. Similar queries on that **same running warehouse** may need fewer remote reads and finish faster.
+- Suspending clears this cache. A longer auto-suspend time keeps it warm but can add idle cost; unrelated large workloads may evict useful data, so a dedicated BI warehouse can help dashboards retain a warm cache.
 
 <a id="metadata-cache"></a>
 
@@ -500,13 +466,8 @@ ALTER SESSION SET USE_CACHED_RESULT = TRUE;
 
 - **Remember:** Statistics and object metadata support planning/pruning and eligible metadata-only answers.
 
-- Snowflake maintains metadata such as row counts and micro-partition value ranges.
-- It can use this information to avoid unnecessary data reads.
-- For example, some simple `COUNT(*)` queries can be answered using metadata rather than scanning the table.
-- Filters and security policies can change whether this is possible; do not assume every `COUNT`, `MIN`, or `MAX` is metadata-only.
-
-- Metadata is managed outside the warehouse-local data cache.
-- Warehouse suspension therefore does not have the same meaning for metadata and local cached table data.
+- Snowflake maintains metadata such as row counts and micro-partition value ranges to avoid unnecessary reads. Some simple `COUNT(*)` queries can use metadata instead of scanning, but filters and security policies can change this; do not assume every `COUNT`, `MIN`, or `MAX` is metadata-only.
+- Metadata is managed outside the warehouse-local data cache. Suspending a warehouse clears its local table data cache, not the platform metadata used for planning.
 - Query compilation/plan reuse is a related internal optimization, but **metadata cache** in the C03 checklist should not be replaced with “compilation cache.”
 
 ---
@@ -628,13 +589,8 @@ QUALIFY ROW_NUMBER() OVER (
 ) = 1;
 ```
 
-- `ROWS` describes physical row offsets.
-- `RANGE` describes an ordering-value range and can include peers with equal ordering values.
-- For example, a running total using `RANGE ...
-- CURRENT ROW` includes all peers at that value, while `ROWS ...
-- CURRENT ROW` advances one row at a time.
-- Use explicit frames and deterministic tie-breakers when needed.
-- The `ORDER BY` inside `OVER` controls the calculation, not final display order; add an outer `ORDER BY` for that.
+- `ROWS` describes physical row offsets; `RANGE` describes an ordering-value range and can include peers with equal ordering values. For example, a running total through `RANGE ... CURRENT ROW` includes all peers at that value, while `ROWS ... CURRENT ROW` advances one row at a time.
+- Use explicit frames and deterministic tie-breakers when needed. The `ORDER BY` inside `OVER` controls the calculation; add an outer `ORDER BY` to control the final display order.
 
 <a id="semi-structured-data-parsing-paths-and-flattening"></a>
 
@@ -700,15 +656,12 @@ FROM sample AS s,
 LATERAL FLATTEN(INPUT => s.src:items) AS f;
 ```
 
-- This returns two rows for order 1.
-- `FLATTEN` exposes `SEQ`, `KEY`, `PATH`, `INDEX`, `VALUE`, and `THIS`.
-- Use `OUTER => TRUE` when zero-row expansions should preserve a parent row, and nested lateral calls for nested arrays.
-- Flattening two independent arrays can multiply the output; confirm the intended grain before joining or aggregating.
+- This returns two rows for order 1. `FLATTEN` exposes `SEQ`, `KEY`, `PATH`, `INDEX`, `VALUE`, and `THIS`.
+- Use `OUTER => TRUE` when zero-row expansions should preserve a parent row, and nested lateral calls for nested arrays. Flattening two independent arrays can multiply the output, so confirm the intended grain before joining or aggregating.
 
 #### Store frequently used fields
 
-- Extracting selected fields into typed relational columns with CTAS or `INSERT ... SELECT` is a common ELT pattern.
-- Frequently queried fields can then be validated and transformed without repeating every path expression.
+- Extracting selected fields into typed relational columns with CTAS or `INSERT ... SELECT` is a common ELT pattern. Frequently queried fields can then be validated and transformed without repeating every path expression.
 - A materialized view is another option for supported repeated patterns when its cost and definition restrictions fit.
 - For loading details, use the [loading course note](../../study-notes/7-Data-Loading-and-Unloading/readme.md).
 

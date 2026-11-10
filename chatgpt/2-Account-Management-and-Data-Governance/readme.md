@@ -127,15 +127,8 @@ Organization
 Object privileges → access roles → functional roles → users
 ```
 
-- **Access role:** describes access to a data area, for example `MART_SALES_READER`.
-- **Functional role:** describes a job, for example `FINANCE_ANALYST`.
-- Grant access roles to functional roles, then grant functional roles to users.
-
-- This separates *what data can be accessed* from *who needs that access*.
-- It also makes auditing and changes easier.
-
-- Avoid putting broad business-object privileges directly on system roles such as `SYSADMIN` or `ACCOUNTADMIN`.
-- Keep system administration and day-to-day data access separate.
+- An **access role** describes access to a data area, such as `MART_SALES_READER`. A **functional role** describes a job, such as `FINANCE_ANALYST`. Grant access roles to functional roles, then functional roles to users.
+- This pattern separates *what data can be accessed* from *who needs that access*, making audits and changes easier. Keep day-to-day business access separate from broad system roles such as `SYSADMIN` and `ACCOUNTADMIN`.
 
 <a id="system-defined-roles"></a>
 
@@ -238,13 +231,8 @@ GRANT SELECT ON FUTURE TABLES IN SCHEMA analytics.mart TO ROLE mart_sales_reader
 GRANT USAGE ON WAREHOUSE analytics_wh TO ROLE mart_sales_reader;
 ```
 
-- `ALL TABLES` covers existing tables.
-- `FUTURE TABLES` covers tables created later.
-- In a production role design, also decide who owns the schema and who is allowed to manage grants.
-
-- Views are separate objects: a grant on all tables does not grant `SELECT` on all views.
-- Use `ALL VIEWS` / `FUTURE VIEWS` when required.
-- Future grants are defaults for new objects; they do not backfill existing access.
+- `ALL TABLES` covers existing tables; `FUTURE TABLES` covers tables created later. Future grants do not backfill access to existing objects. In production, also decide who owns the schema and who can manage grants.
+- Views need separate grants: use `ALL VIEWS` and `FUTURE VIEWS` when readers need access to existing and future views.
 
 ```sql
 SHOW GRANTS TO ROLE mart_sales_reader;
@@ -286,20 +274,15 @@ USE SECONDARY ROLES ALL;
 
 - **Remember:** Create the policy, then assign it. An unassigned policy does not restrict a connection.
 
-- A **network policy** restricts where connections to Snowflake can originate.
-- It uses allowed and blocked network rules, usually IP addresses or CIDR ranges.
+- A **network policy** restricts where connections to Snowflake can originate, using allowed and blocked rules such as IP addresses or CIDR ranges.
 
-- An account policy is the broad default.
-- A user policy overrides an account policy.
-- A security-integration policy is the most specific and overrides user and account policies.
+- An account-level policy is the broad default. A user-level policy overrides it, and a security-integration policy is more specific than either one for applicable connections.
 
 - Use network policies to allow office/VPN egress addresses and block untrusted sources.
 - Plan carefully: an incorrectly restrictive policy can lock administrators out.
 
-- The workflow is **create network rule → include it in a network policy → activate the policy**.
-- A policy that has not been assigned does not restrict traffic.
-- If the same address is allowed and blocked, the block wins.
-- An allow list implicitly excludes other addresses of that identifier type.
+- The workflow is **create network rule → include it in a network policy → activate the policy**. An unassigned policy does not restrict traffic.
+- If an address is both allowed and blocked, the block wins. An allow list implicitly excludes other addresses of the same identifier type.
 
 ```sql
 -- Example only: documentation address range, not your actual office network.
@@ -354,11 +337,7 @@ Open Snowsight
     → Snowflake verifies the login and opens your session
 ```
 
-- **Enrollment** means registering your second factor, such as setting up an authenticator app.
-- **Using MFA** means completing the check when signing in, subject to the applicable session rules.
-
-- Two passwords are still the same kind of proof; MFA uses different factors.
-- It is an extra check in a login path, not a grant of table privileges.
+- **Enrollment** means registering a second factor, such as an authenticator app. **Using MFA** means completing that check during sign-in, subject to the session rules. Two passwords are still the same kind of proof; MFA uses different factors and does not grant table privileges.
 
 - **Remember: password = what you know; MFA = another kind of proof.** Snowflake is enforcing MFA for password sign-ins through a rollout.
 - Do not design unattended jobs around a human password login without MFA; service users need a supported application authentication method.
@@ -367,13 +346,8 @@ Open Snowsight
 
 #### 2. Company SSO: your company checks your identity
 
-- **SSO** means **single sign-on**: use your company identity across applications.
-- An **identity provider (IdP)**, such as Microsoft Entra ID or Okta, manages that identity.
-- Snowflake is the **service provider (SP)**: the application you want to enter.
-
-- **SAML** means **Security Assertion Markup Language**.
-- It is a standard for sending identity proof between systems.
-- A SAML assertion is an XML message exchanged behind the login screens.
+- **SSO** means **single sign-on**: you use your company identity across applications. An **identity provider (IdP)**, such as Microsoft Entra ID or Okta, checks that identity; Snowflake is the **service provider (SP)** you want to enter.
+- **SAML** means **Security Assertion Markup Language**. It is a standard for sending identity proof between systems; a SAML assertion is the XML message exchanged behind the login screens.
 
 - For a company using SAML with Entra ID:
 
@@ -383,8 +357,7 @@ Open Snowsight
 4. The browser carries signed identity proof back to Snowflake.
 5. Snowflake validates it, maps the identity to a Snowflake user, and opens a session.
 
-- The company password stays with the IdP.
-- Administrators first configure a **security integration** so Snowflake knows which provider to trust.
+- The company password stays with the IdP. Administrators configure a **security integration** so Snowflake knows which provider to trust.
 
 - **Remember: Entra ID/Okta = who checks you; SAML = how proof travels; SSO = the login experience.** Federated authentication is the trust arrangement.
 - OIDC is another supported standard for company login.
@@ -791,9 +764,7 @@ ALTER TABLE analytics.mart.orders
 
 - **Remember:** A tag alone labels an object; associated policies supply enforcement.
 
-- A **tag** is metadata you assign to Snowflake objects or columns.
-- Tags do not, by themselves, deny access.
-- They help you classify, find, govern, audit, and sometimes automatically apply tag-based policies.
+- A **tag** is metadata on an object or column. It helps classify, find, govern, and audit data, but it does not deny access by itself; an associated tag-based policy can add enforcement.
 
 - Common tag examples:
 
@@ -809,11 +780,7 @@ ALTER TABLE analytics.mart.customer
   SET TAG governance.tags.data_classification = 'PII';
 ```
 
-- **Exam trap:** a tag labels an object; it does not automatically mask a column or filter rows.
-- A tag can be connected to a tag-based policy when centralized, scalable enforcement is needed.
-
-- For column-level protection, a policy can be attached to a tag and the tag applied to sensitive columns.
-- The policy's input/output type must match the protected column type.
+- **Exam trap:** a tag alone does not mask a column or filter rows. For centralized column protection, attach a compatible masking policy to the tag and apply that tag to sensitive columns; the policy's input and output type must match the column type.
 
 ```sql
 CREATE TAG governance.tags.sensitive_email;
@@ -1038,14 +1005,8 @@ GRANT ROLE security_reviewer TO USER REVIEWER_USER;
 1. A Snowflake-maintained key.
 2. A customer-managed key in the cloud provider's key-management service.
 
-- Together, they form a composite key that protects the account's encryption-key hierarchy.
-- Tri-Secret Secure is a Business Critical feature.
-
-- Distinguish **key rotation** from **rekeying**.
-- Rotation replaces active key versions for new encryption; retired versions remain available to decrypt existing data.
-- Optional periodic rekeying re-encrypts older data with new keys.
-- Snowflake rotates its managed keys automatically; periodic rekeying is an Enterprise-or-higher option and may add storage cost.
-- Revoking access to a customer-managed key can make the protected data unavailable.
+- The Snowflake-maintained key and customer-managed key form a composite key that protects the account's encryption-key hierarchy. **Tri-Secret Secure** is a Business Critical feature; revoking access to the customer-managed key can make protected data unavailable.
+- **Rotation** replaces active key versions for new encryption while retaining older versions for decryption. Optional **periodic rekeying** re-encrypts older data with new keys; Snowflake rotates its managed keys automatically, while periodic rekeying is an Enterprise-or-higher option that may add storage cost.
 - See [key management](https://docs.snowflake.com/en/user-guide/security-encryption-manage).
 
 #### Inspect the periodic-rekeying setting
@@ -1297,14 +1258,7 @@ WHERE referenced_database = 'ANALYTICS'
 
 - A **resource monitor** tracks virtual-warehouse credit usage against a credit quota and can take action at configured thresholds.
 
-- Possible actions include:
-
-- Notify.
-- Suspend assigned warehouses.
-- Suspend assigned warehouses immediately.
-
-- `SUSPEND` lets running statements finish before suspending; `SUSPEND_IMMEDIATE` cancels running statements.
-- Both can notify.
+- A monitor can notify you, suspend assigned warehouses after running statements finish, or suspend them immediately and cancel running statements. The last two actions are `SUSPEND` and `SUSPEND_IMMEDIATE`, and both can notify.
 - A warehouse can have one warehouse-level monitor and also be covered by the account monitor; whichever applicable suspend threshold is reached can stop it.
 
 ```sql
@@ -1322,11 +1276,7 @@ ALTER WAREHOUSE etl_wh
   SET RESOURCE_MONITOR = monthly_etl_limit;
 ```
 
-- Important distinctions:
-
-- A monitor can be assigned to a warehouse or to the account.
-- An account can have only one account-level resource monitor.
-- Resource monitors apply to **virtual warehouses**. They do **not** control serverless-feature or AI-service costs; use the appropriate budgets/cost controls for those services.
+- A monitor can be assigned to a warehouse or to the account; an account can have only one account-level monitor. Resource monitors cover **virtual warehouses**, not serverless features or AI services, which need other cost controls.
 - A resource monitor is not a perfectly real-time hard spending cap. Consumption can exceed a threshold before the action is applied.
 
 - The example uses the default schedule: immediate start with a reset at the beginning of each calendar month.

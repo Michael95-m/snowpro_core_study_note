@@ -75,11 +75,8 @@ CREATE WAREHOUSE study_wh
 ALTER WAREHOUSE study_wh SET WAREHOUSE_SIZE = SMALL;
 ```
 
-- **Generation** is a separate setting for Standard warehouses.
-- Where supported, `GENERATION = '2'` selects Gen2.
-- This is not a setting for Snowpark-optimized warehouses.
-- Use `SHOW WAREHOUSES` to inspect the actual configuration.
-- Do not assume the default generation.
+- **Generation** is separate from warehouse size and applies to Standard warehouses. Where supported, `GENERATION = '2'` selects Gen2; it is not a Snowpark-optimized warehouse setting.
+- Use `SHOW WAREHOUSES` to inspect the actual generation rather than assuming the default.
 
 <a id="multi-cluster-settings-and-scaling-policies"></a>
 

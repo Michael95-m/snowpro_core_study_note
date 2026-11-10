@@ -241,9 +241,7 @@ References: [CREATE FILE FORMAT](https://docs.snowflake.com/en/sql-reference/sql
 | Table stage | Available automatically for a table. | `@%orders` | Files belong to one table's loading workflow. |
 | Named internal stage | Create it explicitly. | `@orders_stage` | Multiple users/tables need a reusable stage. |
 
-- A user stage belongs to its user.
-- User/table stages cannot be separately altered or dropped like named stages.
-- Named stages can have configurable properties, grants, and a directory table.
+- A user stage belongs to one user. User and table stages cannot be altered or dropped separately like named stages, which can have their own properties, grants, and directory table.
 - Files in an internal stage use Snowflake-managed storage.
 - Table rows and staged files have separate lifecycles:
   - Loading the file does not automatically delete it.
@@ -265,10 +263,7 @@ LIST @%orders;
   - Amazon S3: `s3://bucket/path/`.
   - Google Cloud Storage: `gcs://bucket/path/`.
   - Azure: `azure://account.blob.core.windows.net/container/path/`.
-- Creating an external stage does **not** copy all files into Snowflake.
-- Use a **storage integration** for controlled access to private cloud storage.
-- SQL grants and cloud IAM permissions must both allow the operation.
-- **Remember:** external stage = reference to external files, not a second copy of those files.
+- Creating an external stage gives Snowflake a **reference** to cloud files; it does not copy the files into Snowflake. A **storage integration** can provide controlled access to private storage, and both Snowflake grants and cloud IAM permissions must allow the operation.
 
 ```sql
 -- Prerequisite: orders_s3_access already exists and its cloud trust is configured.
@@ -947,11 +942,8 @@ References: [COPY_HISTORY function](https://docs.snowflake.com/en/sql-reference/
 | Maintain the stored result of a SQL query. | Dynamic Table | Keep this query result reasonably fresh. |
 | Connect and route data from many source systems. | Openflow | Build a managed integration flow. |
 
-- A **Stream** does not upload external events by itself.
-- A **Task** does not automatically discover cloud files unless its SQL does that work.
-- Snowpipe and Snowpipe Streaming ingest data.
-- Streams, Tasks, and Dynamic Tables are often used **after ingestion** to process that data.
-- **Remember:** a pipeline can combine features rather than choosing exactly one for everything.
+- **Snowpipe** and **Snowpipe Streaming** ingest data. A **Stream** tracks changes after ingestion; a **Task** runs work but does not automatically discover cloud files unless its SQL does so.
+- Streams, Tasks, and Dynamic Tables can process ingested data together. A pipeline can combine features instead of choosing one for every step.
 
 ### 3.2.2 Snowpipe: continuous file ingestion
 
@@ -1205,11 +1197,8 @@ AS
     );
 ```
 
-- The source is `DATA_SOURCE(TYPE => 'STREAMING')`, not `@stage`.
-- `AUTO_INGEST = TRUE` and a stage file format are not how this pipe receives rows.
-- Creating the pipe does not open a client channel or send data.
-- An SDK/REST client must still authenticate, open the appropriate channel, and submit rows.
-- Use ordinary `SELECT` to verify rows after the client commits ingestion.
+- This pipe reads from `DATA_SOURCE(TYPE => 'STREAMING')`, not `@stage`. It does not use `AUTO_INGEST = TRUE` or a stage file format to receive rows.
+- Creating the pipe alone does not send data. An SDK/REST client must authenticate, open the appropriate channel, and submit rows; after ingestion commits, verify the result with an ordinary `SELECT`.
 - **Remember:** Snowpipe = staged files; Snowpipe Streaming = direct row ingestion.
 
 #### E. Check progress and errors
@@ -1244,10 +1233,7 @@ References: [Snowpipe Streaming](https://docs.snowflake.com/en/user-guide/snowpi
 - Its central state is an **offset**:
   - A point in the source's version history.
   - Used to return changes after that point.
-- A Stream is not a separate stored copy of all source rows.
-- It exposes source columns plus change metadata.
-- It does not ingest external data by itself.
-- Source examples include supported tables, views, and directory tables.
+- A Stream is not a separate copy of all source rows. It exposes source columns and change metadata from supported sources such as tables, views, and directory tables; it does not ingest external data by itself.
 
 #### B. Stream types
 
@@ -1335,11 +1321,7 @@ WHERE METADATA$ACTION = 'INSERT';
 
 #### E. Staleness and checking for work
 
-- A stream needs source change history to interpret its offset.
-- If that history is no longer retained, it can become **stale**.
-- Inspect `SHOW STREAMS`, including staleness information such as `STALE_AFTER`.
-- Consume changes before the needed history expires.
-- Recreating a stale stream at the current point does not recover old changes automatically.
+- A stream needs source change history to interpret its offset. If that history expires before you consume the changes, the stream can become **stale**. Inspect `SHOW STREAMS` for information such as `STALE_AFTER`; recreating a stale stream at the current point does not automatically recover old changes.
 - `SYSTEM$STREAM_HAS_DATA`:
   - Useful as a Task condition.
   - Can return `TRUE` even when the stream query has no rows.
@@ -1566,11 +1548,8 @@ References: [Task security](https://docs.snowflake.com/en/user-guide/tasks-intro
 
 #### A. The main idea
 
-- A **Dynamic Table** stores the result of a SQL query.
-- You define the result with `SELECT`.
-- Snowflake manages refreshes to meet a freshness goal.
-- The normal pipeline does not require you to write your own Stream, Task, and `MERGE` for every refresh step.
-- It uses a specified virtual warehouse for refresh compute.
+- A **Dynamic Table** stores the result of a `SELECT` query. Snowflake manages refreshes toward a freshness goal, so the normal pipeline does not need a custom Stream, Task, and `MERGE` for every step.
+- Refreshes use the virtual warehouse specified for the Dynamic Table.
 - It is useful for maintained transformation results:
   - Cleaned rows.
   - Joins.
@@ -1805,13 +1784,8 @@ Reference: [Python Connector connections](https://docs.snowflake.com/en/develope
 
 #### B. Snowflake Connector for Kafka
 
-- Connects Kafka data streams to Snowflake.
-- Learn the source clue:
-  - Kafka topics/messages -> Kafka connector.
-- Supported connector versions/configurations can use file-based Snowpipe or Snowpipe Streaming.
-- Delivery behavior depends on the connector's ingestion method and offset management.
-- Do not assume Kafka source offsets eliminate all possible business-data duplicates.
-- Snowpipe Streaming itself is not limited to Kafka.
+- The Kafka connector moves Kafka topics and messages into Snowflake. Supported versions and configurations can use file-based Snowpipe or Snowpipe Streaming; delivery behavior depends on the ingestion method and offset management.
+- Kafka source offsets do not eliminate every possible business-data duplicate. Snowpipe Streaming itself is not limited to Kafka.
 
 #### C. Snowflake Connector for Spark
 
@@ -1968,19 +1942,14 @@ References: [S3 storage integration setup](https://docs.snowflake.com/en/user-gu
 
 #### A. External functions
 
-- An **external function** calls a remote service from Snowflake SQL.
-- An **API integration** stores the configuration needed to reach a supported proxy/remote service.
-- The function describes the callable SQL interface.
+- An **external function** gives SQL a callable interface to a remote service. Its **API integration** stores the configuration for reaching the supported proxy and service.
 - A common pattern is:
 
 ```text
 SQL query -> external function -> API integration/proxy -> remote service
 ```
 
-- A remote address-enrichment or scoring service is an example.
-- Creating the integration does not deploy the remote function.
-- The remote service must implement Snowflake's expected request/response contract.
-- Authentication, allowed URL prefixes, cloud trust, and remote permissions must be configured.
+- A remote address-enrichment or scoring service is one example. Creating an API integration does not deploy that service; the service must implement Snowflake's request/response format, with authentication, allowed URL prefixes, cloud trust, and remote permissions configured.
 
 ```sql
 -- OPTIONAL CLOUD TEMPLATE: not a complete external-service deployment.

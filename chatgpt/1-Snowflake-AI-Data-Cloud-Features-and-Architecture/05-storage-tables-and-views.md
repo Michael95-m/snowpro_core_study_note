@@ -12,32 +12,20 @@
 
 ### Micro-partitions and pruning
 
-- For standard Snowflake tables, Snowflake automatically organizes rows into **micro-partitions**.
-- These are:
-  - Immutable.
-  - Compressed.
-  - Columnar.
-- You do not define and maintain traditional table partitions yourself.
-- Specialized table types do not necessarily use the same storage mechanism.
+- Snowflake automatically organizes standard-table rows into **immutable, compressed, columnar micro-partitions**. You do not maintain traditional table partitions yourself; specialized table types may use different storage mechanisms.
 
 - A micro-partition represents approximately 50 MB to 500 MB of uncompressed data; physical storage is compressed.
-- Snowflake records metadata such as per-column value ranges and distinct-value information.
-- A selective predicate can use metadata to skip partitions that cannot match. This is **micro-partition pruning**.
-- Updates/deletes produce new micro-partitions rather than modifying the old ones in place. Historical versions can remain for applicable protection periods.
+- Snowflake records metadata such as per-column value ranges and distinct-value information. A selective predicate can use it to skip partitions that cannot match; this is **micro-partition pruning**.
+- Updates and deletes produce new micro-partitions instead of modifying the old ones in place. Historical versions can remain during applicable protection periods.
 
 <p align="center"><img src="../../img/domain1-partition-pruning.png" alt="A March date filter skips January-only and February-only partitions, while scanning partitions whose metadata ranges overlap March." width="760"></p>
 
-- The ranges in the image are illustrative.
-- A candidate partition can contain rows outside the filter.
-- **Pruning** selects which partitions must be scanned.
-- The query still checks which rows match.
+- The image's ranges are illustrative. **Pruning** chooses partitions to scan, but a candidate partition may contain rows outside the filter; the query still checks each row for a match.
 
 ### Natural clustering and clustering keys
 
-- **Natural clustering** comes from the order in which data is loaded or inserted.
-- Pruning can become less effective when frequently filtered values are scattered across many overlapping micro-partitions.
-- An optional **clustering key** guides maintenance of a better organization for a suitable large-table workload.
-- A clustering key is not mandatory for every table.
+- **Natural clustering** comes from load or insert order. Pruning can become less effective when values used in filters are scattered across overlapping micro-partitions.
+- An optional **clustering key** can guide better organization for a suitable large-table workload. It is not mandatory for every table.
 
 - These fundamentals were moved from the storage course chapter.
 - Use [Domain 4](../4-Performance-Optimization-Querying-and-Transformation/readme.md) for:
@@ -56,10 +44,8 @@
 | Temporary | Current session only, unless dropped sooner. | Up to one day while available; do not rely on recovery after the session ends. | None. | Session-local intermediate work. |
 | Transient | Until dropped; survives sessions. | 0 or 1 day. | None. | Rebuildable staging or derived data. |
 
-- **Temporary tables** are scoped to a session.
-- They are not shared across every connection owned by the same user.
-- A temporary table can hide a permanent table with the same name in that session.
-- **Transient** does not mean “automatically deleted soon.”
+- **Temporary tables** belong to one session, not every connection owned by the user. In that session, a temporary table can hide a permanent table with the same name.
+- **Transient** means the table survives sessions without Fail-safe; it does not mean Snowflake automatically deletes it soon.
 
 ```sql
 -- Run in an existing writable study schema.
@@ -124,11 +110,8 @@ AS
   GROUP BY order_date;
 ```
 
-- **Target lag** is a freshness target relative to source data.
-- It is not a fixed refresh interval or guaranteed SLA.
-- Snowflake schedules refresh work to pursue the target.
-- Incremental/full refresh support depends on the query and mode.
-- Refreshing the stored result consumes compute.
+- **Target lag** is a freshness goal relative to source data, not a fixed refresh interval or guaranteed SLA. Snowflake schedules refresh work to pursue that goal.
+- A dynamic table can refresh incrementally or fully, depending on its query and mode. Refreshing the stored result consumes compute.
 
 <a id="view-types"></a>
 

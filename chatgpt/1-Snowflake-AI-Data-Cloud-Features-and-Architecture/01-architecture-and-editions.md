@@ -32,11 +32,8 @@
 
 <p align="center"><img src="../../img/Shared_disk_vs_Shared_nothing.png" alt="Shared disk compared with shared nothing" width="640"></p>
 
-- Snowflake combines **centralized persistent data** with **massively parallel compute**.
-- Independent warehouses isolate compute workloads.
-- Scaling a warehouse does not require duplicating its source tables.
-- Scaling is configurable and subject to supported capacity and service limits.
-- It is not literally unlimited.
+- Snowflake combines **centralized persistent data** with **massively parallel compute**. Independent warehouses can isolate workloads and scale without duplicating their source tables.
+- Scaling is configurable within supported capacity and service limits; it is not literally unlimited.
 
 <p align="center"><img src="../../img/Multi-cluster-shared-data-architecture.png" alt="Multi-cluster shared-data architecture" width="640"></p>
 
@@ -54,10 +51,7 @@
 
 <p align="center"><img src="../../img/Services_layer.png" alt="Cloud services coordinating Snowflake activity" width="600"></p>
 
-- **Serverless features** use Snowflake-managed compute.
-- Not every operation runs on your selected virtual warehouse.
-- Storage is charged separately from compute.
-- Managed storage billing uses average stored bytes over time.
+- **Serverless features** use Snowflake-managed compute, so not every operation runs on your selected warehouse. Storage is charged separately from compute, using average stored bytes over time.
 - A cloud-storage durability percentage is not a Snowflake availability guarantee.
 
 <a id="editions"></a>
@@ -99,14 +93,9 @@
   2. Each calculates a partial total.
   3. Those partial totals are combined into the final total.
 
-- **Separate virtual warehouses** provide independent compute resources for different workloads.
-- An ETL warehouse and a BI warehouse can access the same persistent tables.
-- They do not compete for the same warehouse CPU and memory.
-- Each warehouse can use parallel processing internally.
+- **Separate virtual warehouses** provide independent compute for different workloads. An ETL warehouse and a BI warehouse can access the same persistent tables without competing for the same warehouse CPU and memory; each can use parallel processing internally.
 
-- MPP explains how nodes cooperate within a cluster.
-- Independent warehouses explain compute isolation between workloads.
-- Adding clusters to a multi-cluster warehouse primarily increases concurrency capacity; it is a different concept from distributing one query across nodes.
+- MPP explains how nodes cooperate within a cluster; independent warehouses explain isolation between workloads. Adding clusters to a multi-cluster warehouse primarily increases concurrency capacity, rather than splitting one query across more clusters.
 
 - **Reference:** [Snowflake architecture](https://docs.snowflake.com/en/user-guide/intro-key-concepts#snowflake-architecture).
 
@@ -134,13 +123,8 @@ ALTER TABLE D1_STUDY.LAB.ORDERS
 
 ### 3. Business Critical private connectivity versus VPS isolation
 
-- **Business Critical already supports private connectivity** to the Snowflake service, such as AWS PrivateLink.
-- A private connection controls the network path to Snowflake.
-- It does not by itself create a dedicated Snowflake environment.
-
-- **VPS** includes Business Critical's features.
-- It provides a separate Snowflake environment.
-- Its hardware resources are not shared with accounts outside that VPS environment.
+- **Business Critical supports private connectivity**, such as AWS PrivateLink. A private connection controls the network path to Snowflake; it does not create a dedicated Snowflake environment by itself.
+- **VPS** includes Business Critical's features and provides a separate Snowflake environment. Its hardware resources are not shared with accounts outside that VPS environment.
 
 - Need AWS PrivateLink without a dedicated environment: **Business Critical is the minimum edition**.
 - Need the additional environment and hardware isolation described above: **VPS**.
