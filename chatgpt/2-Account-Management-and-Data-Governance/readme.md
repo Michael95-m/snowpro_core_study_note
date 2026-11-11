@@ -999,6 +999,7 @@ GRANT ROLE security_reviewer TO USER REVIEWER_USER;
 - **Remember:** Rotation, rekeying, and customer-managed key control are different mechanisms.
 
 - Snowflake encrypts customer data by default and manages the normal encryption-key hierarchy.
+- **In transit:** Connections to Snowflake use TLS to encrypt data moving between a client and the service. Snowflake drivers support TLS 1.2; many also support TLS 1.3, so the negotiated version depends on the client and configuration. This protects data in transit, while Snowflake's key hierarchy protects stored data. [Snowflake encryption overview](https://docs.snowflake.com/en/user-guide/security-encryption-end-to-end) · [Driver TLS support](https://docs.snowflake.com/en/developer-guide/drivers)
 
 - For extra customer control, **Tri-Secret Secure** combines:
 
@@ -1732,7 +1733,7 @@ GRANT ROLE cost_reviewer TO USER REVIEWER_USER;
 12. What can a tag do by itself, and what can it not do by itself?
 13. What problem do privacy policies solve?
 14. What does the Trust Center help you find? How does a violation differ from a detection?
-15. What extra control does Tri-Secret Secure add to normal Snowflake encryption?
+15. What protects a client connection in transit? What extra control does Tri-Secret Secure add to stored-data encryption?
 16. What must you do after creating an alert before it can run?
 17. What is the difference between an alert and a notification integration?
 18. Which costs can a resource monitor control, and which can it not control?
@@ -1782,7 +1783,7 @@ GRANT ROLE cost_reviewer TO USER REVIEWER_USER;
 12. It supplies classification/metadata; enforcement requires an associated policy or other configured control.
 13. They limit cumulative privacy exposure from analytical queries, using differential privacy and privacy budgets.
 14. Trust Center scanners find security risks. A violation is an ongoing condition, such as missing MFA; a detection is a one-time event, such as a login from an unusual IP. Investigate and address the underlying risk.
-15. A customer-managed cloud key participates with Snowflake-managed key material in the composite protection hierarchy.
+15. TLS encrypts the client connection in transit (TLS 1.2, or TLS 1.3 where supported and negotiated). Tri-Secret Secure adds a customer-managed cloud key to the composite protection hierarchy for stored data.
 16. Provide owner privileges and resume it for its schedule, or request a one-time EXECUTE ALERT run; creation leaves it suspended.
 17. An alert detects a condition and runs an action; an integration configures how a notification destination is reached.
 18. Warehouse compute and supporting cloud-services usage count toward monitor quotas before adjustment; it does not suspend Snowpipe, compute pools, AI, or all serverless services.

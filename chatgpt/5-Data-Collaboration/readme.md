@@ -138,6 +138,8 @@ A reader account can help a customer who has no Snowflake account query the prov
 3. **Consumer access.** With direct object grants to the share, grant `IMPORTED PRIVILEGES` on the imported database to a local account role. If the provider shared database roles, grant the appropriate imported database role to a local account role to give access to its slice of the share.
 4. **Consumer user.** Run a query with a role that has both the shared data access and `USAGE` on a consumer warehouse. [Provider workflow](https://docs.snowflake.com/en/user-guide/data-sharing-provider) · [Consumer workflow](https://docs.snowflake.com/en/user-guide/data-share-consumers)
 
+**Materialized-view sharing.** A **secure materialized view** can be shared: grant the share `USAGE` on its database and schema, then `SELECT` on the view. Check `IS_SECURE` with `SHOW MATERIALIZED VIEWS`. An ordinary materialized view is not eligible for a default share, which accepts only secure views; attempting to grant it can fail. So “materialized views cannot be shared” is too broad. A consumer can also create its own materialized view on shared data and pay for its maintenance. [Shareable objects](https://docs.snowflake.com/en/user-guide/data-sharing-intro) · [Share grants](https://docs.snowflake.com/en/sql-reference/sql/grant-privilege-share) · [Materialized views on shared data](https://docs.snowflake.com/en/user-guide/views-materialized)
+
 - `SHOW SHARES` lets you inspect visible inbound or outbound shares. Delegated administrators need the applicable privileges to create shares, add targets, import databases, and grant access. [Share administration privileges](https://docs.snowflake.com/en/user-guide/security-access-privileges-shares)
 
 #### Share data from multiple databases in one direct share
@@ -294,6 +296,7 @@ SELECT * FROM D5_IMPORTED_ORDERS.LAB.D5_PARTNER_INTL_ORDERS_V;
 17. What are the jobs of the manifest and setup script?
 18. How does a Data Exchange differ from the External sharing page? Can a direct share to an account in your own organization appear on that page?
 19. When is a Data Exchange more useful than one private listing?
+20. Can you share a materialized view? What must you check before granting it to a default share?
 
 <details>
 <summary>Answer key</summary>
@@ -317,5 +320,6 @@ SELECT * FROM D5_IMPORTED_ORDERS.LAB.D5_PARTNER_INTL_ORDERS_V;
 17. The manifest describes configuration and identifies the setup script. The setup script creates or updates objects on installation or upgrade.
 18. A Data Exchange is a private hub with invited member accounts and provider/consumer roles. External sharing is a Snowsight page for direct shares, listings, and Data Exchange items. Yes, a direct share to an account in your organization can appear there.
 19. When an invited group needs ongoing membership and several providers/consumers publishing or discovering listings; one private listing can target selected consumers without creating an exchange.
+20. Yes, a secure materialized view can be shared. Check that it is secure and grant the required database/schema `USAGE` plus view `SELECT`; an ordinary materialized view is rejected by a default secure-only share.
 
 </details>

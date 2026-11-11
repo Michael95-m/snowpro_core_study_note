@@ -106,6 +106,13 @@ ALTER WAREHOUSE study_wh SET
 - **Scaling policy:** governs cluster decisions.
 - **Auto-suspend:** governs idle warehouse suspension.
 - Increasing the cluster maximum does not mean every query is spread across that many clusters.
+- **`MAX_CONCURRENCY_LEVEL`** controls the concurrency level for SQL statements on each warehouse cluster; its default is **8**. This is not a guarantee that exactly eight full queries always run at once: query size and resource needs matter, and small statements can count as a fraction. At the limit, a single-cluster or maximized warehouse queues more statements; an auto-scale multi-cluster warehouse can start another cluster within its configured maximum. [Concurrency limit](https://docs.snowflake.com/en/user-guide/performance-query-warehouse-max-concurrency) · [Warehouse parameter](https://docs.snowflake.com/en/sql-reference/parameters#max-concurrency-level)
+
+```sql
+SHOW PARAMETERS LIKE 'MAX_CONCURRENCY_LEVEL' IN WAREHOUSE study_wh;
+-- Example only: lower the limit after measuring the workload.
+-- ALTER WAREHOUSE study_wh SET MAX_CONCURRENCY_LEVEL = 4;
+```
 
 <a id="choose-by-workload"></a>
 

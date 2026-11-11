@@ -1009,11 +1009,13 @@ DESCRIBE PIPE orders_pipe;
 - This tells Snowpipe **which existing staged files to load**:
   - It does not upload local file bytes.
   - It is not the same API as row-based Snowpipe Streaming.
+- **Authentication:** the usual method is key-pair authentication. Create an RSA public/private key pair, assign the public key to a dedicated Snowflake service user, and have the client sign a short-lived JSON Web Token (JWT) with the private key. Send it as `Authorization: Bearer <jwt>` on the HTTPS request; the user's password is not needed for this method. Protect and rotate the private key rather than putting it in application code.
+- **Alternative:** Snowpipe REST also supports workload identity federation, which sends a `Bearer WIF.<provider>.<token>` token. Each REST request authenticates separately; this API does not create a SQL session.
 - Supported staging choices include named internal stages and external stages.
 - The REST client needs authentication, `USAGE` on the pipe's database/schema, and `OPERATE` on the pipe for `insertFiles`.
 - The **pipe owner's role** needs the required access to the stage and target table. The REST caller does not need direct stage or target-table privileges just to submit filenames.
 
-References: [Snowpipe overview](https://docs.snowflake.com/en/user-guide/data-load-snowpipe-intro), [Automating Snowpipe](https://docs.snowflake.com/en/user-guide/data-load-snowpipe-auto), [Snowpipe REST API](https://docs.snowflake.com/en/user-guide/data-load-snowpipe-rest-overview), [CREATE PIPE](https://docs.snowflake.com/en/sql-reference/sql/create-pipe).
+References: [Snowpipe overview](https://docs.snowflake.com/en/user-guide/data-load-snowpipe-intro), [Automating Snowpipe](https://docs.snowflake.com/en/user-guide/data-load-snowpipe-auto), [Snowpipe REST API authentication](https://docs.snowflake.com/en/user-guide/data-load-snowpipe-rest-overview#authentication-and-access-control), [CREATE PIPE](https://docs.snowflake.com/en/sql-reference/sql/create-pipe).
 
 #### D. Monitor, pause, and resume
 
@@ -1049,6 +1051,17 @@ FROM TABLE(D3_STUDY.INFORMATION_SCHEMA.VALIDATE_PIPE_LOAD(
 - Pausing prevents new file loads from starting:
   - An in-progress file load can finish.
   - Notifications can still add files to the queue.
+
+#### Cloned pipes
+
+When a database or schema clone includes an eligible external-stage pipe, Snowflake copies its pipe definition but does **not** let the clone start loading automatically:
+
+| Pipe setting | Initial state of the clone | What happens before resume? |
+| --- | --- | --- |
+| `AUTO_INGEST = FALSE` | Paused | The cloned pipe does not process submitted files. |
+| `AUTO_INGEST = TRUE` | `STOPPED_CLONED` | The cloned pipe does **not** accumulate new file-event notifications. After resume, it processes only newly notified files. |
+
+Before resuming, inspect the cloned pipe's `COPY INTO` target. If it explicitly names the **source** database or schema, resuming the clone can load the source table again instead of the cloned table. Recreate the pipe with the cloned target if needed; then resume only when its stage path and target are correct. Check the state with `SYSTEM$PIPE_STATUS`. [Cloning considerations](https://docs.snowflake.com/en/user-guide/object-clone#cloning-and-pipes) · [Troubleshooting `STOPPED_CLONED`](https://docs.snowflake.com/en/user-guide/data-load-snowpipe-ts)
 
 #### E. Duplicate protection and recovery
 
@@ -1263,11 +1276,13 @@ CREATE STREAM new_order_events
 - `METADATA$ISUPDATE`:
   - Whether this record is part of an update.
 - `METADATA$ROW_ID`:
-  - A stable identifier for the source row.
+  - A unique, stable identifier for tracking the source row across changes.
 - A standard stream can represent an update with:
   - A `DELETE` record for the old value.
   - An `INSERT` record for the new value.
   - Both marked `METADATA$ISUPDATE = TRUE`.
+- For example, changing order 101 from amount 20 to 25 can return `DELETE / TRUE / row_101 / 20` and `INSERT / TRUE / row_101 / 25` (action / is-update / row ID / amount). An ordinary insert or delete has `METADATA$ISUPDATE = FALSE`.
+- Treat `METADATA$ROW_ID` as a stream/source row identifier, not a permanent business key. Streams on the same source return the same row ID for that row, but a stream on a view is not guaranteed to match a stream on its base table; disabling and re-enabling change tracking can also change IDs.
 - Streams show **net changes between offsets**, not every intermediate event:
   - A new row inserted and then deleted within the unconsumed window can disappear from the net result.
   - A new row inserted and then updated can appear as one final insertion.
@@ -1337,7 +1352,7 @@ SELECT SYSTEM$STREAM_HAS_DATA('D3_STUDY.LAB.D3_TASK_INSERTS');
 - **Remember:** Stream = offset + net change records; committed consumption moves the offset.
 - **Practice:** exercise 02 checks repeated reads, committed consumption, an update pair, a delete, and rollback.
 
-References: [Introduction to Streams](https://docs.snowflake.com/en/user-guide/streams-intro), [CREATE STREAM and metadata](https://docs.snowflake.com/en/sql-reference/sql/create-stream), [SYSTEM$STREAM_HAS_DATA](https://docs.snowflake.com/en/sql-reference/functions/system_stream_has_data).
+References: [Introduction to Streams and row IDs](https://docs.snowflake.com/en/user-guide/streams-intro), [CREATE STREAM and metadata](https://docs.snowflake.com/en/sql-reference/sql/create-stream), [SYSTEM$STREAM_HAS_DATA](https://docs.snowflake.com/en/sql-reference/functions/system_stream_has_data).
 
 ### 3.2.5 Tasks: run the work
 
@@ -2194,7 +2209,7 @@ Use these to check understanding after running the SQL yourself.
 20. Why is `AUTO_INGEST = TRUE` not the complete cloud-event setup?
 21. What can happen if you correct a Snowpipe file and reuse its name within the metadata window?
 22. What are the separate meanings of the 64-day, 14-day, and 7-day periods?
-23. How do you inspect, pause, and resume a pipe? What changes for a stale pipe?
+23. How do you inspect, pause, and resume a pipe? What changes for a stale or cloned pipe?
 24. How does current Snowpipe pricing differ from older per-file/per-compute pricing?
 25. How does Snowpipe Streaming differ from file-based Snowpipe?
 26. Why do channels and committed offset tokens matter for streaming recovery?
@@ -2203,6 +2218,7 @@ Quick scenario checks:
 
 - A CSV file partially loads through Snowpipe. Why might an error notification not arrive, and where can you check the partial result?
 - A corrected file keeps its original path/name. Why does `ALTER PIPE ... REFRESH` not reload it, and what are two deliberate recovery routes?
+- An external app calls Snowpipe `insertFiles`. How can it authenticate without a password, and what alternative to key-pair JWT is supported?
 - A streaming producer crashes after submitting offsets `100`-`105`; the last committed offset is `102`. Where should it resume?
 - When would you choose a Named Channel instead of an Elastic Channel? Does the default streaming pipe decide that choice?
 - Can Snowpipe Streaming apply an incoming CDC delete directly to the target table?
@@ -2264,7 +2280,7 @@ Quick scenario checks:
 20. Cloud event delivery, trust, permissions, and the stage/table configuration must also work.
 21. Snowpipe can ignore the same path/name, even after a correction; use a planned replay strategy.
 22. Bulk load metadata: 64 days; Snowpipe file metadata/recent COPY_HISTORY function window: separate 14-day concepts; ALTER PIPE REFRESH: files staged within seven days.
-23. SYSTEM$PIPE_STATUS; ALTER PIPE with PIPE_EXECUTION_PAUSED; a stale pipe needs the documented force-resume process and missed-file recovery.
+23. Use SYSTEM$PIPE_STATUS and ALTER PIPE with PIPE_EXECUTION_PAUSED. A stale pipe needs the documented force-resume process and missed-file recovery. A cloned pipe starts paused (`AUTO_INGEST = FALSE`) or STOPPED_CLONED (`TRUE`); inspect its COPY target before resuming so it cannot accidentally load the source table.
 24. Current billing is by loaded data volume, not a per-file fee or user-sized warehouse time. Text uses uncompressed size; binary uses observed size.
 25. Snowpipe loads staged files; Streaming submits rows without intermediate staged files.
 26. They define source progress and recovery boundaries. Correct replay from committed offsets is required; business-event uniqueness is not automatic.
@@ -2273,6 +2289,7 @@ Quick scenario checks:
 
 - `ON_ERROR = CONTINUE` can leave valid rows in a partially loaded file without a failed-file notification. Check `COPY_HISTORY` for `Partially loaded`.
 - Pipe metadata remembers the path/name. Use a new path/name with a new event, or use a targeted manual `COPY INTO`; reconcile original rows first.
+- Use a short-lived JWT signed with the service user's private RSA key, with the public key registered on that user; workload identity federation is another supported method.
 - Resume at `103` from a durable source, using the same Named Channel and original offsets.
 - Choose Named for per-channel ordering and offset-based recovery; Elastic is at-least-once without that ordering. The default/custom pipe choice is separate.
 - No. Streaming inserts raw CDC records; process deletes downstream.
