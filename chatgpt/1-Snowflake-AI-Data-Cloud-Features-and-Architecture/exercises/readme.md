@@ -43,7 +43,7 @@ snow sql -c learning -f chatgpt/1-Snowflake-AI-Data-Cloud-Features-and-Architect
 
 - Expect **3 orders totaling 600** in the second result. Change `min_amount` to `200` and predict the new count and total before rerunning.
 - Compare the CLI's active role with Snowsight or VS Code. The same SQL may behave differently if the connections use different roles or warehouses.
-- The course's SnowSQL `!define` example runs inside SnowSQL. This lab uses Snowflake CLI's current `<% variable %>` template syntax and `-D` option.
+- SnowSQL `!define` runs inside SnowSQL. This lab uses Snowflake CLI's `<% variable %>` template syntax and `-D` option.
 - [CLI SQL and variable reference](https://docs.snowflake.com/en/developer-guide/snowflake-cli/sql/execute-sql).
 
 ## Compute and stopping

@@ -23,7 +23,7 @@
 ## 1.2.2 Snowsight: worksheets and workspaces
 
 - Use the SQL editor for queries and scripts, and object exploration for databases, schemas, and tables. **Query History** and **Query Profile** help investigate performance; administration pages cover security and compute.
-- Workspaces support broader projects. Notebook and editor names can differ from those in older course recordings.
+- Workspaces support broader projects and notebooks.
 
 - For an unexpected **“object not found”** or **“no warehouse selected”** error, check:
   1. Role.
@@ -48,7 +48,7 @@ snow sql -c learning -f exercise.sql
 - Keep secrets in a supported credential configuration rather than embedding passwords in scripts.
 
 - `PUT` transfers local files to **internal stages** through supported clients such as the CLI. A browser worksheet does not provide the same local-file workflow.
-- **Related note:** [loading chapter](../../study-notes/7-Data-Loading-and-Unloading/readme.md).
+- **Related note:** [Domain 3 loading](../3-Data-Loading-Unloading-and-Connectivity/readme.md).
 
 <a id="ide-integrations"></a>
 

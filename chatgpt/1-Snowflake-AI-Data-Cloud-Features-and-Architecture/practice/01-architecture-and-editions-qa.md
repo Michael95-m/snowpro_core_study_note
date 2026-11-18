@@ -527,7 +527,7 @@ Distinguish parallel query processing from using separate ETL and BI warehouses.
 
 You asked whether you clearly understood 1.1. Your revised explanations showed that you could distinguish the key concepts in your own words. However, repeated multiple-choice recognition is weaker evidence than delayed, closed-book recall. This practice round does not establish exam readiness by itself.
 
-The three distinctions we added to your study note were:
+Three distinctions to recall:
 
 1. **MPP versus independent warehouses:** parallel work inside a cluster versus compute isolation between warehouses.
 2. **Feature availability versus configuration:** an Enterprise upgrade does not automatically configure extended retention or multiple clusters.

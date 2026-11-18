@@ -42,19 +42,17 @@ This folder follows all **six Domain 1 objectives** in the supplied SnowPro Core
 | Business users ask revenue questions in natural language | Cortex Analyst with semantic definitions and validation. |
 | Govern reusable ML inputs versus trained versions | Feature Store versus Model Registry. |
 
-## How your existing notes fit
+## Related domains
 
-Topic **1.1** includes your original architecture explanations and images. Topic **1.5** expands the table and view comparisons, including micro-partitions and natural clustering from the storage course chapter. Some concepts appear in more than one domain: this folder explains what each object or service is, and the related notes below cover operational details.
+Some concepts appear in more than one domain. Use these notes for the related details:
 
-| Related material | Where to study the detail |
+| Topic | Domain note |
 | --- | --- |
 | RBAC, ownership, authentication, governance, and cost controls | [Domain 2](../2-Account-Management-and-Data-Governance/readme.md) |
-| Stage operations, file formats, loading, unloading, and pipes | [Loading course chapter](../../study-notes/7-Data-Loading-and-Unloading/readme.md) |
+| Stage operations, file formats, loading, unloading, and pipes | [Domain 3](../3-Data-Loading-Unloading-and-Connectivity/readme.md) |
 | Clustering-key selection, materialized-view tuning, caching, and SQL optimization | [Domain 4](../4-Performance-Optimization-Querying-and-Transformation/readme.md) |
-| Time Travel, Fail-safe, cloning, replication, and collaboration examples | [Storage and sharing course chapter](../../study-notes/9-Storage-Data-Protection-and-sharing/readme.md) |
-| Unstructured files and additional transformation functions | [Transformation course chapter](../../study-notes/8-Data-transformation/readme.md) |
-
-Folder numbers **7, 8, and 9** are course chapter numbers, not C03 exam domains. The separate Level Up Accounts and Assurances file contains only a heading, so there was no lesson content to relocate.
+| Time Travel, Fail-safe, cloning, replication, and collaboration | [Domain 5](../5-Data-Collaboration/readme.md) |
+| Unstructured files and transformation functions | [Domain 4](../4-Performance-Optimization-Querying-and-Transformation/readme.md#44-perform-data-transformation-techniques) |
 
 ## Scope and practice
 

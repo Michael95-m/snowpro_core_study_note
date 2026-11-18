@@ -1,1249 +1,418 @@
 # Domain 4.0: Performance Optimization, Querying, and Transformation
 
-- **Exam outline:** supplied [SnowPro Core C03 guide](../../SnowProCoreStudyGuideC03.pdf), pages 5 and 10.
-- **Domain weighting in that guide:** **21%**.
-- **Format and exercise update:** November 5, 2026.
-- **Purpose:** understand the feature, recognize a scenario, and practice with SQL.
-- Technical terms stay unchanged; explanations use short bullets and numbered steps.
-- SQL examples are reviewed against official documentation, **not executed in your Snowflake account**.
+The [SnowPro Core C03 study guide](../../SnowProCoreStudyGuideC03.pdf) assigns **21%** of the exam to Domain 4. This note focuses on recognizing a performance symptom, choosing the right tool, and reading common SQL patterns.
 
-## How to use this note
+| Objective | Main question |
+| --- | --- |
+| **4.1 Evaluate performance** | Where does the query spend time, and how much data does it read? |
+| **4.2 Optimize performance** | Should you change SQL, compute, or a table/warehouse feature? |
+| **4.3 Caching** | Was a final result reused, or was table data read from warehouse cache? |
+| **4.4 Transformation** | How do SQL, JSON, and staged files become useful results? |
 
-1. Read one numbered subsection.
-2. Learn its **Remember** line and scenario distinctions.
-3. Run the related exercise and compare the expected result.
-4. Answer **What to Recall** without looking, then open its answer key.
-5. Check the official reference when a feature or prerequisite needs more detail.
+## Practice files
 
-### The C03 coverage checklist
+- [Ordered SQL labs](exercises/readme.md): begin with [setup](exercises/00-setup.sql) and finish with [stop-lab](exercises/99-stop-lab.sql).
+- [Domain 4 practice quiz](practice/domain-4-qa.md) for scenario questions.
+- Some optional optimization features have extra cost or edition requirements; use the lab guide's setup and cleanup instructions.
 
-| C03 objective | Coverage | Start |
-| --- | --- | --- |
-| **4.1** | Query Profile/Insights; spill; pruning; joins; queues; query attribution/history; workload management. | [4.1](#41-evaluate-query-performance) |
-| **4.2** | QAS; Search Optimization; clustering keys; materialized views. | [4.2](#42-optimize-query-performance) |
-| **4.3** | Persisted query results; warehouse cache; metadata cache. | [4.3](#43-snowflake-caching) |
-| **4.4** | Structured, semi-structured, unstructured data; aggregates; SQL optimization; windows. | [4.4](#44-perform-data-transformation-techniques) |
-
-### Core study versus optional depth
-
-- Start with the named guide objectives and feature-selection distinctions.
-- Add the runnable lab to connect the definition to an observed result.
-- Reference snippets outside the exercise folder are separate patterns with stated prerequisites; do not run the entire README as one SQL script.
-- Account-wide security changes, real email, multi-account DR, paid AI, and paid background optimization require their own setup.
-- New product features do not automatically become new exam objectives. The guide also says its list is not exhaustive.
-- Keep the existing images, practice Q&A, and course references as supporting material.
-
-## Practice setup and exercise files
-
-- Review the [25-question Domain 4 practice quiz](practice/domain-4-qa.md).
-- Follow the [ordered lab guide and checkpoints](exercises/readme.md).
-- Run [00-setup.sql](exercises/00-setup.sql) first in a fresh lab session.
-- Finish with [99-stop-lab.sql](exercises/99-stop-lab.sql).
-- Each script uses only its named study objects and synthetic data.
-- Basic queries can resume the small warehouse and consume credits.
-- Optional blocks are clearly marked; their permissions/editions and cleanup are in the lab guide.
-
-## Material already covered in your other course notes
-
-- This Domain 4 note brings the exam-relevant parts together.
-- The linked notes remain the deeper reference for each topic.
-
-| Domain 4 topic | Existing note to review | What is reused here |
-| --- | --- | --- |
-| Micro-partitions, pruning, and clustering | [Domain 1 storage concepts](../1-Snowflake-AI-Data-Cloud-Features-and-Architecture/05-storage-tables-and-views.md) | Pruning fundamentals; key-selection decisions remain in Domain 4. |
-| Virtual warehouses and local cache | [Domain 1 warehouses](../1-Snowflake-AI-Data-Cloud-Features-and-Architecture/04-virtual-warehouses.md) | Warehouse configuration and local caching. |
-| Semi-structured data | [Loading course note](../../study-notes/7-Data-Loading-and-Unloading/readme.md) | `VARIANT`, paths, casting, and `FLATTEN`. |
-| Unstructured file functions | [Data Transformation note](../../study-notes/8-Data-transformation/readme.md) | Scoped, stage, and pre-signed URLs; directory tables. |
-| Aggregates, windows, sampling, and approximate functions | [Data Transformation note](../../study-notes/8-Data-transformation/readme.md) | Core transformations plus course extensions. |
+The SQL below illustrates a concept. Run the linked exercises for complete objects and expected results.
 
 ---
 
 ## 4.1 Evaluate Query Performance
 
-<a id="a-practical-diagnostic-order"></a>
+### 4.1.1 Read the symptom before changing settings
 
-### 4.1.1 A practical diagnostic order
+Start with the **Query Profile** and query history. Check execution time, queue/provisioning/blocking time, partitions scanned versus total, bytes scanned, warehouse-cache percentage, join row counts, and local/remote spill. A query that waited in a queue needs a different fix from a query that scanned too much data.
 
-- **Remember:** Find the query, inspect its profile, identify the bottleneck, change one justified factor, and verify results and cost.
+<p align="center"><img src="../../img/domain4-query-diagnosis.png" alt="Query diagnosis: distinguish queueing, spill, poor pruning, and exploding joins before choosing a fix." width="760"></p>
 
-1. Find a representative slow query in **Snowsight Query History**.
-2. Open its **Query Profile** and inspect the most expensive nodes and Query Insights.
-3. Identify the main bottleneck: poor pruning, a bad join, data spilling, or queueing.
-4. Check whether the problem is one query, a repeated query pattern, or warehouse concurrency.
-5. Apply the smallest suitable fix, then compare the same workload again.
-
-- Record the query ID, row count, warehouse size, elapsed time, bytes scanned, spill, and queue time. Separate compilation, startup wait, execution, and client/network time: a slower end-to-end result does not always mean slower SQL execution.
-- Use representative data and repeated measurements, and preserve result correctness while optimizing.
-
-<a id="query-profile-and-query-insights"></a>
-
-### 4.1.2 Query Profile and Query Insights
-
-- **Remember:** History summarizes a query; Profile exposes its physical operators; Insights flags recognized patterns.
-
-<p align="center"><img src="../../img/domain4-query-diagnosis.png" alt="Query diagnosis guide: distinguish overload, provisioning, and blocking; investigate memory for large spill, selectivity for weak pruning, and join keys and grain for exploding joins." width="760"></p>
-
-- The Query Profile shows how Snowflake executed a query, including costly scans, joins, aggregates, sorts, and data transfers. Query Insights flags recognized performance problems and suggests a next step.
-
-| Signal | What it means | First response |
+| Symptom | Likely meaning | First action |
 | --- | --- | --- |
-| **Bytes spilled to local storage** | Intermediate query data did not fit in memory and spilled to local disk. | Simplify or batch the work; consider a larger warehouse. |
-| **Bytes spilled to remote storage** | The data exceeded local disk too, so Snowflake used remote storage. This is especially slow. | Reduce intermediate rows, process in batches, or use a larger warehouse. |
-| **Inefficient pruning** | A scan reads too many micro-partitions relative to the data returned. | Add a selective filter; assess clustering only for a large, repeated workload. |
-| **Exploding join** | A join produces far more rows than its inputs, often because of a missing or many-to-many join condition. | Check join keys, grain, duplicates, and filters before the join. |
-| **Queued overload** | The warehouse lacks enough concurrency capacity at that time. | Isolate workloads, use a larger warehouse, or scale out with multi-cluster capacity. |
+| High `QUEUED_OVERLOAD_TIME` | Too many simultaneous queries | Check concurrency; consider multi-cluster or workload isolation. |
+| High `QUEUED_PROVISIONING_TIME` | Waiting for compute to start/add capacity | Check resume/scaling behavior. |
+| Large remote spill | Query exceeded available memory | Fix join/aggregation shape; then consider a larger warehouse. |
+| Many partitions scanned for a selective filter | Weak micro-partition pruning | Check filter, data organization, SOS, or clustering. |
+| Join produces far more rows than inputs | Join explosion | Fix join keys, data grain, or duplicate matches. |
 
-<a id="reading-the-most-common-problems"></a>
+`partitions_scanned / partitions_total` measures pruning. For example, **1 of 122** partitions scanned means strong pruning; **122 of 122** means none were skipped. `PERCENTAGE_SCANNED_FROM_CACHE = 100%` means scanned table data came from the **warehouse cache**. It does not mean the final query result was reused.
 
-### 4.1.3 Reading the most common problems
-
-- **Remember:** Scan volume, intermediate rows, memory, and queueing call for different fixes.
-
-#### Bytes spilled to storage
-
-- Spilling is usually a symptom of a large intermediate result from operations such as a big sort, aggregation, `COUNT(DISTINCT ...)`, or join.
-
-- Local spill is slower than in-memory processing.
-- Remote spill is slower than local spill.
-- More warehouse memory can help, but first ask whether the SQL is producing unnecessary rows or columns.
-
-- **Exam clue:** When a profile shows spill, choose a solution about memory/capacity or reducing intermediate data - not a result-cache solution.
-
-- With QAS enabled, a small nonzero remote-spill value can be service-related even if the query is not accelerated.
-- Inspect the expensive operator and magnitude before concluding that memory is exhausted.
-- See [spilling diagnostics](https://docs.snowflake.com/en/user-guide/performance-query-warehouse-memory).
-
-#### Inefficient pruning
-
-- Snowflake uses micro-partition metadata to skip partitions that cannot match a filter. In Query Profile, compare **partitions scanned** with **partitions total**: a small ratio usually means pruning worked, while a large ratio may mean the filter is broad or matching values are scattered.
-
-- Start with a selective filter expressed so Snowflake can use the stored column values directly.
-- Only add a cluster key when the table is very large and the filter/join/aggregation pattern is frequent enough to justify maintenance cost.
-- A full scan can be appropriate when the query genuinely needs most of the table; a high scanned ratio alone is not proof of bad SQL.
-
-#### Exploding joins
-
-An exploding join produces far more rows than expected. Common causes include:
-
-- A missing join condition, creating a Cartesian product.
-- A many-to-many relationship when you expected one-to-many.
-- Duplicate dimension keys.
-- A selective filter not being applied early enough in the actual execution plan; SQL text order alone does not prove operator order.
+Use `QUERY_TAG` to identify workloads and `QUERY_PARAMETERIZED_HASH` to group similar SQL with different literal values. `ACCOUNT_USAGE.QUERY_HISTORY` is useful for historical patterns; Information Schema history functions can be fresher but expose a different column set. If you need operator-level spill values, inspect Query Profile or `GET_QUERY_OPERATOR_STATS(query_id)` rather than assuming `QUERY_HISTORY_BY_SESSION` has `BYTES_SPILLED_TO_LOCAL_STORAGE`.
 
 ```sql
--- Risky: missing a join condition creates a Cartesian product.
-SELECT *
-FROM orders o
-JOIN customers c;
-
--- Better: join on the intended key and project only needed columns.
-SELECT
-  o.order_id,
-  o.order_date,
-  c.customer_name
-FROM orders o
-JOIN customers c
-  ON o.customer_id = c.customer_id;
-```
-
-#### Queuing
-
-- Queue time is separate from execution time. Even a well-written query can wait when too many queries compete for a warehouse.
-
-- Group similar workloads where possible:
-
-| Workload | Why separate it? |
-| --- | --- |
-| Interactive BI | Needs predictable, low latency and benefits from a warm warehouse cache. |
-| ETL / ELT | Often uses large scans and long transformations that can delay BI queries. |
-| Ad hoc exploration | Can be unpredictable and should not disrupt scheduled production work. |
-
-- Use dedicated warehouses when workloads have different performance needs. Multi-cluster warehouses address concurrency, not the speed of one poorly written query.
-
-- Distinguish `QUEUED_OVERLOAD_TIME` (capacity/concurrency wait) from `QUEUED_PROVISIONING_TIME` (warehouse provisioning or resume) and `TRANSACTION_BLOCKED_TIME` (transaction blocking).
-- More clusters may relieve overloaded concurrency, while transaction blocking requires investigation of the conflicting work. **Scale up** adds resources per cluster; **scale out** adds clusters to run more queries concurrently. Multi-cluster warehouses require Enterprise or higher.
-
-<a id="account_usage-for-query-analysis-and-attribution"></a>
-
-### 4.1.4 `ACCOUNT_USAGE` for query analysis and attribution
-
-- **Remember:** Attribution is query-level compute accounting, not the whole warehouse/account invoice.
-
-#### Choose a history view
-
-- The shared `SNOWFLAKE` database provides historical views for monitoring.
-
-| View | Use it for | Important limitation |
-| --- | --- | --- |
-| `QUERY_HISTORY` | Analyze execution time, scans, spill, queue time, user, and warehouse. | Historical data; it can lag by up to about 45 minutes. |
-| `QUERY_ATTRIBUTION_HISTORY` | Attribute warehouse compute credits to individual query runs. | Does not represent idle cost as a separate query cost. |
-| `WAREHOUSE_LOAD_HISTORY` | Review warehouse load and queued workload. | Historical, not a live alerting control. |
-
-- `QUERY_HISTORY` retains up to 365 days.
-- Information Schema query-history functions cover a shorter recent range (up to seven days) and are useful for fresher investigation.
-- Access depends on the user's own queries and granted monitoring privileges.
-- The most expensive operator is a better starting point than SQL text length.
-
-- `QUERY_ATTRIBUTION_HISTORY` can lag up to eight hours and excludes idle compute from its per-query attribution.
-- QAS credits are in a separate column; sum them with attributed compute to include acceleration.
-- Cloud services, storage, and transfer are outside this combined query-compute figure.
-- See [query attribution](https://docs.snowflake.com/en/sql-reference/account-usage/query_attribution_history).
-
-#### Find slow and expensive queries
-
-```sql
--- Find recent queries with the most remote spill or overload queue time.
-SELECT
-  query_id,
-  warehouse_name,
-  user_name,
-  total_elapsed_time / 1000 AS elapsed_seconds,
-  bytes_scanned,
-  bytes_spilled_to_local_storage,
-  bytes_spilled_to_remote_storage,
-  queued_overload_time / 1000 AS overload_queue_seconds,
-  partitions_scanned,
-  partitions_total,
-  query_text
-FROM snowflake.account_usage.query_history
-WHERE start_time >= DATEADD(day, -7, CURRENT_TIMESTAMP())
-  AND (bytes_spilled_to_local_storage > 0
-       OR bytes_spilled_to_remote_storage > 0
-       OR queued_overload_time > 0)
-ORDER BY bytes_spilled_to_remote_storage DESC, queued_overload_time DESC
+SELECT QUERY_ID, QUERY_TEXT, EXECUTION_TIME, QUEUED_OVERLOAD_TIME
+FROM SNOWFLAKE.ACCOUNT_USAGE.QUERY_HISTORY
+WHERE START_TIME >= DATEADD(hour, -24, CURRENT_TIMESTAMP())
+ORDER BY EXECUTION_TIME DESC
 LIMIT 20;
 ```
 
-```sql
--- Attribute compute credits to users' queries. This is useful for showback,
--- but it is not the full warehouse invoice because idle cost also exists.
-SELECT
-  user_name,
-  SUM(credits_attributed_compute) AS query_compute_credits
-FROM snowflake.account_usage.query_attribution_history
-WHERE start_time >= DATEADD(day, -30, CURRENT_TIMESTAMP())
-GROUP BY user_name
-ORDER BY query_compute_credits DESC;
-```
-
-- Add `QUERY_TAG` to application sessions to identify workload ownership, and use `QUERY_PARAMETERIZED_HASH` to group repeated query patterns with different literals.
-- Repeated moderately slow queries can cost more in total than one rare long-running query.
-
-```sql
-ALTER SESSION SET QUERY_TAG = 'finance_dashboard';
--- Run the workload here, then restore the prior tag or clear it.
-ALTER SESSION UNSET QUERY_TAG;
-```
+References: [Query Profile](https://docs.snowflake.com/en/user-guide/ui-query-profile), [Query history](https://docs.snowflake.com/en/sql-reference/account-usage/query_history), [Operator statistics](https://docs.snowflake.com/en/sql-reference/functions/get_query_operator_stats).
 
 ---
 
 ## 4.2 Optimize Query Performance
 
-<a id="choose-the-right-optimization"></a>
+### 4.2.1 Choose by query pattern
 
-### 4.2.1 Choose the right optimization
-
-- **Remember:** Selective lookup -> search optimization; repeated large-table range pattern -> evaluate clustering; repeated single-table result -> evaluate MV.
-
-| Need | Best first choice | Why the alternatives may be wrong |
+| Pattern | First feature or change | Level |
 | --- | --- | --- |
-| Large scans with highly selective filters or aggregations; variable/ad hoc workload | Query Acceleration Service (QAS) | QAS does not fix an incorrect join or warehouse queueing. |
-| Fast point lookups returning a few rows, including targeted `VARIANT` searches | Search Optimization Service | A cluster key is broader and is usually less targeted for “needle in a haystack” lookups. |
-| Frequent range filters, joins, or aggregations on the same columns in a very large table | Clustering key | It adds maintenance cost and is not for every table. |
-| Repeated, expensive single-table aggregation or semi-structured flattening pattern | Materialized view | It has storage and maintenance cost; it cannot be based on more than one table. |
-| A query returns a huge unnecessary result | Rewrite the SQL | Storage optimizations cannot fix `SELECT *`, a missing filter, or a bad join. |
+| Bad join or unnecessary `SELECT *` | Rewrite SQL | Query |
+| Many concurrent short queries | Multi-cluster warehouse or isolate workloads | Warehouse |
+| One memory-heavy query with spill | Improve SQL, then consider a larger warehouse | Query/warehouse |
+| Eligible large scans with selective filters or aggregations | Query Acceleration Service (QAS) | Warehouse |
+| Point lookup that should find a few rows in a huge table | Search Optimization Service (SOS) | Table |
+| Frequent range filters on the same columns in a large table | Clustering key | Table |
+| Repeated expensive single-table result | Materialized view (MV) | Schema object |
 
-<a id="query-acceleration-service-qas"></a>
+**QAS** offloads eligible query work to separately billed serverless compute. It is set on a **warehouse**, not a table. `QUERY_ACCELERATION_MAX_SCALE_FACTOR` limits how much extra compute a query can borrow; `0` means no limit, not off. Use `SYSTEM$ESTIMATE_QUERY_ACCELERATION(query_id)` and `QUERY_ACCELERATION_ELIGIBLE` to assess past queries. QAS does not repair an incorrect join or a query waiting in the warehouse queue.
 
-### 4.2.2 Query Acceleration Service (QAS)
+**SOS** maintains a search access path for selective predicates. It is set on a **table**, for example `ALTER TABLE t ADD SEARCH OPTIMIZATION ON EQUALITY(id);`. It has build/maintenance cost. It fits a needle-in-a-haystack lookup better than a broad scan; it can work with QAS when both are useful.
 
-- **Remember:** QAS offloads eligible work to separately billed serverless compute; it does not repair incorrect SQL.
+**Clustering** groups similar values into micro-partitions so range filters can prune more partitions. One table has one clustering key, which may contain **multiple expressions**, such as `(event_date, customer_id)`. Automatic reclustering can consume credits after the load/query completes. Use `SYSTEM$CLUSTERING_INFORMATION('DB.SCHEMA.TABLE', '(EVENT_DATE)')` to assess candidate columns when the table has no key. High `average_depth`/`average_overlaps` can indicate poor clustering, but decide using representative query scans and maintenance cost—not one JSON number alone.
 
-- QAS can offload eligible parts of a query to serverless compute.
-- It is a good fit for workloads with large scans and highly selective filters or eligible aggregations, especially when query shapes and scanned volume vary.
+**Materialized views** store and maintain a supported query result from **one base table**. They suit repeated single-table aggregates or projections that are expensive to recompute. They use storage and maintenance credits; they are not a general multi-table pipeline or a replacement for a Dynamic Table.
 
-```sql
-ALTER WAREHOUSE analytics_wh
-  SET ENABLE_QUERY_ACCELERATION = TRUE;
-```
-
-Key points:
-
-- QAS is enabled at the warehouse level, but additional serverless compute is used only for eligible work.
-- It consumes credits separately from the warehouse. The scale factor limits the extra consumption rate.
-- Use `QUERY_ACCELERATION_ELIGIBLE` and `SYSTEM$ESTIMATE_QUERY_ACCELERATION` before enabling it broadly.
-- `SNOWFLAKE.ACCOUNT_USAGE.QUERY_ACCELERATION_ELIGIBLE` identifies **past eligible queries that have not already been accelerated** and their eligible execution time. For a specific query ID, `SYSTEM$ESTIMATE_QUERY_ACCELERATION` reports eligibility and estimated run times at different scale factors.
-- The estimate function accepts a query ID from the last **14 days**. Its estimates are planning evidence, not guaranteed speedups; they do not include concurrency effects. QAS is enabled per warehouse, not by one account-wide switch.
-- QAS and search optimization can help the same query: search optimization reduces the partitions to read, then QAS can accelerate eligible remaining work.
-
-- QAS requires Enterprise or higher.
-- Snowflake enables QAS by default on Gen2 standard and multi-cluster warehouses; check the warehouse setting before treating `ALTER WAREHOUSE ... ENABLE_QUERY_ACCELERATION = TRUE` as a required setup step. [QAS documentation](https://docs.snowflake.com/en/user-guide/query-acceleration-service)
-- Set a finite `QUERY_ACCELERATION_MAX_SCALE_FACTOR` when testing; `0` means unlimited scale factor rather than disabled acceleration.
-- Eligibility and available service capacity determine benefit, so enabling QAS does not guarantee a speedup.
+QAS, SOS, and materialized views require **Enterprise Edition or higher**. Clustering keys are available across editions, but automatic maintenance can still cost credits.
 
 ```sql
-ALTER WAREHOUSE analytics_wh SET
-  ENABLE_QUERY_ACCELERATION = TRUE
-  QUERY_ACCELERATION_MAX_SCALE_FACTOR = 2;
--- Replace with a real eligible query ID from your account.
-SELECT PARSE_JSON(SYSTEM$ESTIMATE_QUERY_ACCELERATION('query-id'));
+ALTER TABLE events ADD SEARCH OPTIMIZATION ON EQUALITY(event_id);
+ALTER TABLE events CLUSTER BY (event_date);
+SELECT SYSTEM$CLUSTERING_INFORMATION('DB.SCHEMA.EVENTS');
 ```
 
-<a id="search-optimization-service"></a>
+Try SQL changes first when they remove needless work: filter early, select only needed columns, join at the intended grain, and avoid applying a function to a filter column when it blocks effective pruning. Compare query IDs and profiles before and after any feature change.
 
-### 4.2.3 Search Optimization Service
-
-- **Remember:** A search access path helps supported highly selective predicates, with storage and maintenance cost.
-
-Search Optimization Service is an Enterprise Edition feature that builds a persistent access path for highly selective searches. Good fits include:
-
-- Equality or `IN` lookups that return a small number of rows.
-- Substring or regular-expression searches.
-- Targeted searches of values inside `VARIANT`, `ARRAY`, or `OBJECT` data.
-- Geospatial searches on `GEOGRAPHY`.
-
-```sql
--- Optimize equality and IN predicates on a frequently searched identifier.
-ALTER TABLE analytics.mart.events
-  ADD SEARCH OPTIMIZATION ON EQUALITY(user_id);
-
--- A targeted semi-structured path can also be optimized.
-ALTER TABLE analytics.raw.events
-  ADD SEARCH OPTIMIZATION ON EQUALITY(src:user.uuid);
-```
-
-- Snowflake decides whether to use the search access path for each query. Adding it does not guarantee a speedup, so measure representative queries and review ongoing storage and serverless maintenance cost.
-- The initial build takes time; check `SEARCH_OPTIMIZATION_PROGRESS` in `SHOW TABLES` before benchmarking. Targeting selected columns and methods avoids unnecessary maintenance, and effectiveness depends on supported predicates and selectivity rather than table size alone.
-
-<a id="clustering-keys"></a>
-
-### 4.2.4 Clustering keys
-
-- **Remember:** Organize suitable large-table access patterns; natural clustering already exists without an explicit key.
-
-- Snowflake automatically creates micro-partitions.
-- A **clustering key** tells Snowflake which expressions should remain co-located as data changes; Automatic Clustering maintains the key in the background.
-
-```sql
--- Appropriate only after confirming a repeated access pattern on a large table.
-ALTER TABLE analytics.mart.orders
-  CLUSTER BY (order_date, customer_id);
-```
-
-Use a clustering key when:
-
-- The table is very large, typically multi-terabyte.
-- Queries repeatedly filter, join, or aggregate on the same columns.
-- Query Profile shows weak pruning because values are broadly overlapping across micro-partitions.
-
-- Do not add a clustering key just because a table is large. Reclustering adds compute and storage cost, including possible Fail-safe storage; a highly unique lookup key is more often a Search Optimization Service candidate.
-
-- Prefer a small set of expressions aligned with common predicates.
-- For a high-cardinality timestamp, a date expression can preserve useful ordering without clustering by every unique instant.
-- With multiple expressions, key order affects organization; lower-to-higher cardinality is a useful starting point, then measure the workload.
-
-```sql
-SELECT SYSTEM$CLUSTERING_INFORMATION('ANALYTICS.MART.ORDERS');
-```
-
-- Clustering depth and overlap describe data organization. Lower overlap can improve pruning, but there is no universal “good depth” across all workloads. Automatic Clustering maintains an explicit key with serverless compute; natural clustering exists without a key.
-
-<a id="materialized-views"></a>
-
-### 4.2.5 Materialized views
-
-- **Remember:** Maintain a supported precomputed result from one base table; storage/maintenance are separate from ordinary result caching.
-
-- A materialized view stores a precomputed `SELECT` result from a **single base table**. Snowflake maintains it automatically as that table changes.
-
-```sql
-CREATE OR REPLACE MATERIALIZED VIEW analytics.mart.daily_sales_mv
-  AS
-  SELECT
-    order_date,
-    region,
-    SUM(amount) AS daily_sales
-  FROM analytics.mart.orders
-  GROUP BY order_date, region;
-```
-
-- Use a materialized view for a repeated, expensive pattern that returns a small subset of the source table, such as an aggregation, a range query, or frequently flattened semi-structured data.
-
-- A materialized view adds storage and automatic-maintenance compute cost. You cannot insert, update, merge, or delete directly in it, and it is not a general-purpose transformation model or multi-table join result.
-
-- Materialized views require Enterprise or higher. The optimizer can rewrite eligible base-table queries to use one even when the query does not name it.
-- Definitions have restrictions beyond the single-table rule, including unsupported window functions and non-deterministic expressions. Check them before using a materialized view for a transformation.
-- A normal view stores SQL, a materialized view stores maintained results, and a result-cache entry is a temporary result of a particular query.
-
-<a id="sql-changes-before-feature-changes"></a>
-
-### 4.2.6 SQL changes before feature changes
-
-- **Remember:** Preserve business meaning while reducing unnecessary rows, columns, joins, and duplicate-removal work.
-
-Before adding an optimization service, make the query do less work:
-
-- Select only required columns; avoid `SELECT *` on large tables.
-- Filter early and use selective predicates.
-- Join on the correct keys and check table grain before joining.
-- Use `UNION ALL` when duplicate elimination from `UNION` is not required.
-- Remove unnecessary `DISTINCT` and `GROUP BY` operations.
-- Aggregate before a join only when it preserves the required business grain.
-
-- Prefer explicit range boundaries when they express the intended filter clearly:
-
-```sql
-SELECT order_id, amount
-FROM analytics.mart.orders
-WHERE order_timestamp >= '2026-01-01'::TIMESTAMP_NTZ
-  AND order_timestamp <  '2026-02-01'::TIMESTAMP_NTZ;
-```
-
-- Applying a function to every stored value can make some optimizations less effective; it is not a universal rule that every expression prevents pruning.
-- Confirm the actual profile.
-- SQL clause order also does not dictate physical execution order: Snowflake's optimizer can reorder operations.
-- Use explicit join conditions and filter semantics rather than assuming a CTE forces materialization.
+References: [Optimization choices](https://docs.snowflake.com/en/user-guide/performance-query-options), [QAS](https://docs.snowflake.com/en/user-guide/query-acceleration-service), [SOS](https://docs.snowflake.com/en/user-guide/search-optimization-service), [Clustering](https://docs.snowflake.com/en/user-guide/tables-clustering-keys), [Materialized views](https://docs.snowflake.com/en/user-guide/views-materialized).
 
 ---
 
 ## 4.3 Snowflake Caching
 
-- Snowflake uses several caching layers.
-- The exam usually tests **what is reused**, **where it is kept**, and **what invalidates it**.
+<p align="center"><img src="../../img/domain4-cache-layers.png" alt="Persisted results reuse a final answer; warehouse cache reuses scanned table data; metadata helps planning and pruning." width="760"></p>
 
-<p align="center"><img src="../../img/domain4-cache-layers.png" alt="Persisted results reuse a final answer, metadata supports planning and pruning, and warehouse cache reuses table data locally. Suspension clears the warehouse cache, while USE_CACHED_RESULT controls final-result reuse." width="760"></p>
-
-| Cache | What is reused | Main behavior | Common invalidation / limitation |
+| Cache | What it holds | When it helps | What clears or bypasses it? |
 | --- | --- | --- | --- |
-| **Persisted query result cache** | The final result of an identical query. | Can bypass query execution entirely. Results normally expire after 24 hours; successful reuse can extend retention up to 31 days from the first execution. | Query text must match exactly; data, relevant settings, and required privileges must still allow reuse. Non-reusable functions also prevent reuse. |
-| **Warehouse cache** | Frequently read table data on the local storage of a running warehouse. | Later queries on the same warehouse can read cached data faster. | The cache is lost when the warehouse suspends; separate warehouses do not share it. |
-| **Metadata cache** | Table/micro-partition statistics and object metadata managed by cloud services. | Supports pruning and some metadata-only operations without scanning table data. | Not a cache of the full rows or final result; only eligible operations can be answered from metadata. |
+| **Persisted query result** | Final answer from a previous query | Identical reusable query with unchanged contributing data and required privileges | `USE_CACHED_RESULT = FALSE` prevents reuse; results also expire. |
+| **Warehouse cache** | Table data read by a running warehouse | Later scans on the same warehouse | Suspending that warehouse clears it. |
+| **Metadata cache** | Snowflake-managed metadata used for planning/pruning | Deciding which micro-partitions to scan | Not controlled by `USE_CACHED_RESULT`. |
 
-<a id="persisted-query-results"></a>
-
-### 4.3.1 Persisted query results
-
-- **Remember:** Final-result reuse can avoid execution when exact-query, data, settings, and authorization conditions allow it.
-
-Result reuse is enabled by default. Snowflake can return a prior result when the identical query runs again and the underlying data has not changed.
+Persisted-result reuse is usually enabled and can avoid running the query at all. It needs eligible SQL, unchanged contributing data, and appropriate privileges; an external function prevents reuse. The warehouse cache is independent: `USE_CACHED_RESULT = FALSE` still allows scans to use cached table data. `PERCENTAGE_SCANNED_FROM_CACHE` measures the **warehouse** cache, not persisted-result reuse.
 
 ```sql
--- For a fair performance benchmark, force queries to execute rather than reuse a result.
 ALTER SESSION SET USE_CACHED_RESULT = FALSE;
-
--- Restore the normal behavior after the benchmark.
+-- Run the same SELECT after the warehouse resumes, then again while it stays on.
 ALTER SESSION SET USE_CACHED_RESULT = TRUE;
+-- Run identical eligible SQL again to test persisted-result reuse.
 ```
 
-- **Exam traps:**
+**Fair benchmark:** Set `USE_CACHED_RESULT = FALSE` to force execution. Run the query just after a suspended test warehouse auto-resumes (cold), then repeat it while that warehouse stays running (warm). Keep data, role, and warehouse size the same; record each query ID, Query Profile, `PERCENTAGE_SCANNED_FROM_CACHE`, and provisioning wait. Avoid other queries that could warm the cache. Finally, set `USE_CACHED_RESULT = TRUE` and repeat identical SQL to test persisted-result reuse separately.
 
-- The same logical query is not enough for exact result reuse: changing letter case or adding an alias can prevent it. Reuse still requires authorization, and the persisted result is different from the warehouse data cache.
-- A query that calls an **external function** is excluded from automatic persisted-result reuse, even with identical SQL, identical arguments, and unchanged tables. Identical arguments do not create a reusable persisted query result across executions.
-- An external function can be declared `IMMUTABLE` when the remote service truly returns the same output for the same input. That can enable other optimizations, but it **does not remove** the persisted-result exclusion. Do not equate this exclusion with a claim that every external function is nondeterministic. [Persisted-result rules](https://docs.snowflake.com/en/user-guide/querying-persisted-results#retrieval-optimization) · [External function volatility](https://docs.snowflake.com/en/sql-reference/sql/create-external-function)
-
-- Result reuse can work across sessions and warehouses when all reuse and authorization conditions hold; suspending a warehouse does not clear persisted query results.
-- `RESULT_SCAN(query_id)` has a different access rule: for a manually run query, only the user who ran it can read that saved result, even after switching roles. A different user cannot fetch it with `RESULT_SCAN`, even with `ACCOUNTADMIN`. [RESULT_SCAN access rules](https://docs.snowflake.com/en/sql-reference/functions/result_scan)
-- Meeting the documented reuse conditions does not guarantee a cache hit. Non-deterministic functions such as `RANDOM()` and changes to underlying micro-partitions can prevent reuse.
-- `USE_CACHED_RESULT = FALSE` affects result reuse, not the warehouse's local data cache. Compare cold and warm runs separately when benchmarking.
-
-<a id="warehouse-cache"></a>
-
-### 4.3.2 Warehouse cache
-
-- **Remember:** Local table-data cache belongs to a running warehouse and is lost on suspension.
-
-- A running warehouse keeps recently accessed table data in a local cache. Similar queries on that **same running warehouse** may need fewer remote reads and finish faster.
-- Suspending clears this cache. A longer auto-suspend time keeps it warm but can add idle cost; unrelated large workloads may evict useful data, so a dedicated BI warehouse can help dashboards retain a warm cache.
-
-<a id="metadata-cache"></a>
-
-### 4.3.3 Metadata cache
-
-- **Remember:** Statistics and object metadata support planning/pruning and eligible metadata-only answers.
-
-- Snowflake maintains metadata such as row counts and micro-partition value ranges to avoid unnecessary reads. Some simple `COUNT(*)` queries can use metadata instead of scanning, but filters and security policies can change this; do not assume every `COUNT`, `MIN`, or `MAX` is metadata-only.
-- Metadata is managed outside the warehouse-local data cache. Suspending a warehouse clears its local table data cache, not the platform metadata used for planning.
-- Query compilation/plan reuse is a related internal optimization, but **metadata cache** in the C03 checklist should not be replaced with “compilation cache.”
+References: [Persisted results](https://docs.snowflake.com/en/user-guide/querying-persisted-results), [Warehouse cache](https://docs.snowflake.com/en/user-guide/performance-query-warehouse-cache).
 
 ---
 
 ## 4.4 Perform Data Transformation Techniques
 
-<a id="structured-semi-structured-and-unstructured-data"></a>
+### 4.4.1 Structured data: aggregates and windows
 
-### 4.4.1 Structured, semi-structured, and unstructured data
+`GROUP BY` reduces rows to one result per group. A **window function** computes a value across related rows while keeping each input row. `WHERE` filters rows **before** window calculation; `QUALIFY` filters rows **after** window calculation.
 
-- **Remember:** Relational rows, nested values, and files need different access/transformation techniques.
-
-| Data type | Examples | Where / how to work with it |
-| --- | --- | --- |
-| **Structured** | Relational rows and columns, CSV loaded to typed columns. | Standard SQL tables, joins, filters, aggregates, and window functions. |
-| **Semi-structured** | JSON, Avro, ORC, Parquet, XML. | Typically stored in `VARIANT`, `OBJECT`, or `ARRAY`; use path syntax, casting, and `FLATTEN`. |
-| **Unstructured** | Documents, images, audio, video. | Store files on an internal or external stage; use file URLs, directory tables, and supported processing features. |
-
-<a id="structured-data-aggregates-and-windows"></a>
-
-### 4.4.2 Structured data: aggregates and windows
-
-- **Remember:** GROUP BY reduces rows to groups; windows preserve the row-level output.
-
-<p align="center"><img src="../../img/domain4-aggregate-versus-window.png" alt="Three orders A 10, A 20, B 5 become two grouped totals A 30 and B 5. A window sum keeps all three orders with customer totals 30, 30, and 5." width="760"></p>
-
-- An aggregate reduces a group of rows to one result.
-- A window function calculates across related rows but keeps the original row-level output.
+<p align="center"><img src="../../img/domain4-aggregate-versus-window.png" alt="GROUP BY turns three orders into two customer totals; a window sum keeps all three orders with their customer totals." width="760"></p>
 
 ```sql
--- Aggregate: one row per customer.
-SELECT customer_id, SUM(amount) AS customer_total
-FROM analytics.mart.orders
+-- One row per customer.
+SELECT customer_id, SUM(amount) AS total
+FROM orders
+WHERE status = 'COMPLETE'
 GROUP BY customer_id;
 
--- Window: one row per order, plus the customer's total.
-SELECT
-  order_id,
-  customer_id,
-  amount,
+-- One row per order, with the customer total beside it.
+SELECT order_id, customer_id, amount,
   SUM(amount) OVER (PARTITION BY customer_id) AS customer_total
-FROM analytics.mart.orders;
+FROM orders
+WHERE status = 'COMPLETE';
 ```
 
-- Use `PARTITION BY` to define related rows, `ORDER BY` inside `OVER (...)` for ordered calculations such as ranks and running totals, and an explicit window frame when the intended range must be clear.
+`COUNT(*)` counts rows; `COUNT(column)` ignores SQL `NULL` values. `COUNT(DISTINCT column)` counts distinct non-null values. `AVG(column)` ignores nulls in both numerator and denominator. `HAVING` filters grouped results.
+
+For deduplication or top-N per group, use `ROW_NUMBER()` and `QUALIFY`. Add a deterministic tie-breaker to `ORDER BY`; otherwise equal timestamps can produce inconsistent winners.
 
 ```sql
--- Running total within each customer, ordered by date.
-SELECT
-  customer_id,
-  order_date,
-  amount,
-  SUM(amount) OVER (
-    PARTITION BY customer_id
-    ORDER BY order_date, order_id
-    ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW
-  ) AS running_total
-FROM analytics.mart.orders;
-```
-
-<a id="aggregate-behavior-and-filtering"></a>
-
-### 4.4.3 Aggregate behavior and filtering
-
-- **Remember:** COUNT(*) includes rows with NULL; COUNT(column) excludes NULL; filter rows, groups, and window results at the right stage.
-
-Common aggregates include `COUNT`, `SUM`, `AVG`, `MIN`, and `MAX`. `COUNT(*)` counts all rows; `COUNT(column)` excludes SQL `NULL`; and `COUNT(DISTINCT column)` counts distinct non-NULL values. Most numeric aggregates ignore NULL inputs, so replacing NULL with zero can change the meaning and denominator.
-
-```sql
--- WHERE filters orders before aggregation; HAVING filters customer groups.
-SELECT
-  customer_id,
-  COUNT(*) AS order_count,
-  COUNT(amount) AS orders_with_amount,
-  SUM(amount) AS total_amount
-FROM analytics.mart.orders
-WHERE order_date >= '2026-01-01'::DATE
-GROUP BY customer_id
-HAVING SUM(amount) > 1000;
-```
-
-- The logical filtering order is **WHERE → GROUP BY / HAVING → window functions → QUALIFY**.
-- `QUALIFY` is particularly useful for selecting rows after calculating a window function.
-
-**Worked example.** A report must keep every customer and count their July orders. One customer placed two July orders, one ordered only in June, and one has never ordered.
-
-| Query choice | What the report shows |
-| --- | --- |
-| July filter in `LEFT JOIN … ON`, then `COUNT(o.order_id)` | Three customers with counts **2, 0, 0**. The unmatched rows have a `NULL` order ID. |
-| July filter in `LEFT JOIN … ON`, then `COUNT(*)` | Three customers with counts **2, 1, 1**. Each unmatched customer still contributes one joined row. |
-| July filter in `WHERE` after the `LEFT JOIN` | Only the customer with July orders appears. The date filter removes rows with a `NULL` order date and rows with June orders. |
-
-Run both versions in [SQL exercise 04](exercises/04-structured-and-semi-structured.sql). [Snowflake joins](https://docs.snowflake.com/en/user-guide/querying-joins) · [Snowflake COUNT](https://docs.snowflake.com/en/sql-reference/functions/count)
-
-<a id="ranking-deduplication-and-window-frames"></a>
-
-### 4.4.4 Ranking, deduplication, and window frames
-
-- **Remember:** Use deterministic tie-breakers for latest-row selection; ROWS and RANGE have different peer behavior.
-
-| Function / clause | Behavior | Typical use |
-| --- | --- | --- |
-| `ROW_NUMBER()` | Assigns a distinct sequence within each partition. | Keep one latest record per business key. |
-| `RANK()` | Ties share a rank and leave gaps afterward. | Competition ranking, such as `1, 1, 3`. |
-| `DENSE_RANK()` | Ties share a rank with no gaps afterward. | Ranking such as `1, 1, 2`. |
-| `LAG` / `LEAD` | Reads an earlier/later row according to window ordering. | Compare a record with its previous/next value. |
-| `QUALIFY` | Filters after window calculations. | Keep the top-ranked or latest rows. |
-
-```sql
--- Latest order per customer. order_id breaks ties in order_date.
-SELECT order_id, customer_id, order_date, amount
-FROM analytics.mart.orders
+SELECT * FROM events
 QUALIFY ROW_NUMBER() OVER (
-  PARTITION BY customer_id
-  ORDER BY order_date DESC, order_id DESC
+  PARTITION BY event_id ORDER BY updated_at DESC, load_id DESC
 ) = 1;
 ```
 
-- `ROWS` describes physical row offsets; `RANGE` describes an ordering-value range and can include peers with equal ordering values. For example, a running total through `RANGE ... CURRENT ROW` includes all peers at that value, while `ROWS ... CURRENT ROW` advances one row at a time.
-- Use explicit frames and deterministic tie-breakers when needed. The `ORDER BY` inside `OVER` controls the calculation; add an outer `ORDER BY` to control the final display order.
+A window frame matters: `ROWS` counts physical rows; `RANGE` groups peers with the same ordering value for many frame definitions. Check the specified frame before answering a running-total question.
 
-<a id="semi-structured-data-parsing-paths-and-flattening"></a>
+### 4.4.2 Semi-structured data: VARIANT, paths, and FLATTEN
 
-### 4.4.5 Semi-structured data: parsing, paths, and flattening
-
-- **Remember:** Extract a path, cast it, and FLATTEN arrays only when the desired output grain needs expansion.
-
-#### Read JSON paths and cast values
-
-JSON keys are case-sensitive, while unquoted Snowflake column names are case-insensitive. Extract a path from `VARIANT` and cast it to the type you need; arrays use zero-based indexes. Snowflake's two native path styles are **dot notation** and **bracket notation**:
-  - Dot: `src:customer.name`. The colon starts the path from the `VARIANT` column; dots move through object keys.
-  - Bracket: `src['customer']['name']`. Brackets select keys or array positions, such as `src:items[0]`.
-  - You can mix them: `src:items[0].sku`. The colon is a path operator, not a third named notation. JSON key spelling and case matter. [Snowflake path syntax](https://docs.snowflake.com/en/user-guide/querying-semistructured#traversing-semi-structured-data)
+`PARSE_JSON` turns valid JSON text into a `VARIANT` value. Use `:`/dot or bracket notation to traverse objects and arrays; JSON keys are case-sensitive. Cast a selected value to a SQL type when needed. `FLATTEN` expands an array or object into rows; `LATERAL` lets it use the current source row.
 
 ```sql
-WITH sample AS (
-  SELECT PARSE_JSON('{"customer":{"name":"Alice"},"items":[{"sku":"A"}]}') AS src
-)
-SELECT
-  src:customer.name::STRING AS dot_path,
-  src['customer']['name']::STRING AS bracket_path,
-  src:items[0].sku::STRING AS mixed_path
-FROM sample;
--- All three expressions return Alice, Alice, and A respectively.
+SELECT src:customer.name::STRING AS name,
+       src:items[0].sku::STRING AS first_sku
+FROM json_events;
+
+SELECT e.id, f.index, f.value:sku::STRING AS sku
+FROM json_events e,
+     LATERAL FLATTEN(INPUT => e.src:items, OUTER => TRUE) f;
 ```
 
-```sql
--- Extract and type JSON fields.
-SELECT
-  src:customer.id::NUMBER AS customer_id,
-  src:customer.name::STRING AS customer_name
-FROM analytics.raw.events;
-```
+Without `OUTER => TRUE`, an empty/missing array contributes no output row. With it, an empty expansion can produce a row with `NULL` `INDEX`/`VALUE`. `COUNT(*)` counts that row; `COUNT(f.index)` does not. For nested arrays, use another `LATERAL FLATTEN` on the previous `VALUE`.
 
-- `PARSE_JSON` converts valid JSON text into a `VARIANT`; `TRY_PARSE_JSON` returns SQL NULL rather than raising a parsing error for invalid input.
-- Missing JSON paths and explicit JSON `null` are different: use `IS_NULL_VALUE` when you must distinguish a JSON null from SQL NULL.
+### 4.4.3 Unstructured data: staged files and URLs
 
-#### Expand arrays with FLATTEN
+A stage stores a file; a directory table lists its metadata. `TO_FILE` represents a staged file as a `FILE` value for supported functions, including document AI functions. Keep file access and recipient requirements in mind:
 
-```sql
--- Turn one array element into one row while keeping the original row context.
-SELECT
-  e.src:customer.id::NUMBER AS customer_id,
-  f.value::STRING AS product_id
-FROM analytics.raw.events AS e,
-LATERAL FLATTEN(INPUT => e.src:products) AS f;
-```
+| Function | Typical use |
+| --- | --- |
+| `BUILD_SCOPED_FILE_URL` | Give limited, query-scoped access to a staged file. |
+| `BUILD_STAGE_FILE_URL` | Build a Snowflake file URL that uses Snowflake authentication and privileges. |
+| `GET_PRESIGNED_URL` | Give a temporary URL to someone who may not sign in to Snowflake; the URL itself grants access until expiry. |
 
-```sql
--- Self-contained query: no source table required.
-WITH sample AS (
-  SELECT PARSE_JSON('{"id":1,"items":[{"sku":"A","qty":2},{"sku":"B","qty":1}]}') AS src
-)
-SELECT
-  s.src:id::NUMBER AS order_id,
-  f.index AS item_index,
-  f.value:sku::STRING AS sku,
-  f.value:qty::NUMBER AS quantity
-FROM sample AS s,
-LATERAL FLATTEN(INPUT => s.src:items) AS f;
-```
+For an internal stage, `GET_PRESIGNED_URL` requires the appropriate `SNOWFLAKE_SSE` encryption setup. Do not assume every file URL has the same access and expiry behavior.
 
-- This returns two rows for order 1. `FLATTEN` exposes `SEQ`, `KEY`, `PATH`, `INDEX`, `VALUE`, and `THIS`.
-- Use `OUTER => TRUE` when zero-row expansions should preserve a parent row, and nested lateral calls for nested arrays. Flattening two independent arrays can multiply the output, so confirm the intended grain before joining or aggregating.
+<a id="read-the-contents-of-a-staged-document"></a>
 
-#### Store frequently used fields
+To read a staged document's **contents** rather than just its filename, pass a `FILE` value to a supported parser such as `AI_PARSE_DOCUMENT`. The [unstructured-data exercise](../additional-exercises/01-unstructured-data-sharing/readme.md) and [Snowflake file-function guide](https://docs.snowflake.com/en/user-guide/unstructured-intro) show complete setup.
 
-- Extracting selected fields into typed relational columns with CTAS or `INSERT ... SELECT` is a common ELT pattern. Frequently queried fields can then be validated and transformed without repeating every path expression.
-- A materialized view is another option for supported repeated patterns when its cost and definition restrictions fit.
-- For loading details, use the [loading course note](../../study-notes/7-Data-Loading-and-Unloading/readme.md).
+**Exam decision:** choose `GROUP BY` for one row per group, windows for values alongside original rows, `FLATTEN` for array elements, and file functions for staged documents.
 
-<a id="unstructured-data-staged-files-and-secure-urls"></a>
-
-### 4.4.6 Unstructured data: staged files and secure URLs
-
-- **Remember:** A file URL and directory metadata reference bytes; they do not parse document contents.
-
-#### File URLs and directory metadata
-
-- Unstructured data has no relational schema.
-- It must be stored on an internal or external stage before Snowflake can access or process it.
-
-| Function | Main use | Important behavior |
-| --- | --- | --- |
-| `BUILD_SCOPED_FILE_URL` | Controlled, temporary file access. | The URL follows the persisted-result lifetime, normally 24 hours. |
-| `BUILD_STAGE_FILE_URL` | Durable file reference for authenticated clients. | It does not bypass stage authorization. |
-| `GET_PRESIGNED_URL` | Temporary direct download from cloud storage. | Gives a time-limited URL with a token. |
-
-```sql
--- Create a controlled temporary file URL for a staged file.
-SELECT BUILD_SCOPED_FILE_URL(@images_stage, 'product.jpg');
-```
-
-- A directory table provides queryable file metadata for a named stage.
-- For the full unstructured-file and directory-table note, use [Data Transformation](../../study-notes/8-Data-transformation/readme.md).
-
-```sql
--- Use an existing named stage with DIRECTORY enabled and metadata refreshed.
-SELECT relative_path, size, last_modified, file_url
-FROM DIRECTORY(@images_stage)
-WHERE relative_path LIKE '%.jpg';
-
--- Refresh file metadata when the stage/cloud configuration requires it.
-ALTER STAGE images_stage REFRESH;
-```
-
-Directory tables contain file metadata, not parsed image or document content. URL generation and metadata refresh do not extract text or pixels; use a supported function, application, or handler to process the file contents.
-- Generating a scoped URL directly requires stage access; an authorized view owner can expose selected scoped file references through a view.
-- A pre-signed URL grants temporary bearer access, so protect it like a temporary credential.
-- Check each function's authorization and expiration rules rather than treating the three URLs as interchangeable.
-
-#### Read the contents of a staged document
-
-- `DIRECTORY(@stage)` lists file metadata; it does **not** extract text.
-- `TO_FILE` turns a stage path or file URL into a `FILE` value that a supported function can read. It does **not** parse the document by itself.
-- `AI_PARSE_DOCUMENT` accepts a `FILE` value and extracts document content. Its result is a JSON-formatted string; use `PARSE_JSON` to access fields such as `content` in SQL.
-- This optional example needs an existing PDF on a stage with a refreshed directory table, stage access, the `SNOWFLAKE.CORTEX_USER` database role, supported regional availability, and AI inference credits. Replace the stage and filename before running it.
-
-```sql
-WITH document_file AS (
-  SELECT relative_path, TO_FILE(file_url) AS file_value
-  FROM DIRECTORY(@documents_stage)
-  WHERE relative_path = 'sample.pdf'
-), parsed AS (
-  SELECT
-    relative_path,
-    PARSE_JSON(AI_PARSE_DOCUMENT(file_value, {'mode': 'OCR'})) AS result
-  FROM document_file
-)
-SELECT relative_path, result:content::STRING AS extracted_text
-FROM parsed;
-```
-
-- **Practice clue:** directory metadata answers *which files exist*; `TO_FILE` identifies *which file to process*; `AI_PARSE_DOCUMENT` reads *what the document says*. The C03 outline names unstructured data, but does not name this particular function. [TO_FILE](https://docs.snowflake.com/en/sql-reference/functions/to_file) · [AI_PARSE_DOCUMENT](https://docs.snowflake.com/en/sql-reference/functions/ai_parse_document)
-
-<a id="course-extensions-approximate-functions-and-sampling"></a>
-
-### 4.4.7 Course extensions: approximate functions and sampling
-
-- **Remember:** Approximation trades exactness for efficiency; treat it as supporting depth beyond the explicit guide bullets.
-
-These functions appeared in your Tom Bailey course notes. They are useful SQL knowledge, but **secondary** to the explicit C03 Domain 4 objectives above.
-
-- `APPROX_COUNT_DISTINCT`: fast estimated cardinality for very large data.
-- `APPROX_TOP_K`: estimated most frequent values.
-- `APPROX_PERCENTILE`: estimated distribution percentile.
-- `SAMPLE` / `TABLESAMPLE`: random subset for exploration or testing.
-
-Use exact calculations when the answer must be exact. Use approximations when a small accuracy trade-off is acceptable for lower cost or faster analysis.
-
----
-
-## Exercise checkpoints and interpretation
-
-| Observation | Expected result | Meaning |
-| --- | --- | --- |
-| Correct order/customer join | 6 rows; total 750. | One dimension row matches each order. |
-| Join against customer versions without deduplication | 8 rows; total 900. | Duplicate customer 10 matches inflate its two orders. |
-| Latest-customer deduplication before join | 6 rows; total 750. | The chosen dimension grain restores the business result. |
-| Aggregate by region | 3 rows: AMER 300, APAC 175, EMEA 275. | Groups replace individual order rows. |
-| Customer-total window | 6 order rows. | Window calculation keeps detail rows. |
-| Latest order per customer | IDs 2, 4, 5, 6. | QUALIFY filters ROW_NUMBER results with deterministic ordering. |
-| Two same-date rows with ROWS/RANGE | ROWS 10/30/35; RANGE 30/30/35. | RANGE includes same-order-value peers. |
-| Array expansion | FLATTEN 2 rows; OUTER FLATTEN 3. | OUTER retains the parent with an empty array. |
-| File inventory | 1 file metadata row. | Directory metadata is not six order rows or parsed document content. |
-
-### A fair benchmark checklist
-
-1. Preserve the intended output and verify counts/totals before comparing speed.
-2. Record the actual query ID, role, warehouse size, input data, and session parameters.
-3. Disable persisted results when comparing execution plans; this does not clear local table cache.
-4. Compare cold and warm warehouse state separately.
-5. Inspect scan operators and intermediate rows; avoid declaring a feature successful from elapsed time alone.
-6. A six-row business fixture is for correctness; the 100,000-row table is only a lightweight inspection aid.
-7. No fixed speedup, spill count, number of partitions, or cache hit is promised.
-
-### Stop all feature categories you enabled
-
-- Suspend the lab warehouse after practice.
-- Remove optional Search Optimization, clustering maintenance, or a materialized view using the paired template cleanup.
-- Disable optional QAS if it was enabled for the experiment.
-- Warehouse suspension alone is not a stop switch for independently billed serverless maintenance.
-
-## Scenario Decision Guide
-
-| Scenario | Best answer | Why |
-| --- | --- | --- |
-| Query Profile shows many partitions scanned, but the query returns few rows after filtering by date. | Check predicate selectivity and consider clustering only if the large-table access pattern repeats. | This is a pruning issue, not a result-cache issue. |
-| A query spills a large amount to remote storage during a large aggregation. | Reduce intermediate data or use a larger warehouse. | Remote spilling indicates memory/local disk was insufficient. |
-| A dashboard needs near-instant lookup by `customer_id` and returns one row from a huge table. | Search Optimization Service. | It is designed for selective point lookups. |
-| A warehouse runs mixed, variable large-scan queries that have selective filters. | Evaluate QAS eligibility, performance benefit, and cost. | QAS can accelerate eligible work but does not solve bad SQL. |
-| The same single-table daily aggregation is used hundreds of times. | Materialized view. | It stores a precomputed result and is maintained automatically. |
-| A user reruns exactly the same `SELECT` and data has not changed. | Persisted query result cache may return the result. | It can bypass execution entirely if reuse conditions are met. |
-| The first query after warehouse resume is slow, then similar queries improve. | Warehouse cache is cold. | Suspending clears the warehouse-local data cache. |
-| An APAC JSON array must become one relational row per item. | `LATERAL FLATTEN`, then cast the extracted values. | Path extraction alone does not expand an array into rows. |
+References: [Window functions](https://docs.snowflake.com/en/user-guide/functions-window-using), [FLATTEN](https://docs.snowflake.com/en/sql-reference/functions/flatten), [Semi-structured data](https://docs.snowflake.com/en/user-guide/semistructured-intro), [Unstructured data](https://docs.snowflake.com/en/user-guide/unstructured-intro).
 
 ---
 
 ## What to Recall
 
+Answer each question, then open its answer. For longer scenarios, use the [practice quiz](practice/domain-4-qa.md).
 
-
-- Answer each question yourself, then click the question to reveal its answer.
+### 4.1 Diagnose
 
 <details>
-<summary><strong>1. Q:</strong> What does Query Profile show that Query History alone does not?</summary>
+<summary><strong>1. Q:</strong> What does high QUEUED_OVERLOAD_TIME suggest?</summary>
 
 <br>
 
-**A:** The physical operators, intermediate rows, scan/pruning behavior, spill, and relative execution cost behind the summary timings.
+**A:** Warehouse concurrency pressure. Check workload isolation or multi-cluster capacity.
 
 </details>
 
 <hr>
 
 <details>
-<summary><strong>2. Q:</strong> What does remote spilling usually mean, and what are two first responses?</summary>
+<summary><strong>2. Q:</strong> What does scanning 1 of 122 micro-partitions suggest?</summary>
 
 <br>
 
-**A:** Large intermediate data exceeded memory/local capacity. Reduce unnecessary work or evaluate a larger warehouse; inspect magnitude and QAS context.
+**A:** Strong pruning: most micro-partitions were skipped.
 
 </details>
 
 <hr>
 
 <details>
-<summary><strong>3. Q:</strong> How do you recognize inefficient pruning in a table-scan node?</summary>
+<summary><strong>3. Q:</strong> What does large remote spill suggest?</summary>
 
 <br>
 
-**A:** Compare partitions scanned with total and inspect predicate selectivity; a legitimate broad query can need a full scan.
+**A:** The query exceeded available memory; inspect joins and aggregations, then consider warehouse size.
 
 </details>
 
 <hr>
 
 <details>
-<summary><strong>4. Q:</strong> What causes an exploding join?</summary>
+<summary><strong>4. Q:</strong> Where can you inspect operator-level spill if QUERY_HISTORY_BY_SESSION lacks those columns?</summary>
 
 <br>
 
-**A:** Wrong/missing join keys, unexpected many-to-many matches, duplicate dimension keys, or excessive intermediate data.
+**A:** Use Query Profile or GET_QUERY_OPERATOR_STATS(query_id).
+
+</details>
+
+<hr>
+
+### 4.2 Optimize
+
+<details>
+<summary><strong>5. Q:</strong> Which feature fits a selective equality lookup on a huge table?</summary>
+
+<br>
+
+**A:** Search Optimization Service on the table.
 
 </details>
 
 <hr>
 
 <details>
-<summary><strong>5. Q:</strong> What is the difference between queue time and execution time?</summary>
+<summary><strong>6. Q:</strong> Which feature can accelerate eligible large scans with extra serverless compute?</summary>
 
 <br>
 
-**A:** Queue time is waiting before execution; execution time is work by the query engine. Provisioning and transaction blocking are separate waits.
+**A:** Query Acceleration Service on the warehouse.
 
 </details>
 
 <hr>
 
 <details>
-<summary><strong>6. Q:</strong> Why should BI and ETL workloads often use different warehouses?</summary>
+<summary><strong>7. Q:</strong> Does QUERY_ACCELERATION_MAX_SCALE_FACTOR = 2 change table settings?</summary>
 
 <br>
 
-**A:** Separate compute isolates latency-sensitive BI from heavy/unpredictable ETL and supports independent sizing/cache behavior.
+**A:** No. It caps additional QAS compute for queries on that warehouse.
 
 </details>
 
 <hr>
 
 <details>
-<summary><strong>7. Q:</strong> What is <code>QUERY_ATTRIBUTION_HISTORY</code> useful for, and what cost does it not represent fully?</summary>
+<summary><strong>8. Q:</strong> Can one table have a clustering key with more than one column?</summary>
 
 <br>
 
-**A:** It attributes compute to query runs; it excludes idle cost and does not represent storage, transfer, or the whole invoice.
+**A:** Yes. One clustering key can contain multiple expressions, such as event_date and customer_id.
 
 </details>
 
 <hr>
 
 <details>
-<summary><strong>8. Q:</strong> When is QAS a strong fit?</summary>
+<summary><strong>9. Q:</strong> When might a materialized view help?</summary>
 
 <br>
 
-**A:** Eligible large-scan work with selective filters/aggregations and variable workload shapes; evaluate eligibility and actual benefit.
+**A:** For a repeated expensive supported result from one base table, after weighing storage and maintenance cost.
 
 </details>
 
 <hr>
 
 <details>
-<summary><strong>9. Q:</strong> When is Search Optimization Service a stronger choice than a clustering key?</summary>
+<summary><strong>10. Q:</strong> What should you check before paying for an optimization feature?</summary>
 
 <br>
 
-**A:** Very selective supported lookups, such as a rare customer ID, rather than broad range organization.
+**A:** Representative SQL, Query Profiles, partitions scanned, runtime, and maintenance cost.
+
+</details>
+
+<hr>
+
+### 4.3 Caching
+
+<details>
+<summary><strong>11. Q:</strong> Does USE_CACHED_RESULT = FALSE disable warehouse cache?</summary>
+
+<br>
+
+**A:** No. It prevents persisted final-result reuse; warehouse scans may still read cached table data.
 
 </details>
 
 <hr>
 
 <details>
-<summary><strong>10. Q:</strong> When is a clustering key worth its ongoing cost?</summary>
+<summary><strong>12. Q:</strong> What does PERCENTAGE_SCANNED_FROM_CACHE = 100% measure?</summary>
 
 <br>
 
-**A:** When a large repeated workload has relevant pruning/organization issues and the benefit justifies serverless maintenance/storage cost.
+**A:** The share of scanned table data served from the warehouse cache, not a persisted-result hit.
 
 </details>
 
 <hr>
 
 <details>
-<summary><strong>11. Q:</strong> What limitation makes a materialized view unsuitable for a multi-table join result?</summary>
+<summary><strong>13. Q:</strong> What happens to the warehouse cache when the warehouse suspends?</summary>
 
 <br>
 
-**A:** A materialized view definition is restricted to one base table; it is not a general multi-table result.
+**A:** Its local data cache is cleared; persistent table data remains.
 
 </details>
 
 <hr>
 
 <details>
-<summary><strong>12. Q:</strong> What three requirements distinguish persisted-result reuse from simply rerunning a query?</summary>
+<summary><strong>14. Q:</strong> How do you benchmark cold scans, warm scans, and persisted-result reuse fairly?</summary>
 
 <br>
 
-**A:** Exact matching query text, unchanged/reusable underlying data and settings, and sufficient authorization; these still do not guarantee reuse.
+**A:** Set USE_CACHED_RESULT = FALSE. Run just after a suspended test warehouse resumes (cold), then again while it stays running (warm). Keep data, role, and warehouse size the same; record query IDs, profiles, cache percentage, and provisioning wait. Avoid other cache-warming queries. Finally, set USE_CACHED_RESULT = TRUE and rerun identical eligible SQL to test final-result reuse.
+
+</details>
+
+<hr>
+
+### 4.4 Transform
+
+<details>
+<summary><strong>15. Q:</strong> How do GROUP BY and a window SUM differ?</summary>
+
+<br>
+
+**A:** GROUP BY reduces rows to one per group; a window SUM keeps original rows and adds a value beside each.
 
 </details>
 
 <hr>
 
 <details>
-<summary><strong>13. Q:</strong> Which cache is lost when a warehouse suspends?</summary>
+<summary><strong>16. Q:</strong> How do COUNT(*), COUNT(column), and AVG(column) treat NULL?</summary>
 
 <br>
 
-**A:** Warehouse-local table-data cache, not persisted results or platform metadata.
+**A:** COUNT(*) counts rows; COUNT(column) ignores NULL; AVG(column) ignores NULL in its numerator and denominator.
 
 </details>
 
 <hr>
 
 <details>
-<summary><strong>14. Q:</strong> How does an aggregate function differ from a window function?</summary>
+<summary><strong>17. Q:</strong> Why add a tie-breaker to ROW_NUMBER ordering?</summary>
 
 <br>
 
-**A:** Aggregate collapses rows to a group; a window computes across related rows while preserving rows.
+**A:** To choose a stable winner when the main sort values are equal.
 
 </details>
 
 <hr>
 
 <details>
-<summary><strong>15. Q:</strong> Why should you cast values extracted from <code>VARIANT</code>?</summary>
+<summary><strong>18. Q:</strong> When is QUALIFY applied relative to a window function?</summary>
 
 <br>
 
-**A:** Path extraction returns VARIANT values; explicit casts establish useful SQL types and comparison/aggregation behavior.
+**A:** After window results are calculated; WHERE filters input rows before them.
 
 </details>
 
 <hr>
 
 <details>
-<summary><strong>16. Q:</strong> What does <code>LATERAL FLATTEN</code> do?</summary>
+<summary><strong>19. Q:</strong> What does FLATTEN do, and why can OUTER = TRUE affect COUNT(*)?</summary>
 
 <br>
 
-**A:** Expands array/object elements into rows while a lateral join retains parent-row context.
+**A:** FLATTEN expands arrays or objects into rows. OUTER can preserve an empty expansion as a row with NULL values, which COUNT(*) counts.
 
 </details>
 
 <hr>
 
 <details>
-<summary><strong>17. Q:</strong> Which URL function is best for temporary controlled access through a view?</summary>
+<summary><strong>20. Q:</strong> Which URL can be sent to someone without a Snowflake sign-in?</summary>
 
 <br>
 
-**A:** BUILD_SCOPED_FILE_URL, with the appropriate stage/view access design.
+**A:** A valid GET_PRESIGNED_URL result; whoever holds it can access the file until it expires.
 
 </details>
 
 <hr>
-
-<details>
-<summary><strong>18. Q:</strong> Which URL function does not bypass stage authorization?</summary>
-
-<br>
-
-**A:** BUILD_STAGE_FILE_URL is an authenticated durable reference; it does not remove authorization requirements.
-
-</details>
-
-<hr>
-
-<details>
-<summary><strong>19. Q:</strong> What query changes should you make before enabling an optimization service?</summary>
-
-<br>
-
-**A:** Project needed columns, use appropriate filters, correct join keys/grain, remove unnecessary DISTINCT, and choose UNION ALL only when duplicates should remain.
-
-</details>
-
-<hr>
-
-<details>
-<summary><strong>20. Q:</strong> Which Domain 4 topics are course extensions rather than explicit C03 bullets?</summary>
-
-<br>
-
-**A:** Approximate functions and sampling are course extensions/supporting SQL depth here, not separately named guide bullets.
-
-</details>
-
-<hr>
-
-<details>
-<summary><strong>21. Q:</strong> How do overload queueing, provisioning queueing, and transaction blocking differ?</summary>
-
-<br>
-
-**A:** Overload: warehouse concurrency capacity. Provisioning: starting/resizing compute. Blocking: conflicting transactions/locks.
-
-</details>
-
-<hr>
-
-<details>
-<summary><strong>22. Q:</strong> Why can a small remote-spill value with QAS enabled require a different interpretation?</summary>
-
-<br>
-
-**A:** QAS can produce a small remote-spill value; inspect operators and magnitude before diagnosing memory exhaustion.
-
-</details>
-
-<hr>
-
-<details>
-<summary><strong>23. Q:</strong> How do scale-up and scale-out solve different warehouse problems?</summary>
-
-<br>
-
-**A:** Scale up adds per-cluster resources; scale out adds concurrency clusters. Choose from profile/load evidence.
-
-</details>
-
-<hr>
-
-<details>
-<summary><strong>24. Q:</strong> Which optimization services require Enterprise or higher, and which add storage as well as compute cost?</summary>
-
-<br>
-
-**A:** QAS, Search Optimization, and materialized views require Enterprise+. Automatic Clustering is available across editions; search optimization/MVs add storage, and reclustering creates additional stored versions.
-
-</details>
-
-<hr>
-
-<details>
-<summary><strong>25. Q:</strong> How can the optimizer use a materialized view without naming it in the submitted SQL?</summary>
-
-<br>
-
-**A:** The optimizer can rewrite an eligible base-table query to use the maintained result automatically.
-
-</details>
-
-<hr>
-
-<details>
-<summary><strong>26. Q:</strong> How does metadata caching differ from persisted results and warehouse-local data caching?</summary>
-
-<br>
-
-**A:** Metadata caches statistics/configuration; persisted results cache a final answer; warehouse cache retains scanned table data locally.
-
-</details>
-
-<hr>
-
-<details>
-<summary><strong>27. Q:</strong> Does <code>USE_CACHED_RESULT = FALSE</code> disable the warehouse data cache?</summary>
-
-<br>
-
-**A:** No. It controls persisted final-result reuse; warehouse-local caching can still occur.
-
-</details>
-
-<hr>
-
-<details>
-<summary><strong>28. Q:</strong> How do <code>COUNT(*)</code>, <code>COUNT(column)</code>, and <code>COUNT(DISTINCT column)</code> treat NULLs?</summary>
-
-<br>
-
-**A:** COUNT(*) counts all rows; COUNT(column) counts non-NULL values; COUNT(DISTINCT column) counts distinct non-NULL values.
-
-</details>
-
-<hr>
-
-<details>
-<summary><strong>29. Q:</strong> When do you use WHERE, HAVING, and QUALIFY?</summary>
-
-<br>
-
-**A:** WHERE filters input rows, HAVING filters groups, and QUALIFY filters window results.
-
-</details>
-
-<hr>
-
-<details>
-<summary><strong>30. Q:</strong> How do ROW_NUMBER, RANK, and DENSE_RANK handle ties?</summary>
-
-<br>
-
-**A:** ROW_NUMBER gives unique numbers; RANK shares ranks with gaps; DENSE_RANK shares ranks without gaps.
-
-</details>
-
-<hr>
-
-<details>
-<summary><strong>31. Q:</strong> How do ROWS and RANGE frames differ when ordering values repeat?</summary>
-
-<br>
-
-**A:** ROWS advances by physical row positions; RANGE includes peers within the ordering-value range, including ties at CURRENT ROW.
-
-</details>
-
-<hr>
-
-<details>
-<summary><strong>32. Q:</strong> Why should a latest-record window include a tie-breaker?</summary>
-
-<br>
-
-**A:** Without a tie-breaker, equal ordering values can select different rows. Add a stable unique criterion where business logic requires one.
-
-</details>
-
-<hr>
-
-<details>
-<summary><strong>33. Q:</strong> How do PARSE_JSON, TRY_PARSE_JSON, SQL NULL, and JSON null differ?</summary>
-
-<br>
-
-**A:** PARSE_JSON parses valid text; TRY_PARSE_JSON yields SQL NULL for invalid input. Explicit JSON null is a VARIANT null detected with IS_NULL_VALUE; missing paths generally yield SQL NULL.
-
-</details>
-
-<hr>
-
-<details>
-<summary><strong>34. Q:</strong> Why can flattening two independent arrays inflate the output row count?</summary>
-
-<br>
-
-**A:** Independent expansions can create combinations of elements; preserve the intended business grain and use correlation/aggregation as needed.
-
-</details>
-
-<hr>
-
-<details>
-<summary><strong>35. Q:</strong> What does a directory table store, and what additional step processes file contents?</summary>
-
-<br>
-
-**A:** A directory table stores file-level metadata. A separate supported parser/model/handler processes the actual bytes.
-
-</details>
-
-<hr>
-
-<details>
-<summary><strong>36. Q:</strong> How should you benchmark result-cache hits, warm warehouse-cache runs, and cold starts separately?</summary>
-
-<br>
-
-**A:** Control persisted-result reuse explicitly, keep warehouse cache state known, capture query IDs/profiles, preserve input/role/warehouse conditions, and repeat representative measurements.
-
-</details>
-
-<hr>
-
-<details>
-<summary><strong>37. Q:</strong> Which two notations traverse nested semi-structured values, and what does the colon do?</summary>
-
-<br>
-
-**A:** Dot and bracket notation. The colon starts a path from the VARIANT column; dots or brackets then access nested keys or array positions.
-
-</details>
-
-<hr>
-
-<details>
-<summary><strong>38. Q:</strong> What do <code>DIRECTORY</code>, <code>TO_FILE</code>, and <code>AI_PARSE_DOCUMENT</code> each contribute to processing a staged PDF?</summary>
-
-<br>
-
-**A:** DIRECTORY lists staged-file metadata; TO_FILE creates a FILE reference; AI_PARSE_DOCUMENT extracts the document content as JSON-formatted text.
-
-</details>
-
-<hr>
-
-<details>
-<summary><strong>39. Q:</strong> Which tool estimates QAS benefits for a particular past query ID, and what are two limits of its estimate?</summary>
-
-<br>
-
-**A:** `SYSTEM$ESTIMATE_QUERY_ACCELERATION`; query IDs must be from the last 14 days, and estimated times are not guaranteed or concurrency-aware.
-
-</details>
-
-<hr>
-
-<details>
-<summary><strong>40. Q:</strong> Can an identical query that calls an <code>IMMUTABLE</code> external function automatically reuse the prior persisted result?</summary>
-
-<br>
-
-**A:** No. Queries containing external functions are excluded from automatic persisted-result reuse, even when the function is declared IMMUTABLE.
-
-</details>
-
-
-## Official References
-
-- [Query Profile and Query History](https://docs.snowflake.com/en/user-guide/ui-snowsight-activity)
-- [Query Insights](https://docs.snowflake.com/en/user-guide/query-insights)
-- [Query-performance options](https://docs.snowflake.com/en/user-guide/performance-query-options)
-- [Query Acceleration Service](https://docs.snowflake.com/en/user-guide/query-acceleration-service)
-- [Search Optimization Service](https://docs.snowflake.com/en/user-guide/search-optimization-service)
-- [Clustering keys](https://docs.snowflake.com/en/user-guide/tables-clustering-keys)
-- [Materialized views](https://docs.snowflake.com/en/user-guide/views-materialized)
-- [Persisted query results](https://docs.snowflake.com/en/user-guide/querying-persisted-results)
-- [Warehouse cache](https://docs.snowflake.com/en/user-guide/performance-query-warehouse-cache)
-- [Window functions](https://docs.snowflake.com/en/user-guide/functions-window-using)
-- [Querying semi-structured data](https://docs.snowflake.com/en/user-guide/querying-semistructured)
-- [Unstructured data types](https://docs.snowflake.com/en/sql-reference/data-types-unstructured)
-- [Query attribution and exclusions](https://docs.snowflake.com/en/sql-reference/account-usage/query_attribution_history)
-- [Memory and spilling](https://docs.snowflake.com/en/user-guide/performance-query-warehouse-memory)
-- [COUNT and NULL behavior](https://docs.snowflake.com/en/sql-reference/functions/count)
-- [QUALIFY](https://docs.snowflake.com/en/sql-reference/constructs/qualify)
-- [Window frame syntax](https://docs.snowflake.com/en/sql-reference/functions-window-syntax)
-- [FLATTEN](https://docs.snowflake.com/en/sql-reference/functions/flatten)
-- [SQL NULL versus JSON null](https://docs.snowflake.com/en/sql-reference/functions/is_null_value)

@@ -11,7 +11,7 @@
 | [5.2 Snowflake data sharing capabilities](#52-snowflake-data-sharing-capabilities) | Providers, consumers, reader accounts, direct shares, access grants, resharing, and Data Clean Rooms |
 | [5.3 Marketplace, listings, and Native Apps](#53-marketplace-listings-and-native-apps) | Internal and external sharing, Data Exchange, listings, Cross-Cloud Auto-Fulfillment, and Native Apps |
 
-The [course chapter on storage, data protection, and sharing](../../study-notes/9-Storage-Data-Protection-and-sharing/readme.md) covers the same foundations and adds storage billing. The [Domain 1 storage note](../1-Snowflake-AI-Data-Cloud-Features-and-Architecture/05-storage-tables-and-views.md) explains table types. The [Domain 2 governance note](../2-Account-Management-and-Data-Governance/readme.md) covers roles, policies, and access control.
+For related concepts, see [Domain 1 storage](../1-Snowflake-AI-Data-Cloud-Features-and-Architecture/05-storage-tables-and-views.md) for table types and [Domain 2 governance](../2-Account-Management-and-Data-Governance/readme.md) for roles, policies, and access control.
 
 ## Practice setup and exercise files
 

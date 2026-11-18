@@ -12,7 +12,7 @@
 
 **Snowflake** is a cloud data platform for analytics, engineering, applications, collaboration, and AI/ML. It runs on supported public-cloud infrastructure. Customers configure their data, access, and workloads; Snowflake installs and maintains the database servers.
 
-<p align="center"><img src="../../img/what_is_snowflake.png" alt="Snowflake platform overview from the course notes" width="560"></p>
+<p align="center"><img src="../../img/what_is_snowflake.png" alt="Snowflake platform overview" width="560"></p>
 
 <a id="shared-disk-shared-nothing-and-snowflake"></a>
 

@@ -28,7 +28,7 @@
   - SQL cells.
   - Python cells.
   - Markdown cells.
-- Use notebooks for exploration and experiments that keep code, results, and explanations together. Current Snowflake materials include **Notebooks in Workspaces**; older course demonstrations may show **Legacy Notebooks**.
+- Use **Notebooks in Workspaces** for exploration and experiments that keep code, results, and explanations together.
 
 - A notebook needs a configured runtime. SQL and Python can use different compute resources, depending on that environment:
   - Local Python work in the notebook.
@@ -59,7 +59,7 @@ Choose Streamlit when end users need an app rather than editing analysis cells. 
   - Compute.
 
 A Streamlit app is not automatically a distributed **Snowflake Native App**. Native Apps add packaging and installation for consumers.
-- **Related note:** [sharing course chapter](../../study-notes/9-Storage-Data-Protection-and-sharing/readme.md).
+- **Related note:** [Domain 5 sharing](../5-Data-Collaboration/readme.md).
 
 <a id="snowpark"></a>
 
@@ -146,7 +146,7 @@ SELECT SNOWFLAKE.CORTEX.SEARCH_PREVIEW(
 ### Cortex Analyst: answer questions about structured data
 
 - **Cortex Analyst** helps turn natural-language questions into SQL over structured data. It uses a semantic model or view with business definitions, relationships, and metrics.
-- Current documentation recommends **semantic views** for new implementations. Legacy **YAML semantic models** remain supported, so recognize both terms in course material.
+- Current documentation recommends **semantic views** for new implementations. Legacy **YAML semantic models** remain supported, so recognize both terms.
 
 ### Choose between Search and Analyst
 

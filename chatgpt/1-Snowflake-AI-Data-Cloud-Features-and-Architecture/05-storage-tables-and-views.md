@@ -27,7 +27,6 @@
 - **Natural clustering** comes from load or insert order. Pruning can become less effective when values used in filters are scattered across overlapping micro-partitions.
 - An optional **clustering key** can guide better organization for a suitable large-table workload. It is not mandatory for every table.
 
-- These fundamentals were moved from the storage course chapter.
 - Use [Domain 4](../4-Performance-Optimization-Querying-and-Transformation/readme.md) for:
   - Scan metrics.
   - Clustering-key choices.

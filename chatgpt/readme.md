@@ -1,12 +1,11 @@
 # ChatGPT Study Notes
 
 - Generated study material organized around the supplied SnowPro Core C03 guide.
-- Your course notes remain in **[study-notes](../study-notes/readme.md)**.
 
 ## Coverage
 
 - The notes have sections for all **19 published C03 objectives** across the five domains.
-- This is a map of the exam outline, not a guarantee that every detail or possible exam question appears in the notes. For example, Partner Connect and dot/bracket notation were gaps found through practice questions and added later.
+- This is a map of the exam outline, not a guarantee that every detail or possible exam question appears in the notes.
 - Use the [C03 guide](../SnowProCoreStudyGuideC03.pdf) as your checklist. When a practice question exposes a gap, check the current Snowflake documentation and add that detail to the relevant note.
 
 ## Domain notes
@@ -28,7 +27,7 @@
 - [Domain 2.1: Security Model and Principles Q&A](2-Account-Management-and-Data-Governance/practice/01-security-model-and-principles-qa.md)
 - [Domain 2.2: Data Governance Features Q&A](2-Account-Management-and-Data-Governance/practice/02-data-governance-features-qa.md)
 - [Domain 2.3: Monitoring and Cost Management Q&A](2-Account-Management-and-Data-Governance/practice/03-monitoring-and-cost-management-qa.md)
-- [Domain 3 exercise instructions](3-Data-Loading-Unloading-and-Connectivity/readme.md#practice-setup-and-exercise-files)
+- [Domain 3 exercise instructions](3-Data-Loading-Unloading-and-Connectivity/readme.md#practice-files)
 - [Domain 3 SQL setup](3-Data-Loading-Unloading-and-Connectivity/exercises/00-setup.sql)
 - [Domain 3 stop-lab SQL](3-Data-Loading-Unloading-and-Connectivity/exercises/99-stop-lab.sql)
 - [Domain 5 practice Q&A](5-Data-Collaboration/practice/domain-5-qa.md)

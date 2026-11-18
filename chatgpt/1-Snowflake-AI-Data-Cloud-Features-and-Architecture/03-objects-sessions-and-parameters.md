@@ -20,7 +20,7 @@ Organization
                 stored procedures, pipes, sequences, model objects
 ```
 
-<p align="center"><img src="../../img/object_model.png" alt="Snowflake object hierarchy from the course notes" width="600"></p>
+<p align="center"><img src="../../img/object_model.png" alt="Snowflake object hierarchy" width="600"></p>
 
 - A **container** organizes child objects, while a **securable object** can have privileges granted on it. The C03 guide groups many object types together for study.
 - A **share** is account-level rather than a child of a schema. An installed Native App **application** is also an account-level object with its own contents.
@@ -47,8 +47,8 @@ Organization
 | ML model | Registered model object with versions and inference methods. | Model artifacts/metadata differ from the training dataset. |
 | Application | Installed Snowflake Native App and its packaged logic/data objects. | An application package is the provider's distribution container. |
 
-- **Loading operations:** [loading note](../../study-notes/7-Data-Loading-and-Unloading/readme.md).
-- **Shares and app distribution:** [sharing note](../../study-notes/9-Storage-Data-Protection-and-sharing/readme.md).
+- **Loading operations:** [Domain 3](../3-Data-Loading-Unloading-and-Connectivity/readme.md).
+- **Shares and app distribution:** [Domain 5](../5-Data-Collaboration/readme.md).
 - **Grants and ownership:** [Domain 2](../2-Account-Management-and-Data-Governance/readme.md).
 
 #### A missing schema between two dots
