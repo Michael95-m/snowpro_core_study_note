@@ -15,6 +15,21 @@ SELECT $D4_QUERY_ID AS INSPECT_THIS_QUERY;
 -- queries; confirm the actual SQL/QUERY_TAG if the captured ID is unexpected.
 SELECT OPERATOR_ID, OPERATOR_TYPE, OPERATOR_STATISTICS, EXECUTION_TIME_BREAKDOWN
 FROM TABLE(GET_QUERY_OPERATOR_STATS($D4_QUERY_ID));
+-- Partition pruning and spill are operator statistics, not columns returned
+-- by INFORMATION_SCHEMA.QUERY_HISTORY_BY_SESSION.
+SELECT OPERATOR_ATTRIBUTES:table_name::STRING AS TABLE_NAME,
+  OPERATOR_STATISTICS:pruning:partitions_scanned::NUMBER AS PARTITIONS_SCANNED,
+  OPERATOR_STATISTICS:pruning:partitions_total::NUMBER AS PARTITIONS_TOTAL
+FROM TABLE(GET_QUERY_OPERATOR_STATS($D4_QUERY_ID))
+WHERE OPERATOR_TYPE = 'TableScan';
+-- Sum spill metrics across operators. A tiny lab query will normally show 0.
+-- OPERATOR_COUNT = 0 means the captured query ID/stats need checking.
+SELECT COUNT(*) AS OPERATOR_COUNT,
+  COALESCE(SUM(OPERATOR_STATISTICS:spilling:bytes_spilled_local_storage::NUMBER), 0)
+    AS LOCAL_SPILL_BYTES,
+  COALESCE(SUM(OPERATOR_STATISTICS:spilling:bytes_spilled_remote_storage::NUMBER), 0)
+    AS REMOTE_SPILL_BYTES
+FROM TABLE(GET_QUERY_OPERATOR_STATS($D4_QUERY_ID));
 -- Requires MONITOR or OPERATE on the execution warehouse (ownership suffices).
 -- Query must have completed and have operator statistics available.
 -- There is no promised spill, speedup, or scanned-partition ratio in this lab.
@@ -42,13 +57,12 @@ SELECT QUERY_ID, QUERY_TAG, QUERY_TEXT,
   EXECUTION_TIME / 1000.0 AS EXECUTION_SECONDS,
   QUEUED_OVERLOAD_TIME / 1000.0 AS OVERLOAD_SECONDS,
   QUEUED_PROVISIONING_TIME / 1000.0 AS PROVISIONING_SECONDS,
-  TRANSACTION_BLOCKED_TIME / 1000.0 AS BLOCKED_SECONDS,
-  PARTITIONS_SCANNED, PARTITIONS_TOTAL,
-  BYTES_SPILLED_TO_LOCAL_STORAGE, BYTES_SPILLED_TO_REMOTE_STORAGE
+  TRANSACTION_BLOCKED_TIME / 1000.0 AS BLOCKED_SECONDS
 FROM TABLE(D4_STUDY.INFORMATION_SCHEMA.QUERY_HISTORY_BY_SESSION(RESULT_LIMIT => 100))
 ORDER BY START_TIME DESC;
--- Most queue/spill values may be zero. Read symptoms; do not manufacture load.
--- ACCOUNT_USAGE.QUERY_HISTORY is useful for longer history but has latency.
+-- Most queue values may be zero. Read symptoms; do not manufacture load.
+-- SNOWFLAKE.ACCOUNT_USAGE.QUERY_HISTORY has partition and spill columns,
+-- but requires access and can lag by up to 45 minutes.
 ALTER SESSION UNSET USE_CACHED_RESULT;
 ALTER SESSION UNSET QUERY_TAG;
 UNSET D4_QUERY_ID;

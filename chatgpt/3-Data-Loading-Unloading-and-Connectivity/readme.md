@@ -2178,150 +2178,501 @@ Use these to check understanding after running the SQL yourself.
 
 ## What to Recall
 
-- Try these without looking at the answers.
+- Answer each question yourself, then click **Show answer** below it.
 - Give a short explanation, not only a feature name.
 - If you miss one, reread that topic and try a new scenario later.
 
 ### 3.1 Loading, unloading, stages, and errors
 
-1. What is the difference between staging a file, loading a table, and unloading a query result?
-2. What does a file format describe? How do `SKIP_HEADER` and `PARSE_HEADER` differ? Which three formats can Snowflake unload?
-3. What are the references for a user stage, table stage, and named stage?
-4. Does creating an external stage copy the external files into Snowflake?
-5. How do `REMOVE` and `DROP STAGE` differ for an external stage?
-6. How do `SNOWFLAKE_FULL` and `SNOWFLAKE_SSE` differ?
-7. What does a directory table store? How does it differ from querying `@stage`?
-8. Which compute runs bulk `COPY INTO <table>`?
-9. Why might a repeated `COPY` skip a file? Does that prevent all duplicate business rows?
-10. How do `FORCE`, `LOAD_UNCERTAIN_FILES`, and `PURGE` differ?
-11. How do `ABORT_STATEMENT`, `CONTINUE`, and `SKIP_FILE` differ?
-12. How do `VALIDATION_MODE` and `VALIDATE` differ?
-13. Why should you capture the load query ID immediately?
-14. Which transformations are suitable inside a load `COPY`, and which are not?
-15. Why choose raw `VARIANT` versus typed columns for JSON?
-16. How do schema detection and schema evolution differ? What enables evolution?
-17. What do `SINGLE`, `MAX_FILE_SIZE`, and `OVERWRITE` mean during unloading?
-18. How does an output prefix differ from `PARTITION BY`?
+**1. Q:** What is the difference between staging a file, loading a table, and unloading a query result?
+
+<details>
+<summary>Show answer</summary>
+
+**A:** Staging makes files available; loading inserts file data into tables; unloading writes table/query results to files.
+
+</details>
+
+**2. Q:** What does a file format describe? How do `SKIP_HEADER` and `PARSE_HEADER` differ? Which three formats can Snowflake unload?
+
+<details>
+<summary>Show answer</summary>
+
+**A:** A file format describes parsing/output rules. `SKIP_HEADER` skips lines; `PARSE_HEADER` reads column names for supported inference/name matching. Snowflake can unload CSV, JSON, and Parquet.
+
+</details>
+
+**3. Q:** What are the references for a user stage, table stage, and named stage?
+
+<details>
+<summary>Show answer</summary>
+
+**A:** `@~`, `@%table_name`, and `@stage_name`.
+
+</details>
+
+**4. Q:** Does creating an external stage copy the external files into Snowflake?
+
+<details>
+<summary>Show answer</summary>
+
+**A:** No. It references the cloud location.
+
+</details>
+
+**5. Q:** How do `REMOVE` and `DROP STAGE` differ for an external stage?
+
+<details>
+<summary>Show answer</summary>
+
+**A:** `REMOVE` can delete cloud objects if authorized. `DROP STAGE` removes the external stage object while leaving those objects.
+
+</details>
+
+**6. Q:** How do `SNOWFLAKE_FULL` and `SNOWFLAKE_SSE` differ?
+
+<details>
+<summary>Show answer</summary>
+
+**A:** FULL adds client-side and server-side encryption; SSE is server-side only. FULL is the internal-stage default and is needed for Tri-Secret Secure.
+
+</details>
+
+**7. Q:** What does a directory table store? How does it differ from querying `@stage`?
+
+<details>
+<summary>Show answer</summary>
+
+**A:** File metadata. A staged-file query parses supported file contents using a file format.
+
+</details>
+
+**8. Q:** Which compute runs bulk `COPY INTO <table>`?
+
+<details>
+<summary>Show answer</summary>
+
+**A:** A user-managed virtual warehouse.
+
+</details>
+
+**9. Q:** Why might a repeated `COPY` skip a file? Does that prevent all duplicate business rows?
+
+<details>
+<summary>Show answer</summary>
+
+**A:** Existing table load metadata can identify a previously loaded file. It does not enforce uniqueness of business rows from other files.
+
+</details>
+
+**10. Q:** How do `FORCE`, `LOAD_UNCERTAIN_FILES`, and `PURGE` differ?
+
+<details>
+<summary>Show answer</summary>
+
+**A:** FORCE reloads regardless of metadata; LOAD_UNCERTAIN_FILES attempts uncertain older files; PURGE requests deletion of successfully loaded source files.
+
+</details>
+
+**11. Q:** How do `ABORT_STATEMENT`, `CONTINUE`, and `SKIP_FILE` differ?
+
+<details>
+<summary>Show answer</summary>
+
+**A:** Abort the load statement; accept good rows; reject the bad file as a unit.
+
+</details>
+
+**12. Q:** How do `VALIDATION_MODE` and `VALIDATE` differ?
+
+<details>
+<summary>Show answer</summary>
+
+**A:** VALIDATION_MODE checks before inserting rows; VALIDATE reports errors from a prior bulk load.
+
+</details>
+
+**13. Q:** Why should you capture the load query ID immediately?
+
+<details>
+<summary>Show answer</summary>
+
+**A:** Later statements change what `LAST_QUERY_ID()` refers to.
+
+</details>
+
+**14. Q:** Which transformations are suitable inside a load `COPY`, and which are not?
+
+<details>
+<summary>Show answer</summary>
+
+**A:** Supported projections, casts, expressions, and field extraction are suitable. Joins, GROUP BY, FLATTEN, WHERE, ORDER BY, and LIMIT are not load-transform features.
+
+</details>
+
+**15. Q:** Why choose raw `VARIANT` versus typed columns for JSON?
+
+<details>
+<summary>Show answer</summary>
+
+**A:** VARIANT preserves a flexible payload; typed columns express a known schema and make downstream querying explicit.
+
+</details>
+
+**16. Q:** How do schema detection and schema evolution differ? What enables evolution?
+
+<details>
+<summary>Show answer</summary>
+
+**A:** Detection proposes initial columns. File-based evolution needs the table flag, name matching, and EVOLVE SCHEMA/OWNERSHIP; CSV also needs the appropriate header/count settings.
+
+</details>
+
+**17. Q:** What do `SINGLE`, `MAX_FILE_SIZE`, and `OVERWRITE` mean during unloading?
+
+<details>
+<summary>Show answer</summary>
+
+**A:** SINGLE requests one output file; MAX_FILE_SIZE is a target size; OVERWRITE replaces colliding filenames rather than clearing an output directory.
+
+</details>
+
+**18. Q:** How does an output prefix differ from `PARTITION BY`?
+
+<details>
+<summary>Show answer</summary>
+
+**A:** A prefix names a location; PARTITION BY separates output paths according to row values.
+
+</details>
 
 ### 3.2 Automated ingestion and pipelines
 
-19. What does a file-based pipe store, and which compute runs Snowpipe?
-20. Why is `AUTO_INGEST = TRUE` not the complete cloud-event setup?
-21. What can happen if you correct a Snowpipe file and reuse its name within the metadata window?
-22. What are the separate meanings of the 64-day, 14-day, and 7-day periods?
-23. How do you inspect, pause, and resume a pipe? What changes for a stale or cloned pipe?
-24. How does current Snowpipe pricing differ from older per-file/per-compute pricing?
-25. How does Snowpipe Streaming differ from file-based Snowpipe?
-26. Why do channels and committed offset tokens matter for streaming recovery?
+**19. Q:** What does a file-based pipe store, and which compute runs Snowpipe?
+
+<details>
+<summary>Show answer</summary>
+
+**A:** The pipe stores its COPY definition. Snowflake-managed serverless compute performs Snowpipe loads.
+
+</details>
+
+**20. Q:** Why is `AUTO_INGEST = TRUE` not the complete cloud-event setup?
+
+<details>
+<summary>Show answer</summary>
+
+**A:** Cloud event delivery, trust, permissions, and the stage/table configuration must also work.
+
+</details>
+
+**21. Q:** What can happen if you correct a Snowpipe file and reuse its name within the metadata window?
+
+<details>
+<summary>Show answer</summary>
+
+**A:** Snowpipe can ignore the same path/name, even after a correction; use a planned replay strategy.
+
+</details>
+
+**22. Q:** What are the separate meanings of the 64-day, 14-day, and 7-day periods?
+
+<details>
+<summary>Show answer</summary>
+
+**A:** Bulk load metadata: 64 days; Snowpipe file metadata/recent COPY_HISTORY function window: separate 14-day concepts; ALTER PIPE REFRESH: files staged within seven days.
+
+</details>
+
+**23. Q:** How do you inspect, pause, and resume a pipe? What changes for a stale or cloned pipe?
+
+<details>
+<summary>Show answer</summary>
+
+**A:** Use SYSTEM$PIPE_STATUS and ALTER PIPE with PIPE_EXECUTION_PAUSED. A stale pipe needs the documented force-resume process and missed-file recovery. A cloned pipe starts paused (`AUTO_INGEST = FALSE`) or STOPPED_CLONED (`TRUE`); inspect its COPY target before resuming so it cannot accidentally load the source table.
+
+</details>
+
+**24. Q:** How does current Snowpipe pricing differ from older per-file/per-compute pricing?
+
+<details>
+<summary>Show answer</summary>
+
+**A:** Current billing is by loaded data volume, not a per-file fee or user-sized warehouse time. Text uses uncompressed size; binary uses observed size.
+
+</details>
+
+**25. Q:** How does Snowpipe Streaming differ from file-based Snowpipe?
+
+<details>
+<summary>Show answer</summary>
+
+**A:** Snowpipe loads staged files; Streaming submits rows without intermediate staged files.
+
+</details>
+
+**26. Q:** Why do channels and committed offset tokens matter for streaming recovery?
+
+<details>
+<summary>Show answer</summary>
+
+**A:** They define source progress and recovery boundaries. Correct replay from committed offsets is required; business-event uniqueness is not automatic.
+
+</details>
 
 Quick scenario checks:
 
-- A CSV file partially loads through Snowpipe. Why might an error notification not arrive, and where can you check the partial result?
-- A corrected file keeps its original path/name. Why does `ALTER PIPE ... REFRESH` not reload it, and what are two deliberate recovery routes?
-- An external app calls Snowpipe `insertFiles`. How can it authenticate without a password, and what alternative to key-pair JWT is supported?
-- A streaming producer crashes after submitting offsets `100`-`105`; the last committed offset is `102`. Where should it resume?
-- When would you choose a Named Channel instead of an Elastic Channel? Does the default streaming pipe decide that choice?
-- Can Snowpipe Streaming apply an incoming CDC delete directly to the target table?
+**Scenario 1. Q:** A CSV file partially loads through Snowpipe. Why might an error notification not arrive, and where can you check the partial result?
 
-27. Does a Stream store a second copy of the source table?
-28. What happens to a Stream offset after `SELECT`, committed DML, and rolled-back DML?
-29. How can a standard Stream represent an update? Why is it not a full event audit log?
-30. Why should independent consumers have separate Streams?
-31. What causes Stream staleness? Can `SYSTEM$STREAM_HAS_DATA` return a false positive?
-32. How do a Stream, a Task, and a stored procedure differ?
-33. What state does a new Task start in? Does `EXECUTE TASK` enable its recurring schedule?
-34. How do scheduled/triggered Tasks and user-managed/serverless compute differ?
-35. What permissions must the Task owner have?
-36. How do `AFTER` dependencies work in a Task graph?
-37. What do Dynamic Table `TARGET_LAG`, refresh mode, and initialization mean?
-38. When would you choose a Dynamic Table versus Streams and Tasks?
-39. What is Openflow, and how should you interpret the C03 guide's GA caveat?
+<details>
+<summary>Show answer</summary>
+
+**A:** `ON_ERROR = CONTINUE` can leave valid rows in a partially loaded file without a failed-file notification. Check `COPY_HISTORY` for `Partially loaded`.
+
+</details>
+
+**Scenario 2. Q:** A corrected file keeps its original path/name. Why does `ALTER PIPE ... REFRESH` not reload it, and what are two deliberate recovery routes?
+
+<details>
+<summary>Show answer</summary>
+
+**A:** Pipe metadata remembers the path/name. Use a new path/name with a new event, or use a targeted manual `COPY INTO`; reconcile original rows first.
+
+</details>
+
+**Scenario 3. Q:** An external app calls Snowpipe `insertFiles`. How can it authenticate without a password, and what alternative to key-pair JWT is supported?
+
+<details>
+<summary>Show answer</summary>
+
+**A:** Use a short-lived JWT signed with the service user's private RSA key, with the public key registered on that user; workload identity federation is another supported method.
+
+</details>
+
+**Scenario 4. Q:** A streaming producer crashes after submitting offsets `100`-`105`; the last committed offset is `102`. Where should it resume?
+
+<details>
+<summary>Show answer</summary>
+
+**A:** Resume at `103` from a durable source, using the same Named Channel and original offsets.
+
+</details>
+
+**Scenario 5. Q:** When would you choose a Named Channel instead of an Elastic Channel? Does the default streaming pipe decide that choice?
+
+<details>
+<summary>Show answer</summary>
+
+**A:** Choose Named for per-channel ordering and offset-based recovery; Elastic is at-least-once without that ordering. The default/custom pipe choice is separate.
+
+</details>
+
+**Scenario 6. Q:** Can Snowpipe Streaming apply an incoming CDC delete directly to the target table?
+
+<details>
+<summary>Show answer</summary>
+
+**A:** No. Streaming inserts raw CDC records; process deletes downstream.
+
+</details>
+
+**27. Q:** Does a Stream store a second copy of the source table?
+
+<details>
+<summary>Show answer</summary>
+
+**A:** No. It stores an offset and uses source change tracking/version history.
+
+</details>
+
+**28. Q:** What happens to a Stream offset after `SELECT`, committed DML, and rolled-back DML?
+
+<details>
+<summary>Show answer</summary>
+
+**A:** SELECT leaves it; committed consumption advances it; rollback preserves it.
+
+</details>
+
+**29. Q:** How can a standard Stream represent an update? Why is it not a full event audit log?
+
+<details>
+<summary>Show answer</summary>
+
+**A:** An update can appear as an old-value DELETE and new-value INSERT, both marked as updates. Net changes can collapse intermediate actions.
+
+</details>
+
+**30. Q:** Why should independent consumers have separate Streams?
+
+<details>
+<summary>Show answer</summary>
+
+**A:** Each needs its own offset; one consumer must not consume another consumer's change window.
+
+</details>
+
+**31. Q:** What causes Stream staleness? Can `SYSTEM$STREAM_HAS_DATA` return a false positive?
+
+<details>
+<summary>Show answer</summary>
+
+**A:** Needed source history expires. Yes, STREAM_HAS_DATA can return TRUE without queryable change rows.
+
+</details>
+
+**32. Q:** How do a Stream, a Task, and a stored procedure differ?
+
+<details>
+<summary>Show answer</summary>
+
+**A:** Stream exposes changes; Task runs SQL; procedure defines reusable logic that a Task can call.
+
+</details>
+
+**33. Q:** What state does a new Task start in? Does `EXECUTE TASK` enable its recurring schedule?
+
+<details>
+<summary>Show answer</summary>
+
+**A:** Suspended. EXECUTE TASK submits a run without enabling the recurring schedule.
+
+</details>
+
+**34. Q:** How do scheduled/triggered Tasks and user-managed/serverless compute differ?
+
+<details>
+<summary>Show answer</summary>
+
+**A:** A schedule checks time; a triggered Task checks a supported change condition. A warehouse runs user-managed Tasks; Snowflake supplies serverless compute.
+
+</details>
+
+**35. Q:** What permissions must the Task owner have?
+
+<details>
+<summary>Show answer</summary>
+
+**A:** Appropriate database/schema and SQL-object access, EXECUTE TASK, warehouse USAGE for user-managed compute, and EXECUTE MANAGED TASK for serverless.
+
+</details>
+
+**36. Q:** How do `AFTER` dependencies work in a Task graph?
+
+<details>
+<summary>Show answer</summary>
+
+**A:** Children depend on successful predecessor completion; graph Tasks share an owner/schema. Enable children before the root.
+
+</details>
+
+**37. Q:** What do Dynamic Table `TARGET_LAG`, refresh mode, and initialization mean?
+
+<details>
+<summary>Show answer</summary>
+
+**A:** TARGET_LAG is desired freshness; refresh mode chooses incremental/full processing; initialization determines when the first result is built.
+
+</details>
+
+**38. Q:** When would you choose a Dynamic Table versus Streams and Tasks?
+
+<details>
+<summary>Show answer</summary>
+
+**A:** Use Dynamic Tables for supported maintained SQL results. Use Streams/Tasks for explicit DML, procedure calls, conditions, or side effects.
+
+</details>
+
+**39. Q:** What is Openflow, and how should you interpret the C03 guide's GA caveat?
+
+<details>
+<summary>Show answer</summary>
+
+**A:** Openflow is a NiFi-based integration service. The guide's testability caveat is conditional; current platform GA and individual connector availability must not be treated as identical.
+
+</details>
 
 ### 3.3 Connectivity and integrations
 
-40. Which drivers fit Java, ODBC-compatible tools, .NET, Node.js, and Go?
-41. How does the Python Connector differ from Snowpark?
-42. Which connector fits Kafka? Which fits Spark?
-43. How do the SQL API, Snowpipe REST API, and Snowpipe Streaming API differ?
-44. What does a storage integration configure, and why is cloud IAM/trust still needed?
-45. How do API integrations and external access integrations differ?
-46. Which objects are involved in Git integration? What does `FETCH` do?
-47. Does switching clients or successfully authenticating give extra table privileges?
-48. Which connection/session settings would you check when a query works in one client but fails in another?
+**40. Q:** Which drivers fit Java, ODBC-compatible tools, .NET, Node.js, and Go?
 
 <details>
-<summary>Answer check: 3.1 loading and unloading</summary>
+<summary>Show answer</summary>
 
-1. Staging makes files available; loading inserts file data into tables; unloading writes table/query results to files.
-2. A file format describes parsing/output rules. `SKIP_HEADER` skips lines; `PARSE_HEADER` reads column names for supported inference/name matching. Snowflake can unload CSV, JSON, and Parquet.
-3. `@~`, `@%table_name`, and `@stage_name`.
-4. No. It references the cloud location.
-5. `REMOVE` can delete cloud objects if authorized. `DROP STAGE` removes the external stage object while leaving those objects.
-6. FULL adds client-side and server-side encryption; SSE is server-side only. FULL is the internal-stage default and is needed for Tri-Secret Secure.
-7. File metadata. A staged-file query parses supported file contents using a file format.
-8. A user-managed virtual warehouse.
-9. Existing table load metadata can identify a previously loaded file. It does not enforce uniqueness of business rows from other files.
-10. FORCE reloads regardless of metadata; LOAD_UNCERTAIN_FILES attempts uncertain older files; PURGE requests deletion of successfully loaded source files.
-11. Abort the load statement; accept good rows; reject the bad file as a unit.
-12. VALIDATION_MODE checks before inserting rows; VALIDATE reports errors from a prior bulk load.
-13. Later statements change what `LAST_QUERY_ID()` refers to.
-14. Supported projections, casts, expressions, and field extraction are suitable. Joins, GROUP BY, FLATTEN, WHERE, ORDER BY, and LIMIT are not load-transform features.
-15. VARIANT preserves a flexible payload; typed columns express a known schema and make downstream querying explicit.
-16. Detection proposes initial columns. File-based evolution needs the table flag, name matching, and EVOLVE SCHEMA/OWNERSHIP; CSV also needs the appropriate header/count settings.
-17. SINGLE requests one output file; MAX_FILE_SIZE is a target size; OVERWRITE replaces colliding filenames rather than clearing an output directory.
-18. A prefix names a location; PARTITION BY separates output paths according to row values.
+**A:** JDBC, ODBC, .NET, Node.js, and Go drivers respectively.
 
 </details>
 
+**41. Q:** How does the Python Connector differ from Snowpark?
+
 <details>
-<summary>Answer check: 3.2 automated ingestion</summary>
+<summary>Show answer</summary>
 
-19. The pipe stores its COPY definition. Snowflake-managed serverless compute performs Snowpipe loads.
-20. Cloud event delivery, trust, permissions, and the stage/table configuration must also work.
-21. Snowpipe can ignore the same path/name, even after a correction; use a planned replay strategy.
-22. Bulk load metadata: 64 days; Snowpipe file metadata/recent COPY_HISTORY function window: separate 14-day concepts; ALTER PIPE REFRESH: files staged within seven days.
-23. Use SYSTEM$PIPE_STATUS and ALTER PIPE with PIPE_EXECUTION_PAUSED. A stale pipe needs the documented force-resume process and missed-file recovery. A cloned pipe starts paused (`AUTO_INGEST = FALSE`) or STOPPED_CLONED (`TRUE`); inspect its COPY target before resuming so it cannot accidentally load the source table.
-24. Current billing is by loaded data volume, not a per-file fee or user-sized warehouse time. Text uses uncompressed size; binary uses observed size.
-25. Snowpipe loads staged files; Streaming submits rows without intermediate staged files.
-26. They define source progress and recovery boundaries. Correct replay from committed offsets is required; business-event uniqueness is not automatic.
-
-Quick scenario checks:
-
-- `ON_ERROR = CONTINUE` can leave valid rows in a partially loaded file without a failed-file notification. Check `COPY_HISTORY` for `Partially loaded`.
-- Pipe metadata remembers the path/name. Use a new path/name with a new event, or use a targeted manual `COPY INTO`; reconcile original rows first.
-- Use a short-lived JWT signed with the service user's private RSA key, with the public key registered on that user; workload identity federation is another supported method.
-- Resume at `103` from a durable source, using the same Named Channel and original offsets.
-- Choose Named for per-channel ordering and offset-based recovery; Elastic is at-least-once without that ordering. The default/custom pipe choice is separate.
-- No. Streaming inserts raw CDC records; process deletes downstream.
-
-27. No. It stores an offset and uses source change tracking/version history.
-28. SELECT leaves it; committed consumption advances it; rollback preserves it.
-29. An update can appear as an old-value DELETE and new-value INSERT, both marked as updates. Net changes can collapse intermediate actions.
-30. Each needs its own offset; one consumer must not consume another consumer's change window.
-31. Needed source history expires. Yes, STREAM_HAS_DATA can return TRUE without queryable change rows.
-32. Stream exposes changes; Task runs SQL; procedure defines reusable logic that a Task can call.
-33. Suspended. EXECUTE TASK submits a run without enabling the recurring schedule.
-34. A schedule checks time; a triggered Task checks a supported change condition. A warehouse runs user-managed Tasks; Snowflake supplies serverless compute.
-35. Appropriate database/schema and SQL-object access, EXECUTE TASK, warehouse USAGE for user-managed compute, and EXECUTE MANAGED TASK for serverless.
-36. Children depend on successful predecessor completion; graph Tasks share an owner/schema. Enable children before the root.
-37. TARGET_LAG is desired freshness; refresh mode chooses incremental/full processing; initialization determines when the first result is built.
-38. Use Dynamic Tables for supported maintained SQL results. Use Streams/Tasks for explicit DML, procedure calls, conditions, or side effects.
-39. Openflow is a NiFi-based integration service. The guide's testability caveat is conditional; current platform GA and individual connector availability must not be treated as identical.
+**A:** The Connector submits SQL/fetches results; Snowpark provides data-processing abstractions for work executed in Snowflake.
 
 </details>
 
-<details>
-<summary>Answer check: 3.3 connectivity</summary>
+**42. Q:** Which connector fits Kafka? Which fits Spark?
 
-40. JDBC, ODBC, .NET, Node.js, and Go drivers respectively.
-41. The Connector submits SQL/fetches results; Snowpark provides data-processing abstractions for work executed in Snowflake.
-42. Kafka connector for Kafka topics; Spark connector for Spark/Snowflake data exchange.
-43. SQL API submits SQL; Snowpipe REST notifies about staged files; Streaming APIs submit rows.
-44. Controlled cloud-storage access. Snowflake configuration cannot replace the cloud's identity trust, object permissions, or key permissions.
-45. API integration supports configured external-function/Git connections. External access integration allows approved UDF/procedure handler network access.
-46. Remote repository, suitable API integration, optional authentication/secret, and a Git repository object. FETCH updates the available repository contents.
-47. No. Authentication and authorization remain separate; changing clients does not grant extra data access.
-48. Account identifier, authentication, role, database, schema, warehouse, object grants, and driver/network configuration.
+<details>
+<summary>Show answer</summary>
+
+**A:** Kafka connector for Kafka topics; Spark connector for Spark/Snowflake data exchange.
+
+</details>
+
+**43. Q:** How do the SQL API, Snowpipe REST API, and Snowpipe Streaming API differ?
+
+<details>
+<summary>Show answer</summary>
+
+**A:** SQL API submits SQL; Snowpipe REST notifies about staged files; Streaming APIs submit rows.
+
+</details>
+
+**44. Q:** What does a storage integration configure, and why is cloud IAM/trust still needed?
+
+<details>
+<summary>Show answer</summary>
+
+**A:** Controlled cloud-storage access. Snowflake configuration cannot replace the cloud's identity trust, object permissions, or key permissions.
+
+</details>
+
+**45. Q:** How do API integrations and external access integrations differ?
+
+<details>
+<summary>Show answer</summary>
+
+**A:** API integration supports configured external-function/Git connections. External access integration allows approved UDF/procedure handler network access.
+
+</details>
+
+**46. Q:** Which objects are involved in Git integration? What does `FETCH` do?
+
+<details>
+<summary>Show answer</summary>
+
+**A:** Remote repository, suitable API integration, optional authentication/secret, and a Git repository object. FETCH updates the available repository contents.
+
+</details>
+
+**47. Q:** Does switching clients or successfully authenticating give extra table privileges?
+
+<details>
+<summary>Show answer</summary>
+
+**A:** No. Authentication and authorization remain separate; changing clients does not grant extra data access.
+
+</details>
+
+**48. Q:** Which connection/session settings would you check when a query works in one client but fails in another?
+
+<details>
+<summary>Show answer</summary>
+
+**A:** Account identifier, authentication, role, database, schema, warehouse, object grants, and driver/network configuration.
 
 </details>
 

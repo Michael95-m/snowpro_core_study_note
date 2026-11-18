@@ -172,30 +172,93 @@ FROM TABLE(GENERATOR(ROWCOUNT => 3));
 
 
 
-1. Where do warehouses, shares, schemas, pipes, and UDFs sit in the hierarchy?
-2. How do stage, file format, and pipe differ?
-3. When do you choose a UDF versus a stored procedure?
-4. Why is a sequence not a reliable row-count or gap-free invoice mechanism?
-5. How does a fully qualified name differ from the current database/schema context?
-6. How do a session variable and a session parameter differ?
-7. Which session-parameter level wins, and what does `UNSET` do?
-8. What are the scopes of a storage integration and a Git repository object?
-9. What does a table function return, and does TABLE(...) create permanent storage?
-10. What object does `mydb..orders` name? Does it search schemas or use the current schema?
+**1. Q:** Where do warehouses, shares, schemas, pipes, and UDFs sit in the hierarchy?
 
 <details>
-<summary>Open the recall answer key</summary>
+<summary>Show answer</summary>
 
-1. Warehouses/shares are account-level; schemas belong to databases; pipes/UDFs belong to schemas.
-2. A stage stores/references files; a file format stores parsing settings; a pipe stores an ingestion definition.
-3. Use a UDF for reusable expressions/table-returning calculations; use a procedure for an authorized workflow invoked with CALL.
-4. Values can be allocated without becoming committed business rows, so gaps are possible.
-5. A fully qualified name specifies database.schema.object explicitly; an unqualified name uses session defaults.
-6. A session variable stores a referenced value; a session parameter configures supported behavior.
-7. An explicit session value wins over user/account defaults for a session parameter. UNSET removes the override so inheritance/defaults can apply.
-8. Storage integration: account-level. Git repository clone: schema-level. The clone is separate from its API integration.
-9. Rows and columns that can be queried with FROM TABLE(...); it does not create a permanent table.
-10. `mydb.PUBLIC.orders`; the empty schema segment resolves specifically to PUBLIC.
+**A:** Warehouses/shares are account-level; schemas belong to databases; pipes/UDFs belong to schemas.
+
+</details>
+
+**2. Q:** How do stage, file format, and pipe differ?
+
+<details>
+<summary>Show answer</summary>
+
+**A:** A stage stores/references files; a file format stores parsing settings; a pipe stores an ingestion definition.
+
+</details>
+
+**3. Q:** When do you choose a UDF versus a stored procedure?
+
+<details>
+<summary>Show answer</summary>
+
+**A:** Use a UDF for reusable expressions/table-returning calculations; use a procedure for an authorized workflow invoked with CALL.
+
+</details>
+
+**4. Q:** Why is a sequence not a reliable row-count or gap-free invoice mechanism?
+
+<details>
+<summary>Show answer</summary>
+
+**A:** Values can be allocated without becoming committed business rows, so gaps are possible.
+
+</details>
+
+**5. Q:** How does a fully qualified name differ from the current database/schema context?
+
+<details>
+<summary>Show answer</summary>
+
+**A:** A fully qualified name specifies database.schema.object explicitly; an unqualified name uses session defaults.
+
+</details>
+
+**6. Q:** How do a session variable and a session parameter differ?
+
+<details>
+<summary>Show answer</summary>
+
+**A:** A session variable stores a referenced value; a session parameter configures supported behavior.
+
+</details>
+
+**7. Q:** Which session-parameter level wins, and what does `UNSET` do?
+
+<details>
+<summary>Show answer</summary>
+
+**A:** An explicit session value wins over user/account defaults for a session parameter. UNSET removes the override so inheritance/defaults can apply.
+
+</details>
+
+**8. Q:** What are the scopes of a storage integration and a Git repository object?
+
+<details>
+<summary>Show answer</summary>
+
+**A:** Storage integration: account-level. Git repository clone: schema-level. The clone is separate from its API integration.
+
+</details>
+
+**9. Q:** What does a table function return, and does TABLE(...) create permanent storage?
+
+<details>
+<summary>Show answer</summary>
+
+**A:** Rows and columns that can be queried with FROM TABLE(...); it does not create a permanent table.
+
+</details>
+
+**10. Q:** What object does `mydb..orders` name? Does it search schemas or use the current schema?
+
+<details>
+<summary>Show answer</summary>
+
+**A:** `mydb.PUBLIC.orders`; the empty schema segment resolves specifically to PUBLIC.
 
 </details>
 

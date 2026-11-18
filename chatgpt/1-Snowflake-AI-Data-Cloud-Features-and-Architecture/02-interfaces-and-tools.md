@@ -141,22 +141,57 @@ snow sql -c learning -f "chatgpt/1-Snowflake-AI-Data-Cloud-Features-and-Architec
 
 
 
-1. Which tool suits browser administration, scripted SQL, or local IDE development?
-2. Why does the same SQL work in one session and fail in another?
-3. What distinguishes a shell command from Snowflake SQL?
-4. Which client workflow uploads a local file to an internal stage?
-5. Does changing the client from Snowsight to VS Code grant additional table privileges?
-6. What does Partner Connect help you set up, and what Snowflake objects can the connection create?
+**1. Q:** Which tool suits browser administration, scripted SQL, or local IDE development?
 
 <details>
-<summary>Open the recall answer key</summary>
+<summary>Show answer</summary>
 
-1. Snowsight for browser work, Snowflake CLI for scripted terminal operations, and the VS Code extension for IDE work.
-2. Different active roles, database/schema context, warehouse, identifier case, or parameters can change behavior.
-3. A shell command invokes a client such as snow; SQL is submitted to Snowflake by that client.
-4. Use PUT through a supported client to an internal stage, then COPY INTO to load rows.
-5. No. The client still needs authentication, role privileges, correct context, and query compute.
-6. A supported third-party service trial connected to Snowflake; setup can create a partner user, role, warehouse, and database. Review any access granted to the partner.
+**A:** Snowsight for browser work, Snowflake CLI for scripted terminal operations, and the VS Code extension for IDE work.
+
+</details>
+
+**2. Q:** Why does the same SQL work in one session and fail in another?
+
+<details>
+<summary>Show answer</summary>
+
+**A:** Different active roles, database/schema context, warehouse, identifier case, or parameters can change behavior.
+
+</details>
+
+**3. Q:** What distinguishes a shell command from Snowflake SQL?
+
+<details>
+<summary>Show answer</summary>
+
+**A:** A shell command invokes a client such as snow; SQL is submitted to Snowflake by that client.
+
+</details>
+
+**4. Q:** Which client workflow uploads a local file to an internal stage?
+
+<details>
+<summary>Show answer</summary>
+
+**A:** Use PUT through a supported client to an internal stage, then COPY INTO to load rows.
+
+</details>
+
+**5. Q:** Does changing the client from Snowsight to VS Code grant additional table privileges?
+
+<details>
+<summary>Show answer</summary>
+
+**A:** No. The client still needs authentication, role privileges, correct context, and query compute.
+
+</details>
+
+**6. Q:** What does Partner Connect help you set up, and what Snowflake objects can the connection create?
+
+<details>
+<summary>Show answer</summary>
+
+**A:** A supported third-party service trial connected to Snowflake; setup can create a partner user, role, warehouse, and database. Review any access granted to the partner.
 
 </details>
 

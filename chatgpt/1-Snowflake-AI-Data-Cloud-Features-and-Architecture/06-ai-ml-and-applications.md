@@ -221,34 +221,111 @@ SELECT SNOWFLAKE.CORTEX.SEARCH_PREVIEW(
 
 
 
-1. When is a notebook more suitable than a Streamlit app?
-2. What triggers a lazy Snowpark DataFrame to execute?
-3. Why can collecting a large DataFrame to a client be a problem?
-4. How does using a managed AI function differ from training your own model?
-5. Which service fits document retrieval versus structured business questions?
-6. Why does a Cortex Search service's owner's-rights model matter?
-7. What are the Model Registry and Feature Store for?
-8. Which runtime, privileges, costs, and quality checks apply to the chosen workflow?
-9. How do semantic definitions and verified queries support Analyst development and evaluation?
-10. Does killing a notebook kernel prove that its service/compute pool stopped?
-11. Which function extracts content from a staged document, and what value type does it accept?
-12. How can a Cortex Search primary key reduce refresh work, and which SQL function tests the service during development?
+**1. Q:** When is a notebook more suitable than a Streamlit app?
 
 <details>
-<summary>Open the recall answer key</summary>
+<summary>Show answer</summary>
 
-1. Notebook for exploratory SQL/Python/Markdown; Streamlit for an interactive application intended for end users.
-2. An action such as show(), collect(), or an appropriate write triggers execution of a lazy DataFrame plan.
-3. It transfers results into client memory/network; large results can exhaust resources. Filter/aggregate first.
-4. Managed AI calls available model capabilities; custom ML training fits and evaluates your own model and inputs.
-5. Cortex Search for relevant indexed content; Cortex Analyst for structured-data questions using semantic definitions and SQL.
-6. Search uses service-owner rights, so service usage can expose indexed content without direct source-table access; control service access.
-7. Feature Store manages reusable governed inputs; Model Registry manages trained model artifacts, versions, and callable methods.
-8. Check selected runtime/compute, source/service/model privileges, ongoing charges, and output/model quality.
-9. Semantic definitions describe the business data; verified question/SQL pairs provide reviewed expected answers for guidance/evaluation.
-10. No. Check/stop the actual notebook service/runtime and independent compute resources, not just the kernel or SQL warehouse.
-11. `AI_PARSE_DOCUMENT` accepts a `FILE` value, which you can construct with `TO_FILE` from a stage path or file URL.
-12. A unique text primary key lets the service use an optimized path for changed rows; test with `SNOWFLAKE.CORTEX.SEARCH_PREVIEW`.
+**A:** Notebook for exploratory SQL/Python/Markdown; Streamlit for an interactive application intended for end users.
+
+</details>
+
+**2. Q:** What triggers a lazy Snowpark DataFrame to execute?
+
+<details>
+<summary>Show answer</summary>
+
+**A:** An action such as show(), collect(), or an appropriate write triggers execution of a lazy DataFrame plan.
+
+</details>
+
+**3. Q:** Why can collecting a large DataFrame to a client be a problem?
+
+<details>
+<summary>Show answer</summary>
+
+**A:** It transfers results into client memory/network; large results can exhaust resources. Filter/aggregate first.
+
+</details>
+
+**4. Q:** How does using a managed AI function differ from training your own model?
+
+<details>
+<summary>Show answer</summary>
+
+**A:** Managed AI calls available model capabilities; custom ML training fits and evaluates your own model and inputs.
+
+</details>
+
+**5. Q:** Which service fits document retrieval versus structured business questions?
+
+<details>
+<summary>Show answer</summary>
+
+**A:** Cortex Search for relevant indexed content; Cortex Analyst for structured-data questions using semantic definitions and SQL.
+
+</details>
+
+**6. Q:** Why does a Cortex Search service's owner's-rights model matter?
+
+<details>
+<summary>Show answer</summary>
+
+**A:** Search uses service-owner rights, so service usage can expose indexed content without direct source-table access; control service access.
+
+</details>
+
+**7. Q:** What are the Model Registry and Feature Store for?
+
+<details>
+<summary>Show answer</summary>
+
+**A:** Feature Store manages reusable governed inputs; Model Registry manages trained model artifacts, versions, and callable methods.
+
+</details>
+
+**8. Q:** Which runtime, privileges, costs, and quality checks apply to the chosen workflow?
+
+<details>
+<summary>Show answer</summary>
+
+**A:** Check selected runtime/compute, source/service/model privileges, ongoing charges, and output/model quality.
+
+</details>
+
+**9. Q:** How do semantic definitions and verified queries support Analyst development and evaluation?
+
+<details>
+<summary>Show answer</summary>
+
+**A:** Semantic definitions describe the business data; verified question/SQL pairs provide reviewed expected answers for guidance/evaluation.
+
+</details>
+
+**10. Q:** Does killing a notebook kernel prove that its service/compute pool stopped?
+
+<details>
+<summary>Show answer</summary>
+
+**A:** No. Check/stop the actual notebook service/runtime and independent compute resources, not just the kernel or SQL warehouse.
+
+</details>
+
+**11. Q:** Which function extracts content from a staged document, and what value type does it accept?
+
+<details>
+<summary>Show answer</summary>
+
+**A:** `AI_PARSE_DOCUMENT` accepts a `FILE` value, which you can construct with `TO_FILE` from a stage path or file URL.
+
+</details>
+
+**12. Q:** How can a Cortex Search primary key reduce refresh work, and which SQL function tests the service during development?
+
+<details>
+<summary>Show answer</summary>
+
+**A:** A unique text primary key lets the service use an optimized path for changed rows; test with `SNOWFLAKE.CORTEX.SEARCH_PREVIEW`.
 
 </details>
 

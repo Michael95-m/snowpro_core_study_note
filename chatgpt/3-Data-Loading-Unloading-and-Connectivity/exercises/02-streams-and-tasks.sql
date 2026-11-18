@@ -155,8 +155,10 @@ ALTER TASK D3_PROCESS_NEW_ORDERS SUSPEND;
 -- A task already executing is not canceled merely by suspending its schedule.
 -- Check TASK_HISTORY before ending the session.
 
--- 7. Prepare an upsert batch with repeated and out-of-order events.
--- This separate example uses temporary tables to isolate the MERGE logic.
+-- 7. Standalone MERGE practice: no stream or task in this section.
+-- Manual INSERTs into temporary tables simulate an incoming event batch.
+-- The earlier sections demonstrate streams and a task; this section isolates
+-- duplicate handling and stale-event protection before automating them.
 -- EVENT_SEQ is the source's version for an order. LOAD_ID breaks ties
 -- between copies of the same event, which have identical amounts here.
 CREATE OR REPLACE TEMPORARY TABLE D3_EVENT_BATCH (

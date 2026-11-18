@@ -219,32 +219,102 @@ DROP TABLE D1_STUDY.LAB.HYBRID_ORDER_STATUS;
 
 
 
-1. What makes micro-partitions immutable, and what metadata supports pruning?
-2. How does natural clustering differ from an explicitly maintained clustering key?
-3. Which table disappears at session end? Which survives but has no Fail-safe?
-4. Which permanent-table retention requires Enterprise or higher?
-5. How do external tables and Iceberg tables differ?
-6. What are the separate Iceberg catalog and storage decisions?
-7. Why does a ten-minute target lag not mean a refresh exactly every ten minutes?
-8. How do secure, materialized, and standard views differ?
-9. How do an external volume and a catalog integration have different jobs?
-10. When would you choose a hybrid table, and what is special about its primary key?
-11. Why does `UPDATE external_csv_table ...` fail even when the CSV values are valid?
+**1. Q:** What makes micro-partitions immutable, and what metadata supports pruning?
 
 <details>
-<summary>Open the recall answer key</summary>
+<summary>Show answer</summary>
 
-1. Existing micro-partitions are not edited in place; modifications create replacement storage. Value ranges/distinct metadata support pruning.
-2. Natural clustering follows load organization; an explicit key guides paid background maintenance for suitable workloads.
-3. Temporary ends with the session; transient persists until dropped and has no Fail-safe.
-4. More than one day, up to 90 days for supported permanent objects, needs Enterprise+ and explicit/inherited configuration.
-5. An external table exposes external files read-only; Iceberg adds an open table format, snapshots, and catalog-managed metadata with configuration-dependent operations.
-6. Choose who manages catalog metadata separately from where data files are stored and how storage access is configured.
-7. Target lag guides freshness scheduling and can be exceeded; it is not a fixed ten-minute timer.
-8. Standard stores a query; materialized stores maintained results; SECURE protects view behavior/definition and can apply to either.
-9. An external volume configures supported external Iceberg storage access; a catalog integration connects supported catalog/metadata sources.
-10. Choose it for fast point lookups and frequent small row changes. Its primary key is required and enforced, unlike the generally informational primary key on a standard Snowflake table.
-11. External tables are read-only regardless of file format; change the files at their source and refresh file metadata as needed.
+**A:** Existing micro-partitions are not edited in place; modifications create replacement storage. Value ranges/distinct metadata support pruning.
+
+</details>
+
+**2. Q:** How does natural clustering differ from an explicitly maintained clustering key?
+
+<details>
+<summary>Show answer</summary>
+
+**A:** Natural clustering follows load organization; an explicit key guides paid background maintenance for suitable workloads.
+
+</details>
+
+**3. Q:** Which table disappears at session end? Which survives but has no Fail-safe?
+
+<details>
+<summary>Show answer</summary>
+
+**A:** Temporary ends with the session; transient persists until dropped and has no Fail-safe.
+
+</details>
+
+**4. Q:** Which permanent-table retention requires Enterprise or higher?
+
+<details>
+<summary>Show answer</summary>
+
+**A:** More than one day, up to 90 days for supported permanent objects, needs Enterprise+ and explicit/inherited configuration.
+
+</details>
+
+**5. Q:** How do external tables and Iceberg tables differ?
+
+<details>
+<summary>Show answer</summary>
+
+**A:** An external table exposes external files read-only; Iceberg adds an open table format, snapshots, and catalog-managed metadata with configuration-dependent operations.
+
+</details>
+
+**6. Q:** What are the separate Iceberg catalog and storage decisions?
+
+<details>
+<summary>Show answer</summary>
+
+**A:** Choose who manages catalog metadata separately from where data files are stored and how storage access is configured.
+
+</details>
+
+**7. Q:** Why does a ten-minute target lag not mean a refresh exactly every ten minutes?
+
+<details>
+<summary>Show answer</summary>
+
+**A:** Target lag guides freshness scheduling and can be exceeded; it is not a fixed ten-minute timer.
+
+</details>
+
+**8. Q:** How do secure, materialized, and standard views differ?
+
+<details>
+<summary>Show answer</summary>
+
+**A:** Standard stores a query; materialized stores maintained results; SECURE protects view behavior/definition and can apply to either.
+
+</details>
+
+**9. Q:** How do an external volume and a catalog integration have different jobs?
+
+<details>
+<summary>Show answer</summary>
+
+**A:** An external volume configures supported external Iceberg storage access; a catalog integration connects supported catalog/metadata sources.
+
+</details>
+
+**10. Q:** When would you choose a hybrid table, and what is special about its primary key?
+
+<details>
+<summary>Show answer</summary>
+
+**A:** Choose it for fast point lookups and frequent small row changes. Its primary key is required and enforced, unlike the generally informational primary key on a standard Snowflake table.
+
+</details>
+
+**11. Q:** Why does `UPDATE external_csv_table ...` fail even when the CSV values are valid?
+
+<details>
+<summary>Show answer</summary>
+
+**A:** External tables are read-only regardless of file format; change the files at their source and refresh file metadata as needed.
 
 </details>
 

@@ -271,55 +271,186 @@ SELECT * FROM D5_IMPORTED_ORDERS.LAB.D5_PARTNER_INTL_ORDERS_V;
 
 ### 5.1 Data collaboration and protection
 
-1. How do `AT` and `BEFORE` differ when you use a query ID?
-2. When should you use `UNDROP`, and what happens if an active table already has the name?
-3. Which edition supports 30 days of Time Travel on a permanent table? Does an upgrade set the retention by itself?
-4. Which table types have Fail-safe? Who performs the recovery?
-5. What does a zero-copy clone share at creation? How do later writes behave? How does `COPY GRANTS` change which grants a new table clone receives?
-6. How do `REFRESH` and `PRIMARY` differ? Which edition supports failover groups?
-7. If the last successful refresh captured source data through 10:00, what happens to later writes if the primary is lost at 10:08?
+**1. Q:** How do `AT` and `BEFORE` differ when you use a query ID?
+
+<details>
+<summary>Show answer</summary>
+
+**A:** `AT` includes changes at that point. `BEFORE` reads immediately before the specified statement completed.
+
+</details>
+
+**2. Q:** When should you use `UNDROP`, and what happens if an active table already has the name?
+
+<details>
+<summary>Show answer</summary>
+
+**A:** Use it to restore a dropped object inside retention. Rename a same-named active table before restoring the dropped one.
+
+</details>
+
+**3. Q:** Which edition supports 30 days of Time Travel on a permanent table? Does an upgrade set the retention by itself?
+
+<details>
+<summary>Show answer</summary>
+
+**A:** Enterprise or higher. Set the required retention on the permanent table or through the appropriate inherited configuration.
+
+</details>
+
+**4. Q:** Which table types have Fail-safe? Who performs the recovery?
+
+<details>
+<summary>Show answer</summary>
+
+**A:** Permanent table data has the 7-day Fail-safe period. Snowflake handles recovery. Transient and temporary tables have no Fail-safe.
+
+</details>
+
+**5. Q:** What does a zero-copy clone share at creation? How do later writes behave? How does `COPY GRANTS` change which grants a new table clone receives?
+
+<details>
+<summary>Show answer</summary>
+
+**A:** A standard table clone initially shares the existing micro-partitions. Writes to either table leave the other table's logical rows unchanged. A new table clone with `COPY GRANTS` gets the source's explicit access grants except ownership. Omitting it allows the destination's applicable future grants to apply.
+
+</details>
+
+**6. Q:** How do `REFRESH` and `PRIMARY` differ? Which edition supports failover groups?
+
+<details>
+<summary>Show answer</summary>
+
+**A:** `REFRESH` updates the read-only secondary. `PRIMARY` promotes a failover group. Failover groups require Business Critical or higher.
+
+</details>
+
+**7. Q:** If the last successful refresh captured source data through 10:00, what happens to later writes if the primary is lost at 10:08?
+
+<details>
+<summary>Show answer</summary>
+
+**A:** Writes after the last captured point might be absent from the promoted target. That gap is relevant to RPO.
+
+</details>
 
 ### 5.2 Snowflake data sharing capabilities
 
-8. Who pays for source storage, standard consumer query compute, and reader account query compute?
-9. Where do you create the share and where do you create the imported database?
-10. When do you grant `IMPORTED PRIVILEGES` and when do you grant an imported database role?
-11. What can the consumer reshare from a direct share? How does a listing change that decision?
-12. How do you expose selected rows and columns to a partner? When is a clean room a better fit?
-13. How do you expose data from two provider databases through one direct share?
+**8. Q:** Who pays for source storage, standard consumer query compute, and reader account query compute?
+
+<details>
+<summary>Show answer</summary>
+
+**A:** Provider pays source storage, the standard consumer pays its own query compute, and the provider pays its reader account's query compute.
+
+</details>
+
+**9. Q:** Where do you create the share and where do you create the imported database?
+
+<details>
+<summary>Show answer</summary>
+
+**A:** Create the share in the provider account and the imported database in the consumer account.
+
+</details>
+
+**10. Q:** When do you grant `IMPORTED PRIVILEGES` and when do you grant an imported database role?
+
+<details>
+<summary>Show answer</summary>
+
+**A:** Use `IMPORTED PRIVILEGES` for objects granted directly to the share. Use the shared database role when the provider published access through database roles.
+
+</details>
+
+**11. Q:** What can the consumer reshare from a direct share? How does a listing change that decision?
+
+<details>
+<summary>Show answer</summary>
+
+**A:** Under the current direct-share behavior, eligible data can be reshared through a secure view to accounts in the consumer's own organization and region. A listing needs provider-enabled resharing and can support other downstream targets depending on its configuration.
+
+</details>
+
+**12. Q:** How do you expose selected rows and columns to a partner? When is a clean room a better fit?
+
+<details>
+<summary>Show answer</summary>
+
+**A:** Share a secure view for approved rows and columns. Use a clean room when participants need a controlled joint analysis, such as an approved overlap count.
+
+</details>
+
+**13. Q:** How do you expose data from two provider databases through one direct share?
+
+<details>
+<summary>Show answer</summary>
+
+**A:** Create the secure views in the shared database and grant `USAGE` on that database and their schemas. Grant `REFERENCE_USAGE` on each additional source database, then grant `SELECT` on the views directly to the share.
+
+</details>
 
 ### 5.3 Marketplace, listings, and Native Apps
 
-14. When would you pick a private listing over a direct share or public listing?
-15. What does Cross-Cloud Auto-Fulfillment do?
-16. Which Native App object belongs to the provider, and what gets created on installation?
-17. What are the jobs of the manifest and setup script?
-18. How does a Data Exchange differ from the External sharing page? Can a direct share to an account in your own organization appear on that page?
-19. When is a Data Exchange more useful than one private listing?
-20. Can you share a materialized view? What must you check before granting it to a default share?
+**14. Q:** When would you pick a private listing over a direct share or public listing?
 
 <details>
-<summary>Answer key</summary>
+<summary>Show answer</summary>
 
-1. `AT` includes changes at that point. `BEFORE` reads immediately before the specified statement completed.
-2. Use it to restore a dropped object inside retention. Rename a same-named active table before restoring the dropped one.
-3. Enterprise or higher. Set the required retention on the permanent table or through the appropriate inherited configuration.
-4. Permanent table data has the 7-day Fail-safe period. Snowflake handles recovery. Transient and temporary tables have no Fail-safe.
-5. A standard table clone initially shares the existing micro-partitions. Writes to either table leave the other table's logical rows unchanged. A new table clone with `COPY GRANTS` gets the source's explicit access grants except ownership. Omitting it allows the destination's applicable future grants to apply.
-6. `REFRESH` updates the read-only secondary. `PRIMARY` promotes a failover group. Failover groups require Business Critical or higher.
-7. Writes after the last captured point might be absent from the promoted target. That gap is relevant to RPO.
-8. Provider pays source storage, the standard consumer pays its own query compute, and the provider pays its reader account's query compute.
-9. Create the share in the provider account and the imported database in the consumer account.
-10. Use `IMPORTED PRIVILEGES` for objects granted directly to the share. Use the shared database role when the provider published access through database roles.
-11. Under the current direct-share behavior, eligible data can be reshared through a secure view to accounts in the consumer's own organization and region. A listing needs provider-enabled resharing and can support other downstream targets depending on its configuration.
-12. Share a secure view for approved rows and columns. Use a clean room when participants need a controlled joint analysis, such as an approved overlap count.
-13. Create the secure views in the shared database and grant `USAGE` on that database and their schemas. Grant `REFERENCE_USAGE` on each additional source database, then grant `SELECT` on the views directly to the share.
-14. Pick a private listing for selected customers who need listing features. Pick a direct share for a direct same-region grant, or a public listing for broad Marketplace discovery.
-15. It fulfills an eligible listing's data product to consumer regions as needed.
-16. The provider creates and publishes an application package. Installation creates an application in the consumer account.
-17. The manifest describes configuration and identifies the setup script. The setup script creates or updates objects on installation or upgrade.
-18. A Data Exchange is a private hub with invited member accounts and provider/consumer roles. External sharing is a Snowsight page for direct shares, listings, and Data Exchange items. Yes, a direct share to an account in your organization can appear there.
-19. When an invited group needs ongoing membership and several providers/consumers publishing or discovering listings; one private listing can target selected consumers without creating an exchange.
-20. Yes, a secure materialized view can be shared. Check that it is secure and grant the required database/schema `USAGE` plus view `SELECT`; an ordinary materialized view is rejected by a default secure-only share.
+**A:** Pick a private listing for selected customers who need listing features. Pick a direct share for a direct same-region grant, or a public listing for broad Marketplace discovery.
+
+</details>
+
+**15. Q:** What does Cross-Cloud Auto-Fulfillment do?
+
+<details>
+<summary>Show answer</summary>
+
+**A:** It fulfills an eligible listing's data product to consumer regions as needed.
+
+</details>
+
+**16. Q:** Which Native App object belongs to the provider, and what gets created on installation?
+
+<details>
+<summary>Show answer</summary>
+
+**A:** The provider creates and publishes an application package. Installation creates an application in the consumer account.
+
+</details>
+
+**17. Q:** What are the jobs of the manifest and setup script?
+
+<details>
+<summary>Show answer</summary>
+
+**A:** The manifest describes configuration and identifies the setup script. The setup script creates or updates objects on installation or upgrade.
+
+</details>
+
+**18. Q:** How does a Data Exchange differ from the External sharing page? Can a direct share to an account in your own organization appear on that page?
+
+<details>
+<summary>Show answer</summary>
+
+**A:** A Data Exchange is a private hub with invited member accounts and provider/consumer roles. External sharing is a Snowsight page for direct shares, listings, and Data Exchange items. Yes, a direct share to an account in your organization can appear there.
+
+</details>
+
+**19. Q:** When is a Data Exchange more useful than one private listing?
+
+<details>
+<summary>Show answer</summary>
+
+**A:** When an invited group needs ongoing membership and several providers/consumers publishing or discovering listings; one private listing can target selected consumers without creating an exchange.
+
+</details>
+
+**20. Q:** Can you share a materialized view? What must you check before granting it to a default share?
+
+<details>
+<summary>Show answer</summary>
+
+**A:** Yes, a secure materialized view can be shared. Check that it is secure and grant the required database/schema `USAGE` plus view `SELECT`; an ordinary materialized view is rejected by a default secure-only share.
 
 </details>

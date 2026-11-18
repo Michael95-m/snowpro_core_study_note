@@ -153,26 +153,75 @@ ALTER TABLE D1_STUDY.LAB.ORDERS
 
 
 
-1. Why does Snowflake combine characteristics of shared disk and shared nothing?
-2. Which layer parses SQL? Which executes it? Which retains data after suspension?
-3. What is independent compute isolation useful for?
-4. Which capabilities suggest Enterprise versus Business Critical?
-5. How is VPS different from merely using a private endpoint?
-6. How does MPP within a cluster differ from using separate warehouses for ETL and BI?
-7. After upgrading to Enterprise, what must you configure to give an existing permanent table 30 days of Time Travel?
-8. Does a partition range containing PRICE = 50 prove that a matching row exists?
+**1. Q:** Why does Snowflake combine characteristics of shared disk and shared nothing?
 
 <details>
-<summary>Open the recall answer key</summary>
+<summary>Show answer</summary>
 
-1. It combines shared persistent storage with independent compute clusters that use parallel processing.
-2. Cloud services parses and optimizes; warehouse compute executes; database storage retains managed data.
-3. Separating ETL, BI, or teams prevents them competing for the same warehouse CPU/memory and supports separate sizing.
-4. Enterprise: multi-cluster, extended permanent-object retention, masking/row access, materialized views. Business Critical: features such as Tri-Secret Secure and private connectivity.
-5. Private connectivity changes the network path; VPS provides the additional isolated Snowflake environment/hardware boundary.
-6. MPP splits work among nodes within a cluster; separate warehouses isolate workloads while accessing shared persistent data.
-7. Set DATA_RETENTION_TIME_IN_DAYS = 30 on the supported permanent table or its applicable parent default; upgrading alone does not set it.
-8. No. A partition whose range includes 50 is a candidate; execution still checks actual row values.
+**A:** It combines shared persistent storage with independent compute clusters that use parallel processing.
+
+</details>
+
+**2. Q:** Which layer parses SQL? Which executes it? Which retains data after suspension?
+
+<details>
+<summary>Show answer</summary>
+
+**A:** Cloud services parses and optimizes; warehouse compute executes; database storage retains managed data.
+
+</details>
+
+**3. Q:** What is independent compute isolation useful for?
+
+<details>
+<summary>Show answer</summary>
+
+**A:** Separating ETL, BI, or teams prevents them competing for the same warehouse CPU/memory and supports separate sizing.
+
+</details>
+
+**4. Q:** Which capabilities suggest Enterprise versus Business Critical?
+
+<details>
+<summary>Show answer</summary>
+
+**A:** Enterprise: multi-cluster, extended permanent-object retention, masking/row access, materialized views. Business Critical: features such as Tri-Secret Secure and private connectivity.
+
+</details>
+
+**5. Q:** How is VPS different from merely using a private endpoint?
+
+<details>
+<summary>Show answer</summary>
+
+**A:** Private connectivity changes the network path; VPS provides the additional isolated Snowflake environment/hardware boundary.
+
+</details>
+
+**6. Q:** How does MPP within a cluster differ from using separate warehouses for ETL and BI?
+
+<details>
+<summary>Show answer</summary>
+
+**A:** MPP splits work among nodes within a cluster; separate warehouses isolate workloads while accessing shared persistent data.
+
+</details>
+
+**7. Q:** After upgrading to Enterprise, what must you configure to give an existing permanent table 30 days of Time Travel?
+
+<details>
+<summary>Show answer</summary>
+
+**A:** Set DATA_RETENTION_TIME_IN_DAYS = 30 on the supported permanent table or its applicable parent default; upgrading alone does not set it.
+
+</details>
+
+**8. Q:** Does a partition range containing PRICE = 50 prove that a matching row exists?
+
+<details>
+<summary>Show answer</summary>
+
+**A:** No. A partition whose range includes 50 is a candidate; execution still checks actual row values.
 
 </details>
 

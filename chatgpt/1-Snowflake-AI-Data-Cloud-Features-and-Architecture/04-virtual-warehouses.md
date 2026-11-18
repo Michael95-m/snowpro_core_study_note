@@ -160,28 +160,84 @@ SHOW PARAMETERS LIKE 'MAX_CONCURRENCY_LEVEL' IN WAREHOUSE study_wh;
 
 
 
-1. When is Snowpark-optimized preferable to Standard?
-2. How do type, generation, size, and cluster count differ?
-3. Which setting reduces overload queues: size, cluster count, or either depending on evidence?
-4. What differs between Standard and Economy scaling policies?
-5. How do auto-suspend, auto-resume, and initially suspended differ?
-6. Why might one shared warehouse be unsuitable for BI and heavy ETL?
-7. How does suspension affect local cache versus table data?
-8. Does AUTO_SUSPEND cancel an active query after that many seconds?
-9. Does stopping a SQL warehouse necessarily stop notebook runtime compute?
+**1. Q:** When is Snowpark-optimized preferable to Standard?
 
 <details>
-<summary>Open the recall answer key</summary>
+<summary>Show answer</summary>
 
-1. For workloads needing its additional memory/architecture, such as suitable memory-intensive ML/Snowpark work; Python alone is insufficient.
-2. Type is workload-oriented compute; generation is the Standard hardware/software generation; size is resources per cluster; count is concurrent cluster capacity.
-3. Investigate the queue first; multi-cluster scale-out/isolation can help concurrency, while size can also affect throughput for an appropriate workload.
-4. Standard starts extra capacity more readily; Economy favors existing-cluster utilization and can allow more waiting.
-5. AUTO_SUSPEND is idle timeout; AUTO_RESUME permits automatic restart; INITIALLY_SUSPENDED controls creation state.
-6. Long ETL can compete with latency-sensitive BI for the same compute and cache.
-7. Suspension clears warehouse-local cached table data; persistent tables remain.
-8. No. An idle timer does not cancel active work. A statement timeout is separate.
-9. No. Stop/check the independent notebook service/runtime or compute pool separately.
+**A:** For workloads needing its additional memory/architecture, such as suitable memory-intensive ML/Snowpark work; Python alone is insufficient.
+
+</details>
+
+**2. Q:** How do type, generation, size, and cluster count differ?
+
+<details>
+<summary>Show answer</summary>
+
+**A:** Type is workload-oriented compute; generation is the Standard hardware/software generation; size is resources per cluster; count is concurrent cluster capacity.
+
+</details>
+
+**3. Q:** Which setting reduces overload queues: size, cluster count, or either depending on evidence?
+
+<details>
+<summary>Show answer</summary>
+
+**A:** Investigate the queue first; multi-cluster scale-out/isolation can help concurrency, while size can also affect throughput for an appropriate workload.
+
+</details>
+
+**4. Q:** What differs between Standard and Economy scaling policies?
+
+<details>
+<summary>Show answer</summary>
+
+**A:** Standard starts extra capacity more readily; Economy favors existing-cluster utilization and can allow more waiting.
+
+</details>
+
+**5. Q:** How do auto-suspend, auto-resume, and initially suspended differ?
+
+<details>
+<summary>Show answer</summary>
+
+**A:** AUTO_SUSPEND is idle timeout; AUTO_RESUME permits automatic restart; INITIALLY_SUSPENDED controls creation state.
+
+</details>
+
+**6. Q:** Why might one shared warehouse be unsuitable for BI and heavy ETL?
+
+<details>
+<summary>Show answer</summary>
+
+**A:** Long ETL can compete with latency-sensitive BI for the same compute and cache.
+
+</details>
+
+**7. Q:** How does suspension affect local cache versus table data?
+
+<details>
+<summary>Show answer</summary>
+
+**A:** Suspension clears warehouse-local cached table data; persistent tables remain.
+
+</details>
+
+**8. Q:** Does AUTO_SUSPEND cancel an active query after that many seconds?
+
+<details>
+<summary>Show answer</summary>
+
+**A:** No. An idle timer does not cancel active work. A statement timeout is separate.
+
+</details>
+
+**9. Q:** Does stopping a SQL warehouse necessarily stop notebook runtime compute?
+
+<details>
+<summary>Show answer</summary>
+
+**A:** No. Stop/check the independent notebook service/runtime or compute pool separately.
 
 </details>
 

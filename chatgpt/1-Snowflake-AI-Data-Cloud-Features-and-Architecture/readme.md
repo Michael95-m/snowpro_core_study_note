@@ -90,41 +90,146 @@
 
 ## Whole-domain recall
 
-1. Which architecture layer handles storage, SQL execution, authentication, and query optimization?
-2. Why can two warehouses query the same data without sharing their compute resources?
-3. Which edition would you choose for multi-cluster compute, extended Time Travel, or Tri-Secret Secure?
-4. When would you use Snowsight, Snowflake CLI, or a VS Code integration?
-5. Which objects are account-level, and which live inside a database schema?
-6. How do stages, file formats, pipes, UDFs, procedures, sequences, ML models, and applications differ?
-7. How do session variables, context functions, and session parameters differ?
-8. Which session parameter wins: account, user, or session? Do all object parameters follow that hierarchy?
-9. When should you scale up instead of out? What do Standard and Economy scaling policies trade off?
-10. Why can auto-suspend reduce cost but make the next query slower?
-11. What is the difference between Standard Gen1/Gen2 and Snowpark-optimized warehouses?
-12. What metadata enables micro-partition pruning? When is natural clustering sufficient?
-13. How do permanent, temporary, transient, external, Iceberg, and dynamic tables differ?
-14. How do standard, materialized, and secure views differ?
-15. When would you choose Notebooks, Streamlit, Snowpark, Cortex Search, Cortex Analyst, or Snowflake ML?
-16. What costs and access controls must you consider before running an AI or ML workload?
+**1. Q:** Which architecture layer handles storage, SQL execution, authentication, and query optimization?
 
 <details>
-<summary>Open the whole-domain answer key</summary>
+<summary>Show answer</summary>
 
-1. Storage retains managed data; compute executes; cloud services coordinates authentication, metadata, parsing, and optimization.
-2. They have independent compute resources and access shared persistent storage.
-3. Enterprise+ for multi-cluster and extended permanent-object retention; Business Critical+ for Tri-Secret Secure.
-4. Snowsight for browser workflows, CLI for terminal scripting, VS Code for IDE development.
-5. Warehouses/users/roles/shares/integrations are account-level; named stages/file formats/tables/views/functions/pipes/Git repository objects are schema-level.
-6. Stages reference files; formats parse; pipes define ingestion; UDFs calculate; procedures run workflows; sequences allocate values; model objects store registered versions; applications are installed app objects.
-7. Variables store values, context functions report state, and parameters configure behavior.
-8. Explicit session settings win for session parameters. Object/account-only parameters have their own supported inheritance rules.
-9. Scale up for per-query resources, out for concurrency. Standard favors responsiveness; Economy favors utilization/cost.
-10. It reduces idle time but loses local table cache and introduces resume/startup work.
-11. Gen1/Gen2 are Standard generations; Snowpark-optimized is a memory-oriented type, not a requirement for all Python.
-12. Value ranges and related micro-partition metadata. Natural organization may be sufficient when representative filters already prune well.
-13. Permanent/temporary/transient define lifetimes/protection; external/Iceberg describe external/open-table access/storage/catalog; dynamic describes maintained query results.
-14. Standard stores SQL; materialized stores maintained results; secure controls definition/security behavior and may apply to either.
-15. Notebook for interactive analysis; Streamlit for apps; Snowpark for APIs near data; Search for retrieval; Analyst for semantic structured questions; ML for model development/lifecycle.
-16. Check runtime/warehouse/pool resources, permissions, service/model availability, storage/maintenance/inference charges, and output quality.
+**A:** Storage retains managed data; compute executes; cloud services coordinates authentication, metadata, parsing, and optimization.
+
+</details>
+
+**2. Q:** Why can two warehouses query the same data without sharing their compute resources?
+
+<details>
+<summary>Show answer</summary>
+
+**A:** They have independent compute resources and access shared persistent storage.
+
+</details>
+
+**3. Q:** Which edition would you choose for multi-cluster compute, extended Time Travel, or Tri-Secret Secure?
+
+<details>
+<summary>Show answer</summary>
+
+**A:** Enterprise+ for multi-cluster and extended permanent-object retention; Business Critical+ for Tri-Secret Secure.
+
+</details>
+
+**4. Q:** When would you use Snowsight, Snowflake CLI, or a VS Code integration?
+
+<details>
+<summary>Show answer</summary>
+
+**A:** Snowsight for browser workflows, CLI for terminal scripting, VS Code for IDE development.
+
+</details>
+
+**5. Q:** Which objects are account-level, and which live inside a database schema?
+
+<details>
+<summary>Show answer</summary>
+
+**A:** Warehouses/users/roles/shares/integrations are account-level; named stages/file formats/tables/views/functions/pipes/Git repository objects are schema-level.
+
+</details>
+
+**6. Q:** How do stages, file formats, pipes, UDFs, procedures, sequences, ML models, and applications differ?
+
+<details>
+<summary>Show answer</summary>
+
+**A:** Stages reference files; formats parse; pipes define ingestion; UDFs calculate; procedures run workflows; sequences allocate values; model objects store registered versions; applications are installed app objects.
+
+</details>
+
+**7. Q:** How do session variables, context functions, and session parameters differ?
+
+<details>
+<summary>Show answer</summary>
+
+**A:** Variables store values, context functions report state, and parameters configure behavior.
+
+</details>
+
+**8. Q:** Which session parameter wins: account, user, or session? Do all object parameters follow that hierarchy?
+
+<details>
+<summary>Show answer</summary>
+
+**A:** Explicit session settings win for session parameters. Object/account-only parameters have their own supported inheritance rules.
+
+</details>
+
+**9. Q:** When should you scale up instead of out? What do Standard and Economy scaling policies trade off?
+
+<details>
+<summary>Show answer</summary>
+
+**A:** Scale up for per-query resources, out for concurrency. Standard favors responsiveness; Economy favors utilization/cost.
+
+</details>
+
+**10. Q:** Why can auto-suspend reduce cost but make the next query slower?
+
+<details>
+<summary>Show answer</summary>
+
+**A:** It reduces idle time but loses local table cache and introduces resume/startup work.
+
+</details>
+
+**11. Q:** What is the difference between Standard Gen1/Gen2 and Snowpark-optimized warehouses?
+
+<details>
+<summary>Show answer</summary>
+
+**A:** Gen1/Gen2 are Standard generations; Snowpark-optimized is a memory-oriented type, not a requirement for all Python.
+
+</details>
+
+**12. Q:** What metadata enables micro-partition pruning? When is natural clustering sufficient?
+
+<details>
+<summary>Show answer</summary>
+
+**A:** Value ranges and related micro-partition metadata. Natural organization may be sufficient when representative filters already prune well.
+
+</details>
+
+**13. Q:** How do permanent, temporary, transient, external, Iceberg, and dynamic tables differ?
+
+<details>
+<summary>Show answer</summary>
+
+**A:** Permanent/temporary/transient define lifetimes/protection; external/Iceberg describe external/open-table access/storage/catalog; dynamic describes maintained query results.
+
+</details>
+
+**14. Q:** How do standard, materialized, and secure views differ?
+
+<details>
+<summary>Show answer</summary>
+
+**A:** Standard stores SQL; materialized stores maintained results; secure controls definition/security behavior and may apply to either.
+
+</details>
+
+**15. Q:** When would you choose Notebooks, Streamlit, Snowpark, Cortex Search, Cortex Analyst, or Snowflake ML?
+
+<details>
+<summary>Show answer</summary>
+
+**A:** Notebook for interactive analysis; Streamlit for apps; Snowpark for APIs near data; Search for retrieval; Analyst for semantic structured questions; ML for model development/lifecycle.
+
+</details>
+
+**16. Q:** What costs and access controls must you consider before running an AI or ML workload?
+
+<details>
+<summary>Show answer</summary>
+
+**A:** Check runtime/warehouse/pool resources, permissions, service/model availability, storage/maintenance/inference charges, and output quality.
 
 </details>

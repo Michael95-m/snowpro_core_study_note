@@ -29,30 +29,48 @@ UNION ALL
 SELECT REGION FROM ORDERS WHERE CUSTOMER_ID = 30;
 -- Expected: 3 APAC rows. These are different business results.
 
--- OPTIONAL feature templates; QAS, Search Optimization, and MVs need Enterprise+.
--- Clustering is available across editions. Maintenance can cost credits even
--- after a query finishes. These are commented; the tiny lab proves syntax only.
--- QAS (Enterprise+): eligible large scans, not bad joins or overloaded query queues.
+-- OPTIONAL: Four separate mini-labs below. Run 00-setup.sql first. Choose one
+-- mini-lab at a time; remove the leading -- only from statements you intend
+-- to run. QAS, Search Optimization, and materialized views need Enterprise+.
+-- These features can incur maintenance or serverless credits. The small setup
+-- data demonstrates syntax; it does not prove a performance benefit.
+
+-- A. QAS (Enterprise+). Run a representative query first and save its query ID.
+-- 1. Check that query's eligibility before changing the warehouse.
+-- SELECT SYSTEM$ESTIMATE_QUERY_ACCELERATION('<query_id>');
+-- 2. If eligible, enable QAS on this warehouse and rerun the same query.
 -- ALTER WAREHOUSE D4_STUDY_WH SET ENABLE_QUERY_ACCELERATION = TRUE
 --   QUERY_ACCELERATION_MAX_SCALE_FACTOR = 2;
--- Inspect an actual eligible query with SYSTEM$ESTIMATE_QUERY_ACCELERATION.
+-- 3. Compare query profile, runtime, and QAS credits. Then restore the prior
+--    warehouse setting if you changed it for this experiment.
 -- ALTER WAREHOUSE D4_STUDY_WH SET ENABLE_QUERY_ACCELERATION = FALSE;
 
--- Search optimization (Enterprise+): a selective lookup; initial build takes time.
+-- B. Search Optimization (Enterprise+). Run statements 1-4 in order.
+-- 1. Add the service to a selective equality lookup column. Build takes time.
 -- ALTER TABLE PERF_EVENTS ADD SEARCH OPTIMIZATION ON EQUALITY(EVENT_ID);
+-- 2. Check table status and wait for the initial build before measuring.
 -- SHOW TABLES LIKE 'PERF_EVENTS' IN SCHEMA D4_STUDY.LAB;
+-- 3. Run a lookup and inspect its Query Profile.
 -- SELECT * FROM PERF_EVENTS WHERE EVENT_ID = 4242;
+-- 4. Remove the service after this experiment.
 -- ALTER TABLE PERF_EVENTS DROP SEARCH OPTIMIZATION;
 
--- Clustering: only enable after justifying repeated large-table access patterns.
+-- C. Clustering. Use only after finding repeated, large-table date filters
+--    with poor pruning. This small lab is not a useful cost/benefit test.
+-- 1. Define the key, then check SHOW TABLES and query pruning over time.
 -- ALTER TABLE PERF_EVENTS CLUSTER BY (EVENT_DATE);
+-- 2. Optional: keep the key but stop automatic maintenance.
 -- ALTER TABLE PERF_EVENTS SUSPEND RECLUSTER;
+-- 3. When finished, remove the key. This is the cleanup action.
 -- ALTER TABLE PERF_EVENTS DROP CLUSTERING KEY;
 
--- Materialized view (Enterprise+): supported repeated single-base-table aggregation.
+-- D. Materialized view (Enterprise+). Run statements 1-3 in order.
+-- 1. Create a maintained result for repeated single-table aggregation.
 -- CREATE MATERIALIZED VIEW REGIONAL_TOTAL_MV AS
 --   SELECT REGION, SUM(AMOUNT) AS TOTAL FROM ORDERS GROUP BY REGION;
+-- 2. Query the view.
 -- SELECT * FROM REGIONAL_TOTAL_MV ORDER BY REGION;
 -- Expected: AMER 300, APAC 175, EMEA 275; no measurable speedup is promised.
+-- 3. Remove the view after this experiment.
 -- DROP MATERIALIZED VIEW REGIONAL_TOTAL_MV;
 ALTER SESSION UNSET USE_CACHED_RESULT;

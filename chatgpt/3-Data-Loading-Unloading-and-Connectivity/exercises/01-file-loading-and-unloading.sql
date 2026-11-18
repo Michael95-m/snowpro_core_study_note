@@ -24,6 +24,8 @@ INSERT INTO D3_FILE_SOURCE VALUES
   ('5', 'Nora', 'EMEA', 'not_a_number', '2026-01-02'),
   ('6', 'Leo',  'AMER', '70.00',        '2026-01-02');
 
+-- Reuse the CSV format. SKIP_HEADER applies when loading, not unloading.
+-- COMPRESSION = NONE keeps these generated files as plain .csv files.
 COPY INTO @D3_FILES/input/good/orders_good.csv
   FROM (
     SELECT *
@@ -31,11 +33,7 @@ COPY INTO @D3_FILES/input/good/orders_good.csv
     WHERE ORDER_ID IN ('1', '2', '3')
     ORDER BY ORDER_ID
   )
-  FILE_FORMAT = (
-    TYPE = CSV
-    COMPRESSION = NONE
-    FIELD_OPTIONALLY_ENCLOSED_BY = '"'
-  )
+  FILE_FORMAT = (FORMAT_NAME = 'D3_CSV_LOAD' COMPRESSION = NONE)
   HEADER = TRUE
   SINGLE = TRUE
   OVERWRITE = TRUE;
@@ -47,11 +45,7 @@ COPY INTO @D3_FILES/input/bad/orders_bad.csv
     WHERE ORDER_ID IN ('4', '5', '6')
     ORDER BY ORDER_ID
   )
-  FILE_FORMAT = (
-    TYPE = CSV
-    COMPRESSION = NONE
-    FIELD_OPTIONALLY_ENCLOSED_BY = '"'
-  )
+  FILE_FORMAT = (FORMAT_NAME = 'D3_CSV_LOAD' COMPRESSION = NONE)
   HEADER = TRUE
   SINGLE = TRUE
   OVERWRITE = TRUE;
