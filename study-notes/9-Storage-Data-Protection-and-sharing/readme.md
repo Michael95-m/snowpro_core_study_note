@@ -49,9 +49,7 @@ The standard default is 1 day. A value of `0` effectively disables Time Travel f
 
 Use `AT` or `BEFORE` after a table name in a `FROM` clause.
 
-- `AT` is inclusive of changes at the specified point in time.
-- `BEFORE` returns the state immediately before the specified point.
-- Common reference points are `TIMESTAMP`, `OFFSET` (seconds before now), and `STATEMENT` (a query ID).
+`AT` includes changes at the specified point, while `BEFORE` returns the state immediately before it. You can identify the point with a `TIMESTAMP`, an `OFFSET` in seconds before now, or a `STATEMENT` query ID.
 
 ```sql
 -- Table state five minutes ago.
@@ -83,9 +81,7 @@ If an object with the same name already exists, `UNDROP` fails until that object
 
 After the Time Travel retention period ends, historical data for **permanent tables** moves to Fail-safe for a non-configurable 7-day period. During Fail-safe:
 
-- Data cannot be queried, cloned, or restored with `UNDROP`.
-- Only Snowflake can attempt recovery after you contact Snowflake Support.
-- Recovery can take hours or days and is not a substitute for backups or normal recovery operations.
+You cannot query, clone, or `UNDROP` Fail-safe data. Only Snowflake can attempt recovery after you contact Support, and it may take hours or days. Treat Fail-safe as a last-resort recovery option, not a substitute for backups or normal recovery operations.
 
 ## Cloning
 
@@ -169,9 +165,7 @@ ALTER TASK admin_db.public.refresh_secondary_db RESUME;
 
 Storage is charged based on average daily stored bytes. This includes active table data, historical data retained by Time Travel and Fail-safe, and files in Snowflake internal stages.
 
-- Updated or deleted data can continue to incur storage charges until it leaves both Time Travel and Fail-safe.
-- Internal-stage files incur normal storage charges, so remove files after loading when they are no longer needed.
-- Storage pricing varies by cloud region and contract type.
+Updated or deleted data can continue to incur storage charges until it leaves Time Travel and Fail-safe. Internal-stage files also incur storage charges, so remove them when no longer needed. Pricing varies by cloud region and contract.
 
 Use `TABLE_STORAGE_METRICS` to inspect active, Time Travel, and Fail-safe bytes per table:
 
@@ -192,10 +186,7 @@ LIMIT 20;
 
 Secure Data Sharing gives another Snowflake account read-only access to selected objects without copying the shared data. The provider continues to own and pay storage for the data; the consumer pays for the compute it uses to query the imported database.
 
-- A **provider** creates a share, grants privileges on chosen objects, and adds consumer accounts.
-- A **consumer** creates an imported database from the share and grants local roles access to it.
-- Shared objects are read-only for consumers. A consumer cannot modify or delete them.
-- A direct share is for accounts in the same region. Use a listing with auto-fulfillment when you need cross-region or cross-cloud sharing.
+The **provider** creates a share, grants access to selected objects, and adds consumer accounts. Each **consumer** creates an imported database and grants local roles access to it; shared objects remain read-only. Direct shares work in the same region. For cross-region or cross-cloud delivery, use an eligible listing with auto-fulfillment.
 
 Common directly shared objects include tables, external tables, secure views, secure materialized views, and secure UDFs. Secure views are useful when you want to expose only selected columns or rows.
 

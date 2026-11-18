@@ -54,10 +54,7 @@
 
 ### 2.1.1 Core access-control concepts
 
-- **Remember:** A successful sign-in proves identity; privileges still authorize each action.
-
-- Snowflake denies access unless an appropriate privilege allows it.
-- Access is controlled through **securable objects**, **privileges**, **roles**, and **users**.
+**Remember:** A successful sign-in proves identity, but an action still needs an appropriate privilege. Snowflake controls access through securable objects, privileges, roles, and users.
 
 | Term | Meaning | Exam clue |
 | --- | --- | --- |
@@ -89,11 +86,7 @@ Organization
 2. `USAGE` on the `analytics.mart` schema.
 3. `SELECT` on the `orders` table or view.
 
-- A query that executes on a warehouse also needs `USAGE` on that warehouse.
-- Warehouse access and data access are separate grants.
-- Warehouses, users, and roles are account-level objects; they are not children of a schema in the hierarchy above.
-
-- **Exam trap:** `SELECT` on a table alone is not enough when the role lacks `USAGE` on its parent database or schema.
+A warehouse-backed query needs `USAGE` on the warehouse as well as the required data privileges. Warehouses, users, and roles are account-level objects, outside the database/schema hierarchy. **Exam trap:** `SELECT` on a table alone is insufficient without `USAGE` on its parent database and schema.
 
 <a id="rbac-and-dac"></a>
 
@@ -117,9 +110,7 @@ Organization
 
 ### 2.1.4 Least privilege and role design
 
-- **Remember:** Give a role only the access needed for its job, then build an understandable inheritance hierarchy.
-
-- Use **least privilege**: grant only the minimum access needed for a role's job.
+**Remember:** Use **least privilege**: grant each role only what its job needs, then build an understandable inheritance hierarchy.
 
 - A scalable pattern is:
 
@@ -174,9 +165,7 @@ Object privileges → access roles → functional roles → users
 
 <p align="center"><img src="../../img/domain2-role-inheritance.png" alt="SELECT is granted to a reader role, the reader role is granted to an analyst role, and the analyst role is granted to a user. The parent analyst role inherits the reader privileges." width="760"></p>
 
-- `GRANT ROLE child TO ROLE parent` means the **parent inherits the child's privileges**.
-- The child does not inherit the parent's privileges.
-- Owning a role is different from inheriting it: ownership alone does not give access to everything that role can query.
+`GRANT ROLE child TO ROLE parent` makes the **parent inherit the child's privileges**, never the reverse. Owning a role is different from inheriting it: ownership alone does not give access to everything that role can query.
 
 ```sql
 USE ROLE USERADMIN;
@@ -203,8 +192,7 @@ GRANT SELECT ON ALL TABLES IN SCHEMA analytics.mart
 GRANT DATABASE ROLE analytics.mart_reader TO ROLE finance_analyst;
 ```
 
-- Granting a database role to an account role implicitly supplies `USAGE` on the containing database.
-- Schema and object privileges still need to be granted.
+Granting a database role to an account role implicitly supplies `USAGE` on the containing database; the database role still needs the appropriate schema and object privileges.
 - See [access-control design](https://docs.snowflake.com/en/user-guide/security-access-control-considerations).
 
 <a id="practical-rbac-sql"></a>
@@ -261,12 +249,7 @@ USE ROLE mart_sales_reader;
 USE SECONDARY ROLES ALL;
 ```
 
-- For most actions, Snowflake can use privileges from the primary role and active secondary roles.
-- Authorization to create an object comes from the **primary role**. The new object's ownership is assigned to that primary role.
-- Secondary roles are useful when a user must query objects protected by different roles, for example in a cross-database join.
-
-- **Exam trap:** a database role cannot be activated directly.
-- Grant it to an account role first.
+For most actions, Snowflake can use privileges from the primary role and active secondary roles. Secondary roles help when a query needs access held by different roles, such as a cross-database join. Object creation is authorized through the **primary role**, which also owns the new object. **Exam trap:** a database role cannot be activated directly; grant it to an account role first.
 
 <a id="network-policies"></a>
 
@@ -304,10 +287,7 @@ CREATE NETWORK POLICY office_access
 
 ### 2.1.11 Authentication methods
 
-- **Remember:** Network origin, identity proof, and data authorization answer different questions.
-
-- Authentication means **proving who is connecting**.
-- The connection might come from a person opening Snowsight or an application running a scheduled job.
+**Remember:** Network origin, identity proof, and data authorization are separate questions. Authentication proves who is connecting, whether it is a person in Snowsight or an automated application.
 
 - Start by separating these three questions:
 
@@ -317,9 +297,7 @@ CREATE NETWORK POLICY office_access
 | **How will you prove who you are?** | Authentication method and authentication policy | Sign in through company SSO, or use a password with MFA. |
 | **What may you do after connecting?** | Authorization: applicable privileges | Read a table only when the session has the required access. |
 
-- **Example:** an employee passes company SSO and MFA, but has no applicable `SELECT` grant on `SALES`.
-- They can sign in, but they cannot read that table.
-- Passing authentication does not grant data access.
+**Example:** an employee who passes company SSO and MFA can sign in, but cannot read `SALES` without an applicable `SELECT` grant. Authentication alone does not grant data access.
 
 - [References: Authentication overview](https://docs.snowflake.com/en/user-guide/security-authentication-overview) · [Access control](https://docs.snowflake.com/en/user-guide/security-access-control-overview)
 
@@ -366,12 +344,7 @@ Open Snowsight
 
 #### 3. OAuth: an application connects using an access token
 
-- Imagine a BI application connecting to Snowflake for an analyst.
-- With OAuth, it presents an **access token**, rather than keeping the analyst's Snowflake password.
-
-- Think of a token as a temporary access pass with limits.
-- The **authorization server** issues that pass.
-- Snowflake validates it and still applies access checks.
+For example, a BI application can connect for an analyst using an **OAuth access token** instead of storing the analyst's Snowflake password. The authorization server issues this limited pass; Snowflake validates it and still checks the analyst's privileges.
 
 | OAuth option | Who issues the token? | Simple example |
 | --- | --- | --- |
@@ -430,9 +403,7 @@ Python job signs authentication proof using its private key
 
 #### 5. Authentication policies: set the login rules
 
-- An authentication policy controls allowed login methods and MFA requirements.
-- It is a **rule object**, not a new way of proving identity.
-- A **security integration** establishes trust with an IdP; the policy can restrict which configured integrations are allowed.
+An authentication policy is a **rule object** that controls login methods and MFA requirements; it is not a login method itself. A **security integration** establishes trust with an IdP, and the policy can restrict which configured integrations are allowed.
 
 - The settings answer different questions:
 
@@ -450,9 +421,7 @@ Python job signs authentication proof using its private key
 | `'REQUIRED'` | Human password and SSO users must enroll. |
 | `'OPTIONAL'` | Legacy compatibility value; it does not bypass Snowflake's enforced MFA requirements. |
 
-- **Important distinction:** `REQUIRED_PASSWORD_ONLY` means **require MFA enrollment for password users**.
-- It does not mean **allow only password login**.
-- If `AUTHENTICATION_METHODS` is omitted, its default is `ALL`.
+**Important distinction:** `REQUIRED_PASSWORD_ONLY` requires MFA enrollment for password users; it does not limit sign-in to passwords. If `AUTHENTICATION_METHODS` is omitted, its default is `ALL`.
 
 - [Reference: Authentication policy parameters](https://docs.snowflake.com/en/sql-reference/sql/create-authentication-policy#optional-parameters)
 
@@ -604,10 +573,7 @@ LIMIT 20;
 
 <p align="center"><img src="../../img/domain2-row-access-and-masking.png" alt="For an APAC reader without email access, the row access policy first removes the EMEA row; masking then hides the email in the remaining APAC row. Source values are unchanged." width="760"></p>
 
-- A **masking policy** controls what a user sees in a column at query time.
-- The underlying data stays unchanged; the returned value is masked or transformed for unauthorized users.
-
-- Example: show an email address only to the `PII_FULL_ACCESS` role; show a masked value to everyone else.
+A **masking policy** controls the value returned from a column at query time without changing stored data. For example, it can show an email address to `PII_FULL_ACCESS` and a masked value to everyone else.
 
 ```sql
 CREATE OR REPLACE MASKING POLICY governance.pii.email_mask
@@ -622,12 +588,7 @@ ALTER TABLE analytics.mart.customer
   SET MASKING POLICY governance.pii.email_mask;
 ```
 
-- Use a masking policy when the user may see the row but should not see the unprotected value in a particular column.
-
-- Dynamic masking and row access policies require Enterprise Edition or higher.
-- They supplement object privileges: a policy does not grant permission to query the table.
-- `IS_ROLE_IN_SESSION` considers the active role hierarchy, while `CURRENT_ROLE()` returns only the primary role name.
-- Keep this distinction in mind when secondary roles are enabled.
+Use a masking policy when a user may see a row but not the raw value in one column. Dynamic masking and row access policies require Enterprise Edition or higher, and neither grants table access by itself. In policy logic, `IS_ROLE_IN_SESSION` considers the active role hierarchy, while `CURRENT_ROLE()` returns only the primary role name.
 
 #### Test the returned values
 
@@ -648,9 +609,7 @@ FROM analytics.mart.customer;
 -- Expected: the original email is returned.
 ```
 
-- Disabling secondary roles makes this comparison easier to understand.
-- It does not remove privileges inherited by the primary role.
-- These statements change only the session's role selection; the policy does not rewrite the stored email.
+Disabling secondary roles makes the comparison easier, but it does not remove privileges inherited by the primary role. These statements change session role selection; the policy does not rewrite the stored email.
 
 #### Inspect the policy and its assignments
 
@@ -674,12 +633,7 @@ FROM TABLE(analytics.INFORMATION_SCHEMA.POLICY_REFERENCES(
 
 ### 2.2.3 Row access policies: row-level security
 
-- **Remember:** A Boolean row policy filters visible rows. A table has one row policy at a time; it can combine many conditions.
-
-- A **row access policy** evaluates a Boolean expression to decide which rows a user can see.
-- It is applied to a table or view.
-
-- Example: regional analysts can see only rows matching their assigned region.
+A **row access policy** evaluates a Boolean expression to filter visible rows on a table or view. A table has one row policy at a time, but it can combine many conditions. For example, regional analysts may see only rows from their assigned region.
 
 ```sql
 CREATE OR REPLACE ROW ACCESS POLICY governance.policies.region_filter
@@ -766,7 +720,7 @@ ALTER TABLE analytics.mart.orders
 
 - A **tag** is metadata on an object or column. It helps classify, find, govern, and audit data, but it does not deny access by itself; an associated tag-based policy can add enforcement.
 
-- Common tag examples:
+Common tag examples:
 
 - `DATA_CLASSIFICATION = 'PII'`
 - `OWNER_TEAM = 'FINANCE'`
@@ -826,24 +780,9 @@ SELECT SYSTEM$GET_TAG(
 
 ### 2.2.5 Privacy policies
 
-- **Remember:** Differential-privacy budget measures cumulative privacy loss, not warehouse credits.
+Snowflake **privacy policies** apply differential privacy to supported queries on protected tables or views. They associate users with privacy budgets, add controlled noise to aggregate results, and limit cumulative privacy loss from repeated queries. This budget measures privacy exposure, not Snowflake credit spend.
 
-- Snowflake **privacy policies** support differential privacy.
-- A policy associates users with privacy budgets and can be assigned to tables or views.
-
-- When an analyst runs a query against privacy-protected data, Snowflake evaluates whether the query would exceed that user's privacy budget.
-- This helps reduce the risk of identifying an individual through repeated analytical queries.
-
-- Do not confuse this with:
-
-- **Masking policy:** hides individual column values.
-- **Row access policy:** filters visible rows.
-- **Privacy policy:** controls privacy loss for aggregate analytical queries through differential privacy.
-
-- Differential privacy adds controlled noise to protected analytical results and limits cumulative privacy loss through a budget.
-- This budget measures privacy exposure, not Snowflake credit spend.
-- Related features include aggregation policies (restrict small result groups), projection policies (restrict returning a column), and join policies (control required joins).
-- These are supporting comparisons; the explicit C03 bullet is **privacy policies**.
+- **Do not confuse the policies:** a masking policy hides individual column values; a row access policy filters visible rows; a privacy policy controls privacy loss in aggregate analysis. Related controls include aggregation policies for small groups, projection policies for returned columns, and join policies for required joins. The explicit C03 topic here is **privacy policies**.
 
 #### Define and attach a privacy policy
 
@@ -1187,10 +1126,7 @@ SHOW FAILOVER GROUPS;
 -- ALTER FAILOVER GROUP analytics_dr PRIMARY;
 ```
 
-- The database-only group above does not include users, roles, or warehouses.
-- Plan those separately.
-- A scheduled refresh is asynchronous; it does not guarantee exactly ten minutes of possible data loss.
-- Promotion changes which copy is writable.
+The database-only group above does not include users, roles, or warehouses; plan those separately. A scheduled refresh is asynchronous, so it does not guarantee exactly ten minutes of possible data loss. Promotion changes which copy is writable.
 
 - [References: CREATE FAILOVER GROUP](https://docs.snowflake.com/en/sql-reference/sql/create-failover-group) · [Replication setup and refresh](https://docs.snowflake.com/en/user-guide/account-replication-config)
 
@@ -1350,11 +1286,7 @@ CALL analytics.monitoring.etl_budget!SET_EMAIL_NOTIFICATIONS(
 SELECT SYSTEM$SHOW_BUDGETS_IN_ACCOUNT();
 ```
 
-- The limit is **100 credits per month**, not dollars.
-- The budget can notify on predicted overspend.
-- This configuration does not automatically suspend the warehouse at 100 credits; a resource monitor has separate suspension actions.
-- Budgets can have supported custom actions, but those require additional configuration.
-- Budget monitoring itself can incur serverless cost.
+This budget sets **100 credits per month**, not dollars, and can notify about predicted overspend. It does not automatically suspend a warehouse at 100 credits; resource monitors have separate suspension actions. Budgets can have custom actions with additional configuration, and budget monitoring can incur serverless cost.
 
 - [References: Custom budgets](https://docs.snowflake.com/en/user-guide/budgets/custom-budget) · [Budget setup tutorial](https://docs.snowflake.com/en/user-guide/tutorials/budgets)
 
@@ -1375,9 +1307,7 @@ SELECT SYSTEM$SHOW_BUDGETS_IN_ACCOUNT();
 | Resource monitor | Responds to a credit quota threshold. |
 | Query history and metering views | Diagnose which workloads and warehouses consume credits. |
 
-- Do not choose a warehouse solely because it is small.
-- A smaller warehouse can run much longer.
-- Right-size it based on workload performance and total credits consumed.
+Do not choose a warehouse solely because it is small: a smaller warehouse may run much longer. Right-size it using workload performance and total credits consumed.
 
 #### Create a small warehouse with idle and query limits
 
@@ -1610,10 +1540,7 @@ ORDER BY total_elapsed_time DESC
 LIMIT 20;
 ```
 
-- The source timing columns use milliseconds.
-- High overload queue time suggests concurrency pressure; long execution time calls for query/profile investigation.
-- Neither number alone proves that resizing is the right fix.
-- Do not treat query elapsed time as its exact share of warehouse credits: concurrent queries and idle time complicate attribution.
+The source timing columns use milliseconds. High overload queue time suggests concurrency pressure; long execution time calls for Query Profile investigation. Neither alone proves that resizing is the right fix. Query elapsed time is also not an exact share of warehouse credits because queries overlap and warehouses can be idle.
 
 - [Reference: QUERY_HISTORY columns](https://docs.snowflake.com/en/sql-reference/account-usage/query_history)
 
@@ -1717,421 +1644,512 @@ GRANT ROLE cost_reviewer TO USER REVIEWER_USER;
 
 
 
-- Answer each question yourself, then click **Show answer** below it.
-
-**1. Q:** What are the three privileges needed to select from `database.schema.table`?
+- Answer each question yourself, then click the question to reveal its answer.
 
 <details>
-<summary>Show answer</summary>
+<summary><strong>1. Q:</strong> What are the three privileges needed to select from <code>database.schema.table</code>?</summary>
+
+<br>
 
 **A:** USAGE on the database, USAGE on the schema, and SELECT on the table; warehouse-backed execution also needs warehouse USAGE.
 
 </details>
 
-**2. Q:** How do RBAC and DAC differ in Snowflake?
+<hr>
 
 <details>
-<summary>Show answer</summary>
+<summary><strong>2. Q:</strong> How do RBAC and DAC differ in Snowflake?</summary>
+
+<br>
 
 **A:** RBAC grants privileges through roles. DAC gives an object owner grant authority, subject to managed-access rules.
 
 </details>
 
-**3. Q:** Why is `ACCOUNTADMIN` not a normal day-to-day working role?
+<hr>
 
 <details>
-<summary>Show answer</summary>
+<summary><strong>3. Q:</strong> Why is <code>ACCOUNTADMIN</code> not a normal day-to-day working role?</summary>
+
+<br>
 
 **A:** It is broad administrative authority and should be restricted; use purpose-specific roles for ordinary work.
 
 </details>
 
-**4. Q:** What is the scope difference between an account role and a database role?
+<hr>
 
 <details>
-<summary>Show answer</summary>
+<summary><strong>4. Q:</strong> What is the scope difference between an account role and a database role?</summary>
+
+<br>
 
 **A:** Account roles can hold account-wide and database-object privileges; database roles are limited to their containing database.
 
 </details>
 
-**5. Q:** Can a database role be activated directly in a session?
+<hr>
 
 <details>
-<summary>Show answer</summary>
+<summary><strong>5. Q:</strong> Can a database role be activated directly in a session?</summary>
+
+<br>
 
 **A:** No. They cannot be selected as primary/secondary roles; these labs grant a database role to an account role.
 
 </details>
 
-**6. Q:** What is the difference between the primary role and secondary roles?
+<hr>
 
 <details>
-<summary>Show answer</summary>
+<summary><strong>6. Q:</strong> What is the difference between the primary role and secondary roles?</summary>
+
+<br>
 
 **A:** One primary role determines creation authority/ownership; active secondary roles can contribute to most other authorized operations.
 
 </details>
 
-**7. Q:** Which role determines ownership when a user creates a new object?
+<hr>
 
 <details>
-<summary>Show answer</summary>
+<summary><strong>7. Q:</strong> Which role determines ownership when a user creates a new object?</summary>
+
+<br>
 
 **A:** The primary role, using privileges it holds or inherits.
 
 </details>
 
-**8. Q:** What does a managed access schema centralize?
+<hr>
 
 <details>
-<summary>Show answer</summary>
+<summary><strong>8. Q:</strong> What does a managed access schema centralize?</summary>
+
+<br>
 
 **A:** Grant decisions: schema owner or MANAGE GRANTS role administers grants instead of individual object owners.
 
 </details>
 
-**9. Q:** What network-policy level has the highest precedence: account, user, or security integration?
+<hr>
 
 <details>
-<summary>Show answer</summary>
+<summary><strong>9. Q:</strong> What network-policy level has the highest precedence: account, user, or security integration?</summary>
+
+<br>
 
 **A:** For the applicable general precedence, security integration over user over account; token-flow exceptions are documented separately.
 
 </details>
 
-**10. Q:** Which authentication method is a strong fit for an automated service account?
+<hr>
 
 <details>
-<summary>Show answer</summary>
+<summary><strong>10. Q:</strong> Which authentication method is a strong fit for an automated service account?</summary>
+
+<br>
 
 **A:** A supported non-interactive method such as key-pair, configured OAuth, or workload identity federation; choose by the client and environment.
 
 </details>
 
-**11. Q:** What is the difference between a masking policy and a row access policy?
+<hr>
 
 <details>
-<summary>Show answer</summary>
+<summary><strong>11. Q:</strong> What is the difference between a masking policy and a row access policy?</summary>
+
+<br>
 
 **A:** Masking transforms returned column values; row access filters rows.
 
 </details>
 
-**12. Q:** What can a tag do by itself, and what can it not do by itself?
+<hr>
 
 <details>
-<summary>Show answer</summary>
+<summary><strong>12. Q:</strong> What can a tag do by itself, and what can it not do by itself?</summary>
+
+<br>
 
 **A:** It supplies classification/metadata; enforcement requires an associated policy or other configured control.
 
 </details>
 
-**13. Q:** What problem do privacy policies solve?
+<hr>
 
 <details>
-<summary>Show answer</summary>
+<summary><strong>13. Q:</strong> What problem do privacy policies solve?</summary>
+
+<br>
 
 **A:** They limit cumulative privacy exposure from analytical queries, using differential privacy and privacy budgets.
 
 </details>
 
-**14. Q:** What does the Trust Center help you find? How does a violation differ from a detection?
+<hr>
 
 <details>
-<summary>Show answer</summary>
+<summary><strong>14. Q:</strong> What does the Trust Center help you find? How does a violation differ from a detection?</summary>
+
+<br>
 
 **A:** Trust Center scanners find security risks. A violation is an ongoing condition, such as missing MFA; a detection is a one-time event, such as a login from an unusual IP. Investigate and address the underlying risk.
 
 </details>
 
-**15. Q:** What protects a client connection in transit? What extra control does Tri-Secret Secure add to stored-data encryption?
+<hr>
 
 <details>
-<summary>Show answer</summary>
+<summary><strong>15. Q:</strong> What protects a client connection in transit? What extra control does Tri-Secret Secure add to stored-data encryption?</summary>
+
+<br>
 
 **A:** TLS encrypts the client connection in transit (TLS 1.2, or TLS 1.3 where supported and negotiated). Tri-Secret Secure adds a customer-managed cloud key to the composite protection hierarchy for stored data.
 
 </details>
 
-**16. Q:** What must you do after creating an alert before it can run?
+<hr>
 
 <details>
-<summary>Show answer</summary>
+<summary><strong>16. Q:</strong> What must you do after creating an alert before it can run?</summary>
+
+<br>
 
 **A:** Provide owner privileges and resume it for its schedule, or request a one-time EXECUTE ALERT run; creation leaves it suspended.
 
 </details>
 
-**17. Q:** What is the difference between an alert and a notification integration?
+<hr>
 
 <details>
-<summary>Show answer</summary>
+<summary><strong>17. Q:</strong> What is the difference between an alert and a notification integration?</summary>
+
+<br>
 
 **A:** An alert detects a condition and runs an action; an integration configures how a notification destination is reached.
 
 </details>
 
-**18. Q:** Which costs can a resource monitor control, and which can it not control?
+<hr>
 
 <details>
-<summary>Show answer</summary>
+<summary><strong>18. Q:</strong> Which costs can a resource monitor control, and which can it not control?</summary>
+
+<br>
 
 **A:** Warehouse compute and supporting cloud-services usage count toward monitor quotas before adjustment; it does not suspend Snowpipe, compute pools, AI, or all serverless services.
 
 </details>
 
-**19. Q:** How do warehouse size, running time, and active clusters affect credit use?
+<hr>
 
 <details>
-<summary>Show answer</summary>
+<summary><strong>19. Q:</strong> How do warehouse size, running time, and active clusters affect credit use?</summary>
+
+<br>
 
 **A:** Multiply the rate by each running interval and active cluster count; apply per-start minimums and sum unequal intervals separately.
 
 </details>
 
-**20. Q:** Why should `ACCOUNT_USAGE` not be treated as real-time monitoring data?
+<hr>
 
 <details>
-<summary>Show answer</summary>
+<summary><strong>20. Q:</strong> Why should <code>ACCOUNT_USAGE</code> not be treated as real-time monitoring data?</summary>
+
+<br>
 
 **A:** Views are historical and have view-specific ingestion latency and permissions; use fresher/live tools where required.
 
 </details>
 
-**21. Q:** Which direction does privilege inheritance flow in `GRANT ROLE child TO ROLE parent`?
+<hr>
 
 <details>
-<summary>Show answer</summary>
+<summary><strong>21. Q:</strong> Which direction does privilege inheritance flow in <code>GRANT ROLE child TO ROLE parent</code>?</summary>
+
+<br>
 
 **A:** Upward: parent inherits child. Child does not inherit parent.
 
 </details>
 
-**22. Q:** Why does owning a role differ from inheriting that role?
+<hr>
 
 <details>
-<summary>Show answer</summary>
+<summary><strong>22. Q:</strong> Why does owning a role differ from inheriting that role?</summary>
+
+<br>
 
 **A:** Role ownership administers the role; GRANT ROLE establishes privilege inheritance.
 
 </details>
 
-**23. Q:** Which separate warehouse privilege is needed to execute a table query?
+<hr>
 
 <details>
-<summary>Show answer</summary>
+<summary><strong>23. Q:</strong> Which separate warehouse privilege is needed to execute a table query?</summary>
+
+<br>
 
 **A:** USAGE on the warehouse, independently from data-object access.
 
 </details>
 
-**24. Q:** How do SSO, MFA, OAuth, and key pairs differ, and where must a private key be stored?
+<hr>
 
 <details>
-<summary>Show answer</summary>
+<summary><strong>24. Q:</strong> How do SSO, MFA, OAuth, and key pairs differ, and where must a private key be stored?</summary>
+
+<br>
 
 **A:** SSO federates identity; MFA adds another factor; OAuth presents an issued token; key pairs prove possession of the private key, which stays protected in the application.
 
 </details>
 
-**25. Q:** What is the preferred account identifier, and how does it differ from an account locator?
+<hr>
 
 <details>
-<summary>Show answer</summary>
+<summary><strong>25. Q:</strong> What is the preferred account identifier, and how does it differ from an account locator?</summary>
+
+<br>
 
 **A:** organization-account is the readable identifier. CURRENT_ACCOUNT returns an account locator; name functions return the names.
 
 </details>
 
-**26. Q:** How do logs, traces, and metrics differ? Which settings and destination are needed to collect them?
+<hr>
 
 <details>
-<summary>Show answer</summary>
+<summary><strong>26. Q:</strong> How do logs, traces, and metrics differ? Which settings and destination are needed to collect them?</summary>
+
+<br>
 
 **A:** Logs are messages, traces show execution steps/timing, and metrics are numeric measurements. Use an active event table plus the relevant LOG_LEVEL, TRACE_LEVEL, or METRIC_LEVEL. Supported custom messages/traces also need handler instrumentation; LOG_EVENT_LEVEL controls supported Snowflake-generated events separately.
 
 </details>
 
-**27. Q:** What is the difference between key rotation and periodic rekeying?
+<hr>
 
 <details>
-<summary>Show answer</summary>
+<summary><strong>27. Q:</strong> What is the difference between key rotation and periodic rekeying?</summary>
+
+<br>
 
 **A:** Rotation changes active key versions while retaining older decryption capability; periodic rekeying re-encrypts older data with newer keys.
 
 </details>
 
-**28. Q:** How do replication groups and failover groups differ? What do RPO and RTO measure?
+<hr>
 
 <details>
-<summary>Show answer</summary>
+<summary><strong>28. Q:</strong> How do replication groups and failover groups differ? What do RPO and RTO measure?</summary>
+
+<br>
 
 **A:** Replication groups synchronize supported state; failover groups also support promotion. RPO is tolerated data loss; RTO is tolerated recovery time.
 
 </details>
 
-**29. Q:** How does lineage help with upstream tracing and downstream impact analysis?
+<hr>
 
 <details>
-<summary>Show answer</summary>
+<summary><strong>29. Q:</strong> How does lineage help with upstream tracing and downstream impact analysis?</summary>
+
+<br>
 
 **A:** Upstream identifies sources; downstream identifies potentially affected consumers, covering supported dependency and data-movement relationships.
 
 </details>
 
-**30. Q:** Calculate credits for two clusters running 45 minutes at 8 credits/hour each. What happens if their run times differ?
+<hr>
 
 <details>
-<summary>Show answer</summary>
+<summary><strong>30. Q:</strong> Calculate credits for two clusters running 45 minutes at 8 credits/hour each. What happens if their run times differ?</summary>
+
+<br>
 
 **A:** 2 x 0.75 x 8 = 12 credits. If runtimes differ, calculate each cluster interval and sum.
 
 </details>
 
-**31. Q:** Which statement cancels active queries: `SUSPEND` or `SUSPEND_IMMEDIATE`?
+<hr>
 
 <details>
-<summary>Show answer</summary>
+<summary><strong>31. Q:</strong> Which statement cancels active queries: <code>SUSPEND</code> or <code>SUSPEND_IMMEDIATE</code>?</summary>
+
+<br>
 
 **A:** SUSPEND_IMMEDIATE cancels active statements; SUSPEND allows running statements to finish.
 
 </details>
 
-**32. Q:** How do a resource-monitor quota, a cost budget, and a differential-privacy budget differ?
+<hr>
 
 <details>
-<summary>Show answer</summary>
+<summary><strong>32. Q:</strong> How do a resource-monitor quota, a cost budget, and a differential-privacy budget differ?</summary>
+
+<br>
 
 **A:** Resource monitor: warehouse credit quota/actions. Cost budget: expected spend/notifications and configured custom actions. Privacy budget: cumulative privacy loss.
 
 </details>
 
-**33. Q:** How do ALL and FUTURE grants differ for existing versus newly created objects?
+<hr>
 
 <details>
-<summary>Show answer</summary>
+<summary><strong>33. Q:</strong> How do ALL and FUTURE grants differ for existing versus newly created objects?</summary>
+
+<br>
 
 **A:** ALL applies to current objects. FUTURE applies to later creations and does not backfill existing tables/views.
 
 </details>
 
-**34. Q:** How does CURRENT_ROLE differ from IS_ROLE_IN_SESSION in a policy?
+<hr>
 
 <details>
-<summary>Show answer</summary>
+<summary><strong>34. Q:</strong> How does CURRENT_ROLE differ from IS_ROLE_IN_SESSION in a policy?</summary>
+
+<br>
 
 **A:** CURRENT_ROLE reports the primary role name; IS_ROLE_IN_SESSION checks active role-hierarchy membership.
 
 </details>
 
-**35. Q:** What must happen before dropping a masking policy attached to a column?
+<hr>
 
 <details>
-<summary>Show answer</summary>
+<summary><strong>35. Q:</strong> What must happen before dropping a masking policy attached to a column?</summary>
+
+<br>
 
 **A:** Unset the column masking policy first. A tag without its own associated masking policy will not replace that protection.
 
 </details>
 
-**36. Q:** Why can EXISTS(SELECT COUNT(*) ...) be true when the count is zero?
+<hr>
 
 <details>
-<summary>Show answer</summary>
+<summary><strong>36. Q:</strong> Why can EXISTS(SELECT COUNT(*) ...) be true when the count is zero?</summary>
+
+<br>
 
 **A:** COUNT(*) returns one result row even when its value is zero. EXISTS sees that row; filter the count with HAVING or use SELECT 1 WHERE a qualifying source row exists.
 
 </details>
 
-**37. Q:** Does creating a resource monitor automatically assign it, and can warehouses share its quota?
+<hr>
 
 <details>
-<summary>Show answer</summary>
+<summary><strong>37. Q:</strong> Does creating a resource monitor automatically assign it, and can warehouses share its quota?</summary>
+
+<br>
 
 **A:** No. The monitor must be assigned; several warehouses can share its combined quota, and account-level coverage can also apply.
 
 </details>
 
-**38. Q:** Why can the total account bill exceed the credits shown for one warehouse?
+<hr>
 
 <details>
-<summary>Show answer</summary>
+<summary><strong>38. Q:</strong> Why can the total account bill exceed the credits shown for one warehouse?</summary>
+
+<br>
 
 **A:** Convert credits using the applicable contract price; add pool/serverless, storage, and transfer categories as applicable. One warehouse total is not the entire account bill.
 
 </details>
 
-**39. Q:** What does MFA_ENROLLMENT = REQUIRED_PASSWORD_ONLY mean?
+<hr>
 
 <details>
-<summary>Show answer</summary>
+<summary><strong>39. Q:</strong> What does MFA_ENROLLMENT = REQUIRED_PASSWORD_ONLY mean?</summary>
+
+<br>
 
 **A:** It requires MFA enrollment for human password users; it does not restrict all login methods to passwords.
 
 </details>
 
-**40. Q:** Which key stays in the application, and which key is registered on the Snowflake user?
+<hr>
 
 <details>
-<summary>Show answer</summary>
+<summary><strong>40. Q:</strong> Which key stays in the application, and which key is registered on the Snowflake user?</summary>
+
+<br>
 
 **A:** Register the public key with the user and protect the private key in the client. Named key-pair management is available alongside legacy RSA_PUBLIC_KEY slots.
 
 </details>
 
-**41. Q:** How do aggregation and projection policies restrict different parts of a query, and which is enforced first?
+<hr>
 
 <details>
-<summary>Show answer</summary>
+<summary><strong>41. Q:</strong> How do aggregation and projection policies restrict different parts of a query, and which is enforced first?</summary>
+
+<br>
 
 **A:** Aggregation requires sufficiently large groups; projection controls whether a column may appear in the final result. Aggregation is enforced before projection; masking is applied before aggregation.
 
 </details>
 
-**42. Q:** Can a materialized view be created from a table protected by a tag-based masking policy inherited from its database?
+<hr>
 
 <details>
-<summary>Show answer</summary>
+<summary><strong>42. Q:</strong> Can a materialized view be created from a table protected by a tag-based masking policy inherited from its database?</summary>
+
+<br>
 
 **A:** No. An inherited tag-based masking policy still protects the base table and blocks materialized-view creation on it. Adding the policy after the materialized view exists invalidates the view for queries.
 
 </details>
 
-**43. Q:** A region has 20 rows from eight customers. Does `MIN_GROUP_SIZE => 10` pass when the aggregation policy has `ENTITY KEY (customer_id)`?
+<hr>
 
 <details>
-<summary>Show answer</summary>
+<summary><strong>43. Q:</strong> A region has 20 rows from eight customers. Does <code>MIN_GROUP_SIZE =&gt; 10</code> pass when the aggregation policy has <code>ENTITY KEY (customer_id)</code>?</summary>
+
+<br>
 
 **A:** No. With an entity key, the threshold counts distinct customers per region, not rows. The region needs at least 10 customers to appear as its own group; the key is checked even if the query does not display it.
 
 </details>
 
-**44. Q:** Which Trust Center application role only views findings, and which manages scanners and schedules?
+<hr>
 
 <details>
-<summary>Show answer</summary>
+<summary><strong>44. Q:</strong> Which Trust Center application role only views findings, and which manages scanners and schedules?</summary>
+
+<br>
 
 **A:** `SNOWFLAKE.TRUST_CENTER_VIEWER` views findings; `SNOWFLAKE.TRUST_CENTER_ADMIN` manages scanners and supported schedules. Grant these application roles to account roles.
 
 </details>
 
-**45. Q:** A role ran a query but cannot select from `SNOWFLAKE.ACCOUNT_USAGE.QUERY_HISTORY`. Which Snowflake database role grants access to that view?
+<hr>
 
 <details>
-<summary>Show answer</summary>
+<summary><strong>45. Q:</strong> A role ran a query but cannot select from <code>SNOWFLAKE.ACCOUNT_USAGE.QUERY_HISTORY</code>. Which Snowflake database role grants access to that view?</summary>
+
+<br>
 
 **A:** `SNOWFLAKE.GOVERNANCE_VIEWER`, granted to an account role by an administrator. Running the query and having USAGE on another database do not grant Account Usage access.
 
 </details>
 
-**46. Q:** A running warehouse grows from 4 to 8 credits/hour and suspends 20 seconds later. Which capacity receives a new 60-second minimum?
+<hr>
 
 <details>
-<summary>Show answer</summary>
+<summary><strong>46. Q:</strong> A running warehouse grows from 4 to 8 credits/hour and suspends 20 seconds later. Which capacity receives a new 60-second minimum?</summary>
+
+<br>
 
 **A:** Only the added 4-credits/hour capacity: `4 × 60 / 3600 ≈ 0.0667` extra credits. Existing compute continues under its own running-time charge.
 
 </details>
+
 
 ## Official References
 

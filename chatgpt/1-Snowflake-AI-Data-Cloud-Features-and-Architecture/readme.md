@@ -2,12 +2,10 @@
 
 - **Exam outline:** supplied [C03 guide](../../SnowProCoreStudyGuideC03.pdf), pages 5-7; **31%** weighting.
 - **Format and exercise update:** November 5, 2026.
-- **Study cycle:** numbered topic -> Remember line/scenario -> exercise -> expected result -> closed-book recall -> answer key.
+- **Study cycle:** numbered topic -> Remember line/scenario -> exercise -> expected result -> click a recall question to reveal its answer.
 - **SQL status:** reviewed against official documentation; not executed in your account.
 
-- This folder follows all **six Domain 1 objectives** in the supplied SnowPro Core C03 study guide.
-- Read the topics in order.
-- Each topic ends with recall questions and official references.
+This folder follows all **six Domain 1 objectives** in the supplied SnowPro Core C03 study guide. Read the topics in order; each ends with clickable recall questions and official references.
 
 | C03 objective | Study topic |
 | --- | --- |
@@ -46,13 +44,7 @@
 
 ## How your existing notes fit
 
-- **Topic 1.1:** includes your original architecture explanations and images.
-- **Topic 1.5:** expands the table and view comparisons.
-- **Topic 1.5:** also includes the micro-partition and natural-clustering explanation from the storage course chapter.
-
-- Some concepts appear in more than one domain.
-- This folder explains **what each object or service is**.
-- Use the related notes below for operational details.
+Topic **1.1** includes your original architecture explanations and images. Topic **1.5** expands the table and view comparisons, including micro-partitions and natural clustering from the storage course chapter. Some concepts appear in more than one domain: this folder explains what each object or service is, and the related notes below cover operational details.
 
 | Related material | Where to study the detail |
 | --- | --- |
@@ -62,19 +54,13 @@
 | Time Travel, Fail-safe, cloning, replication, and collaboration examples | [Storage and sharing course chapter](../../study-notes/9-Storage-Data-Protection-and-sharing/readme.md) |
 | Unstructured files and additional transformation functions | [Transformation course chapter](../../study-notes/8-Data-transformation/readme.md) |
 
-- Folder numbers **7, 8, and 9** are course chapter numbers, not C03 exam domains.
-- The separate Level Up Accounts and Assurances file currently contains only a heading.
-- It had no lesson content to relocate.
+Folder numbers **7, 8, and 9** are course chapter numbers, not C03 exam domains. The separate Level Up Accounts and Assurances file contains only a heading, so there was no lesson content to relocate.
 
 ## Scope and practice
 
-- Completed chat practice is saved in the [practice Q&A folder](practice/readme.md).
-- Sections **1.1, 1.2, and 1.3** have separate files.
-- Each records your answers, corrections, and follow-up explanations.
-- Answers are collapsible for self-testing.
+Completed chat practice is in the [practice Q&A folder](practice/readme.md). Sections **1.1, 1.2, and 1.3** have separate files with your answers, corrections, and follow-up explanations. Answers are collapsible for self-testing.
 
-- Examples are study patterns reviewed against official documentation.
-- They have **not been executed in your account**.
+Examples are study patterns reviewed against official documentation; they have **not been executed in your account**.
 - SQL that references existing objects requires:
   1. Those objects to exist.
   2. A suitable role.
@@ -84,151 +70,180 @@
 - The supplied guide has a footnote about the default warehouse for Notebooks:
   - It will not be tested until globally **Generally Available (GA)**.
   - Preserve this condition when using the guide.
-- Availability in one account does not prove that the feature is currently testable.
-- Notebook experiences and warehouse defaults change.
-- Focus on purpose, compute selection, and cost rather than memorizing a changing default name.
+
+Availability in one account does not prove that a feature is testable on the exam. Notebook experiences and warehouse defaults can change, so focus on purpose, compute selection, and cost rather than memorizing an old default name.
 
 ## Whole-domain recall
 
-**1. Q:** Which architecture layer handles storage, SQL execution, authentication, and query optimization?
-
 <details>
-<summary>Show answer</summary>
+<summary><strong>1. Q:</strong> Which architecture layer handles storage, SQL execution, authentication, and query optimization?</summary>
+
+<br>
 
 **A:** Storage retains managed data; compute executes; cloud services coordinates authentication, metadata, parsing, and optimization.
 
 </details>
 
-**2. Q:** Why can two warehouses query the same data without sharing their compute resources?
+<hr>
 
 <details>
-<summary>Show answer</summary>
+<summary><strong>2. Q:</strong> Why can two warehouses query the same data without sharing their compute resources?</summary>
+
+<br>
 
 **A:** They have independent compute resources and access shared persistent storage.
 
 </details>
 
-**3. Q:** Which edition would you choose for multi-cluster compute, extended Time Travel, or Tri-Secret Secure?
+<hr>
 
 <details>
-<summary>Show answer</summary>
+<summary><strong>3. Q:</strong> Which edition would you choose for multi-cluster compute, extended Time Travel, or Tri-Secret Secure?</summary>
+
+<br>
 
 **A:** Enterprise+ for multi-cluster and extended permanent-object retention; Business Critical+ for Tri-Secret Secure.
 
 </details>
 
-**4. Q:** When would you use Snowsight, Snowflake CLI, or a VS Code integration?
+<hr>
 
 <details>
-<summary>Show answer</summary>
+<summary><strong>4. Q:</strong> When would you use Snowsight, Snowflake CLI, or a VS Code integration?</summary>
+
+<br>
 
 **A:** Snowsight for browser workflows, CLI for terminal scripting, VS Code for IDE development.
 
 </details>
 
-**5. Q:** Which objects are account-level, and which live inside a database schema?
+<hr>
 
 <details>
-<summary>Show answer</summary>
+<summary><strong>5. Q:</strong> Which objects are account-level, and which live inside a database schema?</summary>
+
+<br>
 
 **A:** Warehouses/users/roles/shares/integrations are account-level; named stages/file formats/tables/views/functions/pipes/Git repository objects are schema-level.
 
 </details>
 
-**6. Q:** How do stages, file formats, pipes, UDFs, procedures, sequences, ML models, and applications differ?
+<hr>
 
 <details>
-<summary>Show answer</summary>
+<summary><strong>6. Q:</strong> How do stages, file formats, pipes, UDFs, procedures, sequences, ML models, and applications differ?</summary>
+
+<br>
 
 **A:** Stages reference files; formats parse; pipes define ingestion; UDFs calculate; procedures run workflows; sequences allocate values; model objects store registered versions; applications are installed app objects.
 
 </details>
 
-**7. Q:** How do session variables, context functions, and session parameters differ?
+<hr>
 
 <details>
-<summary>Show answer</summary>
+<summary><strong>7. Q:</strong> How do session variables, context functions, and session parameters differ?</summary>
+
+<br>
 
 **A:** Variables store values, context functions report state, and parameters configure behavior.
 
 </details>
 
-**8. Q:** Which session parameter wins: account, user, or session? Do all object parameters follow that hierarchy?
+<hr>
 
 <details>
-<summary>Show answer</summary>
+<summary><strong>8. Q:</strong> Which session parameter wins: account, user, or session? Do all object parameters follow that hierarchy?</summary>
+
+<br>
 
 **A:** Explicit session settings win for session parameters. Object/account-only parameters have their own supported inheritance rules.
 
 </details>
 
-**9. Q:** When should you scale up instead of out? What do Standard and Economy scaling policies trade off?
+<hr>
 
 <details>
-<summary>Show answer</summary>
+<summary><strong>9. Q:</strong> When should you scale up instead of out? What do Standard and Economy scaling policies trade off?</summary>
+
+<br>
 
 **A:** Scale up for per-query resources, out for concurrency. Standard favors responsiveness; Economy favors utilization/cost.
 
 </details>
 
-**10. Q:** Why can auto-suspend reduce cost but make the next query slower?
+<hr>
 
 <details>
-<summary>Show answer</summary>
+<summary><strong>10. Q:</strong> Why can auto-suspend reduce cost but make the next query slower?</summary>
+
+<br>
 
 **A:** It reduces idle time but loses local table cache and introduces resume/startup work.
 
 </details>
 
-**11. Q:** What is the difference between Standard Gen1/Gen2 and Snowpark-optimized warehouses?
+<hr>
 
 <details>
-<summary>Show answer</summary>
+<summary><strong>11. Q:</strong> What is the difference between Standard Gen1/Gen2 and Snowpark-optimized warehouses?</summary>
+
+<br>
 
 **A:** Gen1/Gen2 are Standard generations; Snowpark-optimized is a memory-oriented type, not a requirement for all Python.
 
 </details>
 
-**12. Q:** What metadata enables micro-partition pruning? When is natural clustering sufficient?
+<hr>
 
 <details>
-<summary>Show answer</summary>
+<summary><strong>12. Q:</strong> What metadata enables micro-partition pruning? When is natural clustering sufficient?</summary>
+
+<br>
 
 **A:** Value ranges and related micro-partition metadata. Natural organization may be sufficient when representative filters already prune well.
 
 </details>
 
-**13. Q:** How do permanent, temporary, transient, external, Iceberg, and dynamic tables differ?
+<hr>
 
 <details>
-<summary>Show answer</summary>
+<summary><strong>13. Q:</strong> How do permanent, temporary, transient, external, Iceberg, and dynamic tables differ?</summary>
+
+<br>
 
 **A:** Permanent/temporary/transient define lifetimes/protection; external/Iceberg describe external/open-table access/storage/catalog; dynamic describes maintained query results.
 
 </details>
 
-**14. Q:** How do standard, materialized, and secure views differ?
+<hr>
 
 <details>
-<summary>Show answer</summary>
+<summary><strong>14. Q:</strong> How do standard, materialized, and secure views differ?</summary>
+
+<br>
 
 **A:** Standard stores SQL; materialized stores maintained results; secure controls definition/security behavior and may apply to either.
 
 </details>
 
-**15. Q:** When would you choose Notebooks, Streamlit, Snowpark, Cortex Search, Cortex Analyst, or Snowflake ML?
+<hr>
 
 <details>
-<summary>Show answer</summary>
+<summary><strong>15. Q:</strong> When would you choose Notebooks, Streamlit, Snowpark, Cortex Search, Cortex Analyst, or Snowflake ML?</summary>
+
+<br>
 
 **A:** Notebook for interactive analysis; Streamlit for apps; Snowpark for APIs near data; Search for retrieval; Analyst for semantic structured questions; ML for model development/lifecycle.
 
 </details>
 
-**16. Q:** What costs and access controls must you consider before running an AI or ML workload?
+<hr>
 
 <details>
-<summary>Show answer</summary>
+<summary><strong>16. Q:</strong> What costs and access controls must you consider before running an AI or ML workload?</summary>
+
+<br>
 
 **A:** Check runtime/warehouse/pool resources, permissions, service/model availability, storage/maintenance/inference charges, and output quality.
 

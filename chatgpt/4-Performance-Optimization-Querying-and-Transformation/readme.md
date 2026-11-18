@@ -123,8 +123,7 @@
 
 #### Exploding joins
 
-- An exploding join produces a row count much larger than expected.
-- Common causes:
+An exploding join produces far more rows than expected. Common causes include:
 
 - A missing join condition, creating a Cartesian product.
 - A many-to-many relationship when you expected one-to-many.
@@ -268,7 +267,7 @@ ALTER WAREHOUSE analytics_wh
   SET ENABLE_QUERY_ACCELERATION = TRUE;
 ```
 
-- Key points:
+Key points:
 
 - QAS is enabled at the warehouse level, but additional serverless compute is used only for eligible work.
 - It consumes credits separately from the warehouse. The scale factor limits the extra consumption rate.
@@ -296,10 +295,7 @@ SELECT PARSE_JSON(SYSTEM$ESTIMATE_QUERY_ACCELERATION('query-id'));
 
 - **Remember:** A search access path helps supported highly selective predicates, with storage and maintenance cost.
 
-- Search optimization builds a persistent search access path to make highly selective searches faster.
-- It is an Enterprise Edition feature.
-
-- Good fits:
+Search Optimization Service is an Enterprise Edition feature that builds a persistent access path for highly selective searches. Good fits include:
 
 - Equality or `IN` lookups that return a small number of rows.
 - Substring or regular-expression searches.
@@ -334,7 +330,7 @@ ALTER TABLE analytics.mart.orders
   CLUSTER BY (order_date, customer_id);
 ```
 
-- Use a clustering key when:
+Use a clustering key when:
 
 - The table is very large, typically multi-terabyte.
 - Queries repeatedly filter, join, or aggregate on the same columns.
@@ -385,7 +381,7 @@ CREATE OR REPLACE MATERIALIZED VIEW analytics.mart.daily_sales_mv
 
 - **Remember:** Preserve business meaning while reducing unnecessary rows, columns, joins, and duplicate-removal work.
 
-- Before adding an optimization service, make the query do less work:
+Before adding an optimization service, make the query do less work:
 
 - Select only required columns; avoid `SELECT *` on large tables.
 - Filter early and use selective predicates.
@@ -429,8 +425,7 @@ WHERE order_timestamp >= '2026-01-01'::TIMESTAMP_NTZ
 
 - **Remember:** Final-result reuse can avoid execution when exact-query, data, settings, and authorization conditions allow it.
 
-- Result reuse is enabled by default.
-- Snowflake can return a prior result when the identical query runs again and the underlying data has not changed.
+Result reuse is enabled by default. Snowflake can return a prior result when the identical query runs again and the underlying data has not changed.
 
 ```sql
 -- For a fair performance benchmark, force queries to execute rather than reuse a result.
@@ -534,10 +529,7 @@ FROM analytics.mart.orders;
 
 - **Remember:** COUNT(*) includes rows with NULL; COUNT(column) excludes NULL; filter rows, groups, and window results at the right stage.
 
-- Common aggregates are `COUNT`, `SUM`, `AVG`, `MIN`, and `MAX`.
-- `COUNT(*)` counts rows, while `COUNT(column)` excludes SQL `NULL` values.
-- `COUNT(DISTINCT column)` counts distinct non-NULL values.
-- Most numeric aggregates ignore NULL inputs; replacing NULL with zero changes the business meaning and sometimes the denominator.
+Common aggregates include `COUNT`, `SUM`, `AVG`, `MIN`, and `MAX`. `COUNT(*)` counts all rows; `COUNT(column)` excludes SQL `NULL`; and `COUNT(DISTINCT column)` counts distinct non-NULL values. Most numeric aggregates ignore NULL inputs, so replacing NULL with zero can change the meaning and denominator.
 
 ```sql
 -- WHERE filters orders before aggregation; HAVING filters customer groups.
@@ -600,10 +592,7 @@ QUALIFY ROW_NUMBER() OVER (
 
 #### Read JSON paths and cast values
 
-- From your loading course note: JSON keys are case-sensitive, while unquoted Snowflake column names are case-insensitive.
-- Extract a path from `VARIANT`, then cast it to the type you need.
-- Arrays use zero-based indexes.
-- Snowflake's two native path styles for traversing nested data are **dot notation** and **bracket notation**:
+JSON keys are case-sensitive, while unquoted Snowflake column names are case-insensitive. Extract a path from `VARIANT` and cast it to the type you need; arrays use zero-based indexes. Snowflake's two native path styles are **dot notation** and **bracket notation**:
   - Dot: `src:customer.name`. The colon starts the path from the `VARIANT` column; dots move through object keys.
   - Bracket: `src['customer']['name']`. Brackets select keys or array positions, such as `src:items[0]`.
   - You can mix them: `src:items[0].sku`. The colon is a path operator, not a third named notation. JSON key spelling and case matter. [Snowflake path syntax](https://docs.snowflake.com/en/user-guide/querying-semistructured#traversing-semi-structured-data)
@@ -700,9 +689,7 @@ WHERE relative_path LIKE '%.jpg';
 ALTER STAGE images_stage REFRESH;
 ```
 
-- Directory tables contain file metadata, not parsed image/document content.
-- URL generation and metadata refresh do not extract text or pixels.
-- Processing needs a supported file-processing function, application, or handler.
+Directory tables contain file metadata, not parsed image or document content. URL generation and metadata refresh do not extract text or pixels; use a supported function, application, or handler to process the file contents.
 - Generating a scoped URL directly requires stage access; an authorized view owner can expose selected scoped file references through a view.
 - A pre-signed URL grants temporary bearer access, so protect it like a temporary credential.
 - Check each function's authorization and expiration rules rather than treating the three URLs as interchangeable.
@@ -737,16 +724,14 @@ FROM parsed;
 
 - **Remember:** Approximation trades exactness for efficiency; treat it as supporting depth beyond the explicit guide bullets.
 
-- These appeared in your Tom Bailey course notes.
-- They are useful SQL knowledge, but they are **secondary** compared with the explicit C03 Domain 4 bullets above.
+These functions appeared in your Tom Bailey course notes. They are useful SQL knowledge, but **secondary** to the explicit C03 Domain 4 objectives above.
 
 - `APPROX_COUNT_DISTINCT`: fast estimated cardinality for very large data.
 - `APPROX_TOP_K`: estimated most frequent values.
 - `APPROX_PERCENTILE`: estimated distribution percentile.
 - `SAMPLE` / `TABLESAMPLE`: random subset for exploration or testing.
 
-- Use exact calculations when the answer must be exact.
-- Use approximations when a small accuracy trade-off is acceptable for lower cost or faster analysis.
+Use exact calculations when the answer must be exact. Use approximations when a small accuracy trade-off is acceptable for lower cost or faster analysis.
 
 ---
 
@@ -800,367 +785,446 @@ FROM parsed;
 
 
 
-- Answer each question yourself, then click **Show answer** below it.
-
-**1. Q:** What does Query Profile show that Query History alone does not?
+- Answer each question yourself, then click the question to reveal its answer.
 
 <details>
-<summary>Show answer</summary>
+<summary><strong>1. Q:</strong> What does Query Profile show that Query History alone does not?</summary>
+
+<br>
 
 **A:** The physical operators, intermediate rows, scan/pruning behavior, spill, and relative execution cost behind the summary timings.
 
 </details>
 
-**2. Q:** What does remote spilling usually mean, and what are two first responses?
+<hr>
 
 <details>
-<summary>Show answer</summary>
+<summary><strong>2. Q:</strong> What does remote spilling usually mean, and what are two first responses?</summary>
+
+<br>
 
 **A:** Large intermediate data exceeded memory/local capacity. Reduce unnecessary work or evaluate a larger warehouse; inspect magnitude and QAS context.
 
 </details>
 
-**3. Q:** How do you recognize inefficient pruning in a table-scan node?
+<hr>
 
 <details>
-<summary>Show answer</summary>
+<summary><strong>3. Q:</strong> How do you recognize inefficient pruning in a table-scan node?</summary>
+
+<br>
 
 **A:** Compare partitions scanned with total and inspect predicate selectivity; a legitimate broad query can need a full scan.
 
 </details>
 
-**4. Q:** What causes an exploding join?
+<hr>
 
 <details>
-<summary>Show answer</summary>
+<summary><strong>4. Q:</strong> What causes an exploding join?</summary>
+
+<br>
 
 **A:** Wrong/missing join keys, unexpected many-to-many matches, duplicate dimension keys, or excessive intermediate data.
 
 </details>
 
-**5. Q:** What is the difference between queue time and execution time?
+<hr>
 
 <details>
-<summary>Show answer</summary>
+<summary><strong>5. Q:</strong> What is the difference between queue time and execution time?</summary>
+
+<br>
 
 **A:** Queue time is waiting before execution; execution time is work by the query engine. Provisioning and transaction blocking are separate waits.
 
 </details>
 
-**6. Q:** Why should BI and ETL workloads often use different warehouses?
+<hr>
 
 <details>
-<summary>Show answer</summary>
+<summary><strong>6. Q:</strong> Why should BI and ETL workloads often use different warehouses?</summary>
+
+<br>
 
 **A:** Separate compute isolates latency-sensitive BI from heavy/unpredictable ETL and supports independent sizing/cache behavior.
 
 </details>
 
-**7. Q:** What is `QUERY_ATTRIBUTION_HISTORY` useful for, and what cost does it not represent fully?
+<hr>
 
 <details>
-<summary>Show answer</summary>
+<summary><strong>7. Q:</strong> What is <code>QUERY_ATTRIBUTION_HISTORY</code> useful for, and what cost does it not represent fully?</summary>
+
+<br>
 
 **A:** It attributes compute to query runs; it excludes idle cost and does not represent storage, transfer, or the whole invoice.
 
 </details>
 
-**8. Q:** When is QAS a strong fit?
+<hr>
 
 <details>
-<summary>Show answer</summary>
+<summary><strong>8. Q:</strong> When is QAS a strong fit?</summary>
+
+<br>
 
 **A:** Eligible large-scan work with selective filters/aggregations and variable workload shapes; evaluate eligibility and actual benefit.
 
 </details>
 
-**9. Q:** When is Search Optimization Service a stronger choice than a clustering key?
+<hr>
 
 <details>
-<summary>Show answer</summary>
+<summary><strong>9. Q:</strong> When is Search Optimization Service a stronger choice than a clustering key?</summary>
+
+<br>
 
 **A:** Very selective supported lookups, such as a rare customer ID, rather than broad range organization.
 
 </details>
 
-**10. Q:** When is a clustering key worth its ongoing cost?
+<hr>
 
 <details>
-<summary>Show answer</summary>
+<summary><strong>10. Q:</strong> When is a clustering key worth its ongoing cost?</summary>
+
+<br>
 
 **A:** When a large repeated workload has relevant pruning/organization issues and the benefit justifies serverless maintenance/storage cost.
 
 </details>
 
-**11. Q:** What limitation makes a materialized view unsuitable for a multi-table join result?
+<hr>
 
 <details>
-<summary>Show answer</summary>
+<summary><strong>11. Q:</strong> What limitation makes a materialized view unsuitable for a multi-table join result?</summary>
+
+<br>
 
 **A:** A materialized view definition is restricted to one base table; it is not a general multi-table result.
 
 </details>
 
-**12. Q:** What three requirements distinguish persisted-result reuse from simply rerunning a query?
+<hr>
 
 <details>
-<summary>Show answer</summary>
+<summary><strong>12. Q:</strong> What three requirements distinguish persisted-result reuse from simply rerunning a query?</summary>
+
+<br>
 
 **A:** Exact matching query text, unchanged/reusable underlying data and settings, and sufficient authorization; these still do not guarantee reuse.
 
 </details>
 
-**13. Q:** Which cache is lost when a warehouse suspends?
+<hr>
 
 <details>
-<summary>Show answer</summary>
+<summary><strong>13. Q:</strong> Which cache is lost when a warehouse suspends?</summary>
+
+<br>
 
 **A:** Warehouse-local table-data cache, not persisted results or platform metadata.
 
 </details>
 
-**14. Q:** How does an aggregate function differ from a window function?
+<hr>
 
 <details>
-<summary>Show answer</summary>
+<summary><strong>14. Q:</strong> How does an aggregate function differ from a window function?</summary>
+
+<br>
 
 **A:** Aggregate collapses rows to a group; a window computes across related rows while preserving rows.
 
 </details>
 
-**15. Q:** Why should you cast values extracted from `VARIANT`?
+<hr>
 
 <details>
-<summary>Show answer</summary>
+<summary><strong>15. Q:</strong> Why should you cast values extracted from <code>VARIANT</code>?</summary>
+
+<br>
 
 **A:** Path extraction returns VARIANT values; explicit casts establish useful SQL types and comparison/aggregation behavior.
 
 </details>
 
-**16. Q:** What does `LATERAL FLATTEN` do?
+<hr>
 
 <details>
-<summary>Show answer</summary>
+<summary><strong>16. Q:</strong> What does <code>LATERAL FLATTEN</code> do?</summary>
+
+<br>
 
 **A:** Expands array/object elements into rows while a lateral join retains parent-row context.
 
 </details>
 
-**17. Q:** Which URL function is best for temporary controlled access through a view?
+<hr>
 
 <details>
-<summary>Show answer</summary>
+<summary><strong>17. Q:</strong> Which URL function is best for temporary controlled access through a view?</summary>
+
+<br>
 
 **A:** BUILD_SCOPED_FILE_URL, with the appropriate stage/view access design.
 
 </details>
 
-**18. Q:** Which URL function does not bypass stage authorization?
+<hr>
 
 <details>
-<summary>Show answer</summary>
+<summary><strong>18. Q:</strong> Which URL function does not bypass stage authorization?</summary>
+
+<br>
 
 **A:** BUILD_STAGE_FILE_URL is an authenticated durable reference; it does not remove authorization requirements.
 
 </details>
 
-**19. Q:** What query changes should you make before enabling an optimization service?
+<hr>
 
 <details>
-<summary>Show answer</summary>
+<summary><strong>19. Q:</strong> What query changes should you make before enabling an optimization service?</summary>
+
+<br>
 
 **A:** Project needed columns, use appropriate filters, correct join keys/grain, remove unnecessary DISTINCT, and choose UNION ALL only when duplicates should remain.
 
 </details>
 
-**20. Q:** Which Domain 4 topics are course extensions rather than explicit C03 bullets?
+<hr>
 
 <details>
-<summary>Show answer</summary>
+<summary><strong>20. Q:</strong> Which Domain 4 topics are course extensions rather than explicit C03 bullets?</summary>
+
+<br>
 
 **A:** Approximate functions and sampling are course extensions/supporting SQL depth here, not separately named guide bullets.
 
 </details>
 
-**21. Q:** How do overload queueing, provisioning queueing, and transaction blocking differ?
+<hr>
 
 <details>
-<summary>Show answer</summary>
+<summary><strong>21. Q:</strong> How do overload queueing, provisioning queueing, and transaction blocking differ?</summary>
+
+<br>
 
 **A:** Overload: warehouse concurrency capacity. Provisioning: starting/resizing compute. Blocking: conflicting transactions/locks.
 
 </details>
 
-**22. Q:** Why can a small remote-spill value with QAS enabled require a different interpretation?
+<hr>
 
 <details>
-<summary>Show answer</summary>
+<summary><strong>22. Q:</strong> Why can a small remote-spill value with QAS enabled require a different interpretation?</summary>
+
+<br>
 
 **A:** QAS can produce a small remote-spill value; inspect operators and magnitude before diagnosing memory exhaustion.
 
 </details>
 
-**23. Q:** How do scale-up and scale-out solve different warehouse problems?
+<hr>
 
 <details>
-<summary>Show answer</summary>
+<summary><strong>23. Q:</strong> How do scale-up and scale-out solve different warehouse problems?</summary>
+
+<br>
 
 **A:** Scale up adds per-cluster resources; scale out adds concurrency clusters. Choose from profile/load evidence.
 
 </details>
 
-**24. Q:** Which optimization services require Enterprise or higher, and which add storage as well as compute cost?
+<hr>
 
 <details>
-<summary>Show answer</summary>
+<summary><strong>24. Q:</strong> Which optimization services require Enterprise or higher, and which add storage as well as compute cost?</summary>
+
+<br>
 
 **A:** QAS, Search Optimization, and materialized views require Enterprise+. Automatic Clustering is available across editions; search optimization/MVs add storage, and reclustering creates additional stored versions.
 
 </details>
 
-**25. Q:** How can the optimizer use a materialized view without naming it in the submitted SQL?
+<hr>
 
 <details>
-<summary>Show answer</summary>
+<summary><strong>25. Q:</strong> How can the optimizer use a materialized view without naming it in the submitted SQL?</summary>
+
+<br>
 
 **A:** The optimizer can rewrite an eligible base-table query to use the maintained result automatically.
 
 </details>
 
-**26. Q:** How does metadata caching differ from persisted results and warehouse-local data caching?
+<hr>
 
 <details>
-<summary>Show answer</summary>
+<summary><strong>26. Q:</strong> How does metadata caching differ from persisted results and warehouse-local data caching?</summary>
+
+<br>
 
 **A:** Metadata caches statistics/configuration; persisted results cache a final answer; warehouse cache retains scanned table data locally.
 
 </details>
 
-**27. Q:** Does `USE_CACHED_RESULT = FALSE` disable the warehouse data cache?
+<hr>
 
 <details>
-<summary>Show answer</summary>
+<summary><strong>27. Q:</strong> Does <code>USE_CACHED_RESULT = FALSE</code> disable the warehouse data cache?</summary>
+
+<br>
 
 **A:** No. It controls persisted final-result reuse; warehouse-local caching can still occur.
 
 </details>
 
-**28. Q:** How do `COUNT(*)`, `COUNT(column)`, and `COUNT(DISTINCT column)` treat NULLs?
+<hr>
 
 <details>
-<summary>Show answer</summary>
+<summary><strong>28. Q:</strong> How do <code>COUNT(*)</code>, <code>COUNT(column)</code>, and <code>COUNT(DISTINCT column)</code> treat NULLs?</summary>
+
+<br>
 
 **A:** COUNT(*) counts all rows; COUNT(column) counts non-NULL values; COUNT(DISTINCT column) counts distinct non-NULL values.
 
 </details>
 
-**29. Q:** When do you use WHERE, HAVING, and QUALIFY?
+<hr>
 
 <details>
-<summary>Show answer</summary>
+<summary><strong>29. Q:</strong> When do you use WHERE, HAVING, and QUALIFY?</summary>
+
+<br>
 
 **A:** WHERE filters input rows, HAVING filters groups, and QUALIFY filters window results.
 
 </details>
 
-**30. Q:** How do ROW_NUMBER, RANK, and DENSE_RANK handle ties?
+<hr>
 
 <details>
-<summary>Show answer</summary>
+<summary><strong>30. Q:</strong> How do ROW_NUMBER, RANK, and DENSE_RANK handle ties?</summary>
+
+<br>
 
 **A:** ROW_NUMBER gives unique numbers; RANK shares ranks with gaps; DENSE_RANK shares ranks without gaps.
 
 </details>
 
-**31. Q:** How do ROWS and RANGE frames differ when ordering values repeat?
+<hr>
 
 <details>
-<summary>Show answer</summary>
+<summary><strong>31. Q:</strong> How do ROWS and RANGE frames differ when ordering values repeat?</summary>
+
+<br>
 
 **A:** ROWS advances by physical row positions; RANGE includes peers within the ordering-value range, including ties at CURRENT ROW.
 
 </details>
 
-**32. Q:** Why should a latest-record window include a tie-breaker?
+<hr>
 
 <details>
-<summary>Show answer</summary>
+<summary><strong>32. Q:</strong> Why should a latest-record window include a tie-breaker?</summary>
+
+<br>
 
 **A:** Without a tie-breaker, equal ordering values can select different rows. Add a stable unique criterion where business logic requires one.
 
 </details>
 
-**33. Q:** How do PARSE_JSON, TRY_PARSE_JSON, SQL NULL, and JSON null differ?
+<hr>
 
 <details>
-<summary>Show answer</summary>
+<summary><strong>33. Q:</strong> How do PARSE_JSON, TRY_PARSE_JSON, SQL NULL, and JSON null differ?</summary>
+
+<br>
 
 **A:** PARSE_JSON parses valid text; TRY_PARSE_JSON yields SQL NULL for invalid input. Explicit JSON null is a VARIANT null detected with IS_NULL_VALUE; missing paths generally yield SQL NULL.
 
 </details>
 
-**34. Q:** Why can flattening two independent arrays inflate the output row count?
+<hr>
 
 <details>
-<summary>Show answer</summary>
+<summary><strong>34. Q:</strong> Why can flattening two independent arrays inflate the output row count?</summary>
+
+<br>
 
 **A:** Independent expansions can create combinations of elements; preserve the intended business grain and use correlation/aggregation as needed.
 
 </details>
 
-**35. Q:** What does a directory table store, and what additional step processes file contents?
+<hr>
 
 <details>
-<summary>Show answer</summary>
+<summary><strong>35. Q:</strong> What does a directory table store, and what additional step processes file contents?</summary>
+
+<br>
 
 **A:** A directory table stores file-level metadata. A separate supported parser/model/handler processes the actual bytes.
 
 </details>
 
-**36. Q:** How should you benchmark result-cache hits, warm warehouse-cache runs, and cold starts separately?
+<hr>
 
 <details>
-<summary>Show answer</summary>
+<summary><strong>36. Q:</strong> How should you benchmark result-cache hits, warm warehouse-cache runs, and cold starts separately?</summary>
+
+<br>
 
 **A:** Control persisted-result reuse explicitly, keep warehouse cache state known, capture query IDs/profiles, preserve input/role/warehouse conditions, and repeat representative measurements.
 
 </details>
 
-**37. Q:** Which two notations traverse nested semi-structured values, and what does the colon do?
+<hr>
 
 <details>
-<summary>Show answer</summary>
+<summary><strong>37. Q:</strong> Which two notations traverse nested semi-structured values, and what does the colon do?</summary>
+
+<br>
 
 **A:** Dot and bracket notation. The colon starts a path from the VARIANT column; dots or brackets then access nested keys or array positions.
 
 </details>
 
-**38. Q:** What do `DIRECTORY`, `TO_FILE`, and `AI_PARSE_DOCUMENT` each contribute to processing a staged PDF?
+<hr>
 
 <details>
-<summary>Show answer</summary>
+<summary><strong>38. Q:</strong> What do <code>DIRECTORY</code>, <code>TO_FILE</code>, and <code>AI_PARSE_DOCUMENT</code> each contribute to processing a staged PDF?</summary>
+
+<br>
 
 **A:** DIRECTORY lists staged-file metadata; TO_FILE creates a FILE reference; AI_PARSE_DOCUMENT extracts the document content as JSON-formatted text.
 
 </details>
 
-**39. Q:** Which tool estimates QAS benefits for a particular past query ID, and what are two limits of its estimate?
+<hr>
 
 <details>
-<summary>Show answer</summary>
+<summary><strong>39. Q:</strong> Which tool estimates QAS benefits for a particular past query ID, and what are two limits of its estimate?</summary>
+
+<br>
 
 **A:** `SYSTEM$ESTIMATE_QUERY_ACCELERATION`; query IDs must be from the last 14 days, and estimated times are not guaranteed or concurrency-aware.
 
 </details>
 
-**40. Q:** Can an identical query that calls an `IMMUTABLE` external function automatically reuse the prior persisted result?
+<hr>
 
 <details>
-<summary>Show answer</summary>
+<summary><strong>40. Q:</strong> Can an identical query that calls an <code>IMMUTABLE</code> external function automatically reuse the prior persisted result?</summary>
+
+<br>
 
 **A:** No. Queries containing external functions are excluded from automatic persisted-result reuse, even when the function is declared IMMUTABLE.
 
 </details>
+
 
 ## Official References
 

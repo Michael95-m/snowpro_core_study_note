@@ -134,13 +134,7 @@ CREATE SECURE VIEW study_public_customers AS
   FROM D1_STUDY.LAB.CUSTOMERS;
 ```
 
-- `SECURE` does not automatically grant access.
-- It does not replace row access or masking policies.
-- **Dynamic Tables:**
-  - Support pipeline definitions with broader transformation patterns.
-- **Materialized views:**
-  - Focus on eligible query acceleration.
-  - Can be selected by the optimizer.
+`SECURE` does not automatically grant access or replace row access and masking policies. **Dynamic Tables** support maintained transformation pipelines; **materialized views** focus on eligible query acceleration and can be selected by the optimizer.
 - Use [Domain 4](../4-Performance-Optimization-Querying-and-Transformation/readme.md) for materialized-view restrictions and tuning.
 
 <a id="iceberg-configuration-pruning-and-exercise-checkpoints"></a>
@@ -162,10 +156,7 @@ CREATE SECURE VIEW study_public_customers AS
 
 ### A pruning example without a large warehouse
 
-- Suppose one partition's recorded PRICE range is **10 to 100**.
-- `WHERE PRICE = 150` -> this partition cannot match and can be skipped.
-- `WHERE PRICE = 50` -> this partition is a candidate; the range does not prove a row with 50 actually exists.
-- This is a reasoning example, not a physical partition layout guaranteed by a six-row lab.
+Suppose one partition's recorded `PRICE` range is **10 to 100**. `WHERE PRICE = 150` can skip that partition, while `WHERE PRICE = 50` must still check it; the range does not prove that a row with 50 exists. This illustrates pruning logic, not a physical layout guaranteed by the six-row lab.
 - **Practice:** [04-storage-and-views.sql](exercises/04-storage-and-views.sql).
 - **Checkpoint:** the temporary `NAME_SHADOW` is selected first; dropping it reveals the permanent table.
 - **Checkpoint:** a standard view returns totals **AMER 300 / APAC 175 / EMEA 275** without storing its own result.
@@ -219,104 +210,125 @@ DROP TABLE D1_STUDY.LAB.HYBRID_ORDER_STATUS;
 
 
 
-**1. Q:** What makes micro-partitions immutable, and what metadata supports pruning?
-
 <details>
-<summary>Show answer</summary>
+<summary><strong>1. Q:</strong> What makes micro-partitions immutable, and what metadata supports pruning?</summary>
+
+<br>
 
 **A:** Existing micro-partitions are not edited in place; modifications create replacement storage. Value ranges/distinct metadata support pruning.
 
 </details>
 
-**2. Q:** How does natural clustering differ from an explicitly maintained clustering key?
+<hr>
 
 <details>
-<summary>Show answer</summary>
+<summary><strong>2. Q:</strong> How does natural clustering differ from an explicitly maintained clustering key?</summary>
+
+<br>
 
 **A:** Natural clustering follows load organization; an explicit key guides paid background maintenance for suitable workloads.
 
 </details>
 
-**3. Q:** Which table disappears at session end? Which survives but has no Fail-safe?
+<hr>
 
 <details>
-<summary>Show answer</summary>
+<summary><strong>3. Q:</strong> Which table disappears at session end? Which survives but has no Fail-safe?</summary>
+
+<br>
 
 **A:** Temporary ends with the session; transient persists until dropped and has no Fail-safe.
 
 </details>
 
-**4. Q:** Which permanent-table retention requires Enterprise or higher?
+<hr>
 
 <details>
-<summary>Show answer</summary>
+<summary><strong>4. Q:</strong> Which permanent-table retention requires Enterprise or higher?</summary>
+
+<br>
 
 **A:** More than one day, up to 90 days for supported permanent objects, needs Enterprise+ and explicit/inherited configuration.
 
 </details>
 
-**5. Q:** How do external tables and Iceberg tables differ?
+<hr>
 
 <details>
-<summary>Show answer</summary>
+<summary><strong>5. Q:</strong> How do external tables and Iceberg tables differ?</summary>
+
+<br>
 
 **A:** An external table exposes external files read-only; Iceberg adds an open table format, snapshots, and catalog-managed metadata with configuration-dependent operations.
 
 </details>
 
-**6. Q:** What are the separate Iceberg catalog and storage decisions?
+<hr>
 
 <details>
-<summary>Show answer</summary>
+<summary><strong>6. Q:</strong> What are the separate Iceberg catalog and storage decisions?</summary>
+
+<br>
 
 **A:** Choose who manages catalog metadata separately from where data files are stored and how storage access is configured.
 
 </details>
 
-**7. Q:** Why does a ten-minute target lag not mean a refresh exactly every ten minutes?
+<hr>
 
 <details>
-<summary>Show answer</summary>
+<summary><strong>7. Q:</strong> Why does a ten-minute target lag not mean a refresh exactly every ten minutes?</summary>
+
+<br>
 
 **A:** Target lag guides freshness scheduling and can be exceeded; it is not a fixed ten-minute timer.
 
 </details>
 
-**8. Q:** How do secure, materialized, and standard views differ?
+<hr>
 
 <details>
-<summary>Show answer</summary>
+<summary><strong>8. Q:</strong> How do secure, materialized, and standard views differ?</summary>
+
+<br>
 
 **A:** Standard stores a query; materialized stores maintained results; SECURE protects view behavior/definition and can apply to either.
 
 </details>
 
-**9. Q:** How do an external volume and a catalog integration have different jobs?
+<hr>
 
 <details>
-<summary>Show answer</summary>
+<summary><strong>9. Q:</strong> How do an external volume and a catalog integration have different jobs?</summary>
+
+<br>
 
 **A:** An external volume configures supported external Iceberg storage access; a catalog integration connects supported catalog/metadata sources.
 
 </details>
 
-**10. Q:** When would you choose a hybrid table, and what is special about its primary key?
+<hr>
 
 <details>
-<summary>Show answer</summary>
+<summary><strong>10. Q:</strong> When would you choose a hybrid table, and what is special about its primary key?</summary>
+
+<br>
 
 **A:** Choose it for fast point lookups and frequent small row changes. Its primary key is required and enforced, unlike the generally informational primary key on a standard Snowflake table.
 
 </details>
 
-**11. Q:** Why does `UPDATE external_csv_table ...` fail even when the CSV values are valid?
+<hr>
 
 <details>
-<summary>Show answer</summary>
+<summary><strong>11. Q:</strong> Why does <code>UPDATE external_csv_table ...</code> fail even when the CSV values are valid?</summary>
+
+<br>
 
 **A:** External tables are read-only regardless of file format; change the files at their source and refresh file metadata as needed.
 
 </details>
+
 
 ## Official references
 

@@ -50,26 +50,22 @@
   - Charts.
   - Filters.
   - Other controls.
-- Choose Streamlit when end users need an app rather than editing analysis cells.
-- The app runs inside Snowflake's governed environment.
+
+Choose Streamlit when end users need an app rather than editing analysis cells. It runs inside Snowflake's governed environment.
 - Check its:
   - Configured runtime.
   - Owner/caller privileges.
   - Data access.
   - Compute.
 
-- A Streamlit app is not automatically a distributed **Snowflake Native App**.
-- Native Apps add packaging and installation for consumers.
+A Streamlit app is not automatically a distributed **Snowflake Native App**. Native Apps add packaging and installation for consumers.
 - **Related note:** [sharing course chapter](../../study-notes/9-Storage-Data-Protection-and-sharing/readme.md).
 
 <a id="snowpark"></a>
 
 ## 1.6.4 Snowpark
 
-- **Snowpark** provides APIs for data processing in Snowflake.
-- Its **DataFrames** represent relational operations.
-- Transformations are generally **lazy**:
-  - An action triggers execution.
+**Snowpark** provides APIs for data processing in Snowflake. Its **DataFrames** represent relational operations; transformations are generally **lazy** and run when an action triggers execution.
 
 ```python
 # Requires an authenticated Snowpark session with source-table access.
@@ -106,8 +102,7 @@ apac_orders.show()  # Action: execute and display a small result.
 SELECT AI_COMPLETE('supported-model-name', 'Explain micro-partition pruning briefly.');
 ```
 
-- The example shows the function-call shape.
-- It does not provision a model.
+The example shows the function-call shape; it does not provision a model.
 - Before using it, check:
   1. Access roles.
   2. Supported model and region.
@@ -155,12 +150,7 @@ SELECT SNOWFLAKE.CORTEX.SEARCH_PREVIEW(
 
 ### Choose between Search and Analyst
 
-- **“Revenue by region last quarter”** needs trusted metric definitions and SQL execution: use Cortex Analyst.
-- **“Find the manual's warranty clause”** is a text-retrieval problem: use Cortex Search.
-- Do not assume either will return correct results without the appropriate:
-  - Data preparation.
-  - Semantic definitions.
-  - Validation.
+Use **Cortex Analyst** for a structured question such as “Revenue by region last quarter,” which needs trusted metric definitions and SQL. Use **Cortex Search** for a text-retrieval question such as “Find the manual's warranty clause.” Both need appropriate data preparation and validation; Analyst also needs sound semantic definitions.
 
 <a id="snowflake-ml-and-model-objects"></a>
 
@@ -180,11 +170,7 @@ SELECT SNOWFLAKE.CORTEX.SEARCH_PREVIEW(
 | Register a version | Store model artifacts, metadata, and callable methods. |
 | Deploy/infer and monitor | Produce predictions and evaluate behavior over time. |
 
-- **Traditional ML:** predicts from learned patterns, such as churn probabilities.
-- **Cortex generative functions:** use managed models for tasks such as summarization.
-- **Notebooks and Snowpark:**
-  - Can support either workflow.
-  - Are development/processing tools, not one particular model family.
+**Traditional ML** predicts from learned patterns, such as churn probabilities, while **Cortex generative functions** use managed models for tasks such as summarization. Notebooks and Snowpark can support either workflow; they are development and processing tools, not model families.
 
 <a id="a-practical-ai-workflow-and-exercise-checkpoints"></a>
 
@@ -221,113 +207,136 @@ SELECT SNOWFLAKE.CORTEX.SEARCH_PREVIEW(
 
 
 
-**1. Q:** When is a notebook more suitable than a Streamlit app?
-
 <details>
-<summary>Show answer</summary>
+<summary><strong>1. Q:</strong> When is a notebook more suitable than a Streamlit app?</summary>
+
+<br>
 
 **A:** Notebook for exploratory SQL/Python/Markdown; Streamlit for an interactive application intended for end users.
 
 </details>
 
-**2. Q:** What triggers a lazy Snowpark DataFrame to execute?
+<hr>
 
 <details>
-<summary>Show answer</summary>
+<summary><strong>2. Q:</strong> What triggers a lazy Snowpark DataFrame to execute?</summary>
+
+<br>
 
 **A:** An action such as show(), collect(), or an appropriate write triggers execution of a lazy DataFrame plan.
 
 </details>
 
-**3. Q:** Why can collecting a large DataFrame to a client be a problem?
+<hr>
 
 <details>
-<summary>Show answer</summary>
+<summary><strong>3. Q:</strong> Why can collecting a large DataFrame to a client be a problem?</summary>
+
+<br>
 
 **A:** It transfers results into client memory/network; large results can exhaust resources. Filter/aggregate first.
 
 </details>
 
-**4. Q:** How does using a managed AI function differ from training your own model?
+<hr>
 
 <details>
-<summary>Show answer</summary>
+<summary><strong>4. Q:</strong> How does using a managed AI function differ from training your own model?</summary>
+
+<br>
 
 **A:** Managed AI calls available model capabilities; custom ML training fits and evaluates your own model and inputs.
 
 </details>
 
-**5. Q:** Which service fits document retrieval versus structured business questions?
+<hr>
 
 <details>
-<summary>Show answer</summary>
+<summary><strong>5. Q:</strong> Which service fits document retrieval versus structured business questions?</summary>
+
+<br>
 
 **A:** Cortex Search for relevant indexed content; Cortex Analyst for structured-data questions using semantic definitions and SQL.
 
 </details>
 
-**6. Q:** Why does a Cortex Search service's owner's-rights model matter?
+<hr>
 
 <details>
-<summary>Show answer</summary>
+<summary><strong>6. Q:</strong> Why does a Cortex Search service's owner's-rights model matter?</summary>
+
+<br>
 
 **A:** Search uses service-owner rights, so service usage can expose indexed content without direct source-table access; control service access.
 
 </details>
 
-**7. Q:** What are the Model Registry and Feature Store for?
+<hr>
 
 <details>
-<summary>Show answer</summary>
+<summary><strong>7. Q:</strong> What are the Model Registry and Feature Store for?</summary>
+
+<br>
 
 **A:** Feature Store manages reusable governed inputs; Model Registry manages trained model artifacts, versions, and callable methods.
 
 </details>
 
-**8. Q:** Which runtime, privileges, costs, and quality checks apply to the chosen workflow?
+<hr>
 
 <details>
-<summary>Show answer</summary>
+<summary><strong>8. Q:</strong> Which runtime, privileges, costs, and quality checks apply to the chosen workflow?</summary>
+
+<br>
 
 **A:** Check selected runtime/compute, source/service/model privileges, ongoing charges, and output/model quality.
 
 </details>
 
-**9. Q:** How do semantic definitions and verified queries support Analyst development and evaluation?
+<hr>
 
 <details>
-<summary>Show answer</summary>
+<summary><strong>9. Q:</strong> How do semantic definitions and verified queries support Analyst development and evaluation?</summary>
+
+<br>
 
 **A:** Semantic definitions describe the business data; verified question/SQL pairs provide reviewed expected answers for guidance/evaluation.
 
 </details>
 
-**10. Q:** Does killing a notebook kernel prove that its service/compute pool stopped?
+<hr>
 
 <details>
-<summary>Show answer</summary>
+<summary><strong>10. Q:</strong> Does killing a notebook kernel prove that its service/compute pool stopped?</summary>
+
+<br>
 
 **A:** No. Check/stop the actual notebook service/runtime and independent compute resources, not just the kernel or SQL warehouse.
 
 </details>
 
-**11. Q:** Which function extracts content from a staged document, and what value type does it accept?
+<hr>
 
 <details>
-<summary>Show answer</summary>
+<summary><strong>11. Q:</strong> Which function extracts content from a staged document, and what value type does it accept?</summary>
+
+<br>
 
 **A:** `AI_PARSE_DOCUMENT` accepts a `FILE` value, which you can construct with `TO_FILE` from a stage path or file URL.
 
 </details>
 
-**12. Q:** How can a Cortex Search primary key reduce refresh work, and which SQL function tests the service during development?
+<hr>
 
 <details>
-<summary>Show answer</summary>
+<summary><strong>12. Q:</strong> How can a Cortex Search primary key reduce refresh work, and which SQL function tests the service during development?</summary>
+
+<br>
 
 **A:** A unique text primary key lets the service use an optimized path for changed rows; test with `SNOWFLAKE.CORTEX.SEARCH_PREVIEW`.
 
 </details>
+
 
 ## Official references
 

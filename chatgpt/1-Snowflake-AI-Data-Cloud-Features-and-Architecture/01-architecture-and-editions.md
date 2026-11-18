@@ -10,13 +10,7 @@
 
 ## 1.1.1 What is Snowflake?
 
-- **Snowflake** is a cloud data platform for analytics, engineering, applications, collaboration, and AI/ML.
-- Snowflake operates the platform on supported public-cloud infrastructure.
-- Customers configure:
-  - Data.
-  - Access.
-  - Workloads.
-- Snowflake handles the installation and maintenance of the database servers.
+**Snowflake** is a cloud data platform for analytics, engineering, applications, collaboration, and AI/ML. It runs on supported public-cloud infrastructure. Customers configure their data, access, and workloads; Snowflake installs and maintains the database servers.
 
 <p align="center"><img src="../../img/what_is_snowflake.png" alt="Snowflake platform overview from the course notes" width="560"></p>
 
@@ -84,9 +78,7 @@
 
 ### 1. MPP within a cluster versus independent warehouses
 
-- **Massively Parallel Processing (MPP)** distributes query work across multiple nodes inside a compute cluster.
-- The nodes work in parallel.
-- They combine their intermediate results as needed.
+**Massively Parallel Processing (MPP)** distributes a query across nodes in one compute cluster. The nodes work in parallel and combine their intermediate results when needed.
 
 - For `SELECT SUM(amount) FROM orders`:
   1. Different nodes process different portions of the data.
@@ -101,12 +93,7 @@
 
 ### 2. Extended Time Travel availability versus configured retention
 
-- **Enterprise or higher** allows up to **90 days** of Time Travel for supported permanent tables.
-- Upgrading does not automatically set every table to 30 or 90 days.
-- The standard default is **1 day**.
-- The effective retention depends on:
-  - Explicit configuration.
-  - Inherited defaults.
+**Enterprise or higher** allows up to **90 days** of Time Travel for supported permanent tables, but upgrading does not change every table to 30 or 90 days. The standard default is **1 day**; effective retention comes from an explicit setting or an inherited default.
 
 - Use an authorized role to configure an existing permanent table for 30 days:
 
@@ -116,8 +103,7 @@ ALTER TABLE D1_STUDY.LAB.ORDERS
   SET DATA_RETENTION_TIME_IN_DAYS = 30;
 ```
 
-- Temporary and transient tables remain limited to **at most one day**, even on higher editions.
-- Increasing retention does not recover history that has already been purged.
+Temporary and transient tables remain limited to **at most one day**, even on higher editions. Increasing retention does not recover history already purged.
 
 - **Reference:** [Time Travel retention](https://docs.snowflake.com/en/user-guide/data-time-travel#data-retention-period).
 
@@ -153,77 +139,92 @@ ALTER TABLE D1_STUDY.LAB.ORDERS
 
 
 
-**1. Q:** Why does Snowflake combine characteristics of shared disk and shared nothing?
-
 <details>
-<summary>Show answer</summary>
+<summary><strong>1. Q:</strong> Why does Snowflake combine characteristics of shared disk and shared nothing?</summary>
+
+<br>
 
 **A:** It combines shared persistent storage with independent compute clusters that use parallel processing.
 
 </details>
 
-**2. Q:** Which layer parses SQL? Which executes it? Which retains data after suspension?
+<hr>
 
 <details>
-<summary>Show answer</summary>
+<summary><strong>2. Q:</strong> Which layer parses SQL? Which executes it? Which retains data after suspension?</summary>
+
+<br>
 
 **A:** Cloud services parses and optimizes; warehouse compute executes; database storage retains managed data.
 
 </details>
 
-**3. Q:** What is independent compute isolation useful for?
+<hr>
 
 <details>
-<summary>Show answer</summary>
+<summary><strong>3. Q:</strong> What is independent compute isolation useful for?</summary>
+
+<br>
 
 **A:** Separating ETL, BI, or teams prevents them competing for the same warehouse CPU/memory and supports separate sizing.
 
 </details>
 
-**4. Q:** Which capabilities suggest Enterprise versus Business Critical?
+<hr>
 
 <details>
-<summary>Show answer</summary>
+<summary><strong>4. Q:</strong> Which capabilities suggest Enterprise versus Business Critical?</summary>
+
+<br>
 
 **A:** Enterprise: multi-cluster, extended permanent-object retention, masking/row access, materialized views. Business Critical: features such as Tri-Secret Secure and private connectivity.
 
 </details>
 
-**5. Q:** How is VPS different from merely using a private endpoint?
+<hr>
 
 <details>
-<summary>Show answer</summary>
+<summary><strong>5. Q:</strong> How is VPS different from merely using a private endpoint?</summary>
+
+<br>
 
 **A:** Private connectivity changes the network path; VPS provides the additional isolated Snowflake environment/hardware boundary.
 
 </details>
 
-**6. Q:** How does MPP within a cluster differ from using separate warehouses for ETL and BI?
+<hr>
 
 <details>
-<summary>Show answer</summary>
+<summary><strong>6. Q:</strong> How does MPP within a cluster differ from using separate warehouses for ETL and BI?</summary>
+
+<br>
 
 **A:** MPP splits work among nodes within a cluster; separate warehouses isolate workloads while accessing shared persistent data.
 
 </details>
 
-**7. Q:** After upgrading to Enterprise, what must you configure to give an existing permanent table 30 days of Time Travel?
+<hr>
 
 <details>
-<summary>Show answer</summary>
+<summary><strong>7. Q:</strong> After upgrading to Enterprise, what must you configure to give an existing permanent table 30 days of Time Travel?</summary>
+
+<br>
 
 **A:** Set DATA_RETENTION_TIME_IN_DAYS = 30 on the supported permanent table or its applicable parent default; upgrading alone does not set it.
 
 </details>
 
-**8. Q:** Does a partition range containing PRICE = 50 prove that a matching row exists?
+<hr>
 
 <details>
-<summary>Show answer</summary>
+<summary><strong>8. Q:</strong> Does a partition range containing PRICE = 50 prove that a matching row exists?</summary>
+
+<br>
 
 **A:** No. A partition whose range includes 50 is a candidate; execution still checks actual row values.
 
 </details>
+
 
 ## Official references
 

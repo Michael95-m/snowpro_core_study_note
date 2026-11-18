@@ -172,95 +172,114 @@ FROM TABLE(GENERATOR(ROWCOUNT => 3));
 
 
 
-**1. Q:** Where do warehouses, shares, schemas, pipes, and UDFs sit in the hierarchy?
-
 <details>
-<summary>Show answer</summary>
+<summary><strong>1. Q:</strong> Where do warehouses, shares, schemas, pipes, and UDFs sit in the hierarchy?</summary>
+
+<br>
 
 **A:** Warehouses/shares are account-level; schemas belong to databases; pipes/UDFs belong to schemas.
 
 </details>
 
-**2. Q:** How do stage, file format, and pipe differ?
+<hr>
 
 <details>
-<summary>Show answer</summary>
+<summary><strong>2. Q:</strong> How do stage, file format, and pipe differ?</summary>
+
+<br>
 
 **A:** A stage stores/references files; a file format stores parsing settings; a pipe stores an ingestion definition.
 
 </details>
 
-**3. Q:** When do you choose a UDF versus a stored procedure?
+<hr>
 
 <details>
-<summary>Show answer</summary>
+<summary><strong>3. Q:</strong> When do you choose a UDF versus a stored procedure?</summary>
+
+<br>
 
 **A:** Use a UDF for reusable expressions/table-returning calculations; use a procedure for an authorized workflow invoked with CALL.
 
 </details>
 
-**4. Q:** Why is a sequence not a reliable row-count or gap-free invoice mechanism?
+<hr>
 
 <details>
-<summary>Show answer</summary>
+<summary><strong>4. Q:</strong> Why is a sequence not a reliable row-count or gap-free invoice mechanism?</summary>
+
+<br>
 
 **A:** Values can be allocated without becoming committed business rows, so gaps are possible.
 
 </details>
 
-**5. Q:** How does a fully qualified name differ from the current database/schema context?
+<hr>
 
 <details>
-<summary>Show answer</summary>
+<summary><strong>5. Q:</strong> How does a fully qualified name differ from the current database/schema context?</summary>
+
+<br>
 
 **A:** A fully qualified name specifies database.schema.object explicitly; an unqualified name uses session defaults.
 
 </details>
 
-**6. Q:** How do a session variable and a session parameter differ?
+<hr>
 
 <details>
-<summary>Show answer</summary>
+<summary><strong>6. Q:</strong> How do a session variable and a session parameter differ?</summary>
+
+<br>
 
 **A:** A session variable stores a referenced value; a session parameter configures supported behavior.
 
 </details>
 
-**7. Q:** Which session-parameter level wins, and what does `UNSET` do?
+<hr>
 
 <details>
-<summary>Show answer</summary>
+<summary><strong>7. Q:</strong> Which session-parameter level wins, and what does <code>UNSET</code> do?</summary>
+
+<br>
 
 **A:** An explicit session value wins over user/account defaults for a session parameter. UNSET removes the override so inheritance/defaults can apply.
 
 </details>
 
-**8. Q:** What are the scopes of a storage integration and a Git repository object?
+<hr>
 
 <details>
-<summary>Show answer</summary>
+<summary><strong>8. Q:</strong> What are the scopes of a storage integration and a Git repository object?</summary>
+
+<br>
 
 **A:** Storage integration: account-level. Git repository clone: schema-level. The clone is separate from its API integration.
 
 </details>
 
-**9. Q:** What does a table function return, and does TABLE(...) create permanent storage?
+<hr>
 
 <details>
-<summary>Show answer</summary>
+<summary><strong>9. Q:</strong> What does a table function return, and does TABLE(...) create permanent storage?</summary>
+
+<br>
 
 **A:** Rows and columns that can be queried with FROM TABLE(...); it does not create a permanent table.
 
 </details>
 
-**10. Q:** What object does `mydb..orders` name? Does it search schemas or use the current schema?
+<hr>
 
 <details>
-<summary>Show answer</summary>
+<summary><strong>10. Q:</strong> What object does <code>mydb..orders</code> name? Does it search schemas or use the current schema?</summary>
+
+<br>
 
 **A:** `mydb.PUBLIC.orders`; the empty schema segment resolves specifically to PUBLIC.
 
 </details>
+
 
 ## Official references
 

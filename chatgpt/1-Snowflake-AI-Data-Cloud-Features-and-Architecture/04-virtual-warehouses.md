@@ -10,9 +10,7 @@
 
 ## 1.4.1 Purpose and warehouse types
 
-- A **virtual warehouse** supplies compute, memory, and local storage for warehouse-backed work.
-- Multiple warehouses can access the same persistent tables.
-- Each maintains independent compute and data caches.
+A **virtual warehouse** supplies compute, memory, and local storage for warehouse-backed work. Multiple warehouses can access the same persistent tables while keeping their compute and local data caches independent.
 
 | Type | Best fit | Remember |
 | --- | --- | --- |
@@ -20,8 +18,7 @@
 | Standard Gen2 | General workloads on newer compute hardware/software improvements. | A generation choice, not a different edition or extra cluster. |
 | Snowpark-optimized | Memory-intensive Snowpark workloads, including some ML training. | Configurable memory/architecture; ordinary SQL is not guaranteed to benefit. |
 
-- Snowpark code can run on a **Standard warehouse**.
-- “Uses Python” alone is not enough reason to select **Snowpark-optimized**.
+Snowpark code can run on a **Standard warehouse**. Using Python alone is not a reason to select **Snowpark-optimized**.
 - Check these for your account rather than relying on an old recording:
   - Generation availability.
   - Sizing.
@@ -64,8 +61,7 @@ CREATE WAREHOUSE study_wh
 | Scale up/down | Size/resources of a cluster. | An individual query needs more memory or processing power, or a smaller size meets its target. |
 | Scale out/in | Number of running clusters in a multi-cluster warehouse. | Many concurrent queries cause queues, or demand later falls. |
 
-- Upsizing does not guarantee a proportional speedup.
-- Extra clusters primarily improve **concurrency**.
+Upsizing does not guarantee a proportional speedup; extra clusters primarily improve **concurrency**.
 - For an exploding join or large remote spill:
   1. Inspect the SQL.
   2. Inspect **Query Profile**.
@@ -160,86 +156,103 @@ SHOW PARAMETERS LIKE 'MAX_CONCURRENCY_LEVEL' IN WAREHOUSE study_wh;
 
 
 
-**1. Q:** When is Snowpark-optimized preferable to Standard?
-
 <details>
-<summary>Show answer</summary>
+<summary><strong>1. Q:</strong> When is Snowpark-optimized preferable to Standard?</summary>
+
+<br>
 
 **A:** For workloads needing its additional memory/architecture, such as suitable memory-intensive ML/Snowpark work; Python alone is insufficient.
 
 </details>
 
-**2. Q:** How do type, generation, size, and cluster count differ?
+<hr>
 
 <details>
-<summary>Show answer</summary>
+<summary><strong>2. Q:</strong> How do type, generation, size, and cluster count differ?</summary>
+
+<br>
 
 **A:** Type is workload-oriented compute; generation is the Standard hardware/software generation; size is resources per cluster; count is concurrent cluster capacity.
 
 </details>
 
-**3. Q:** Which setting reduces overload queues: size, cluster count, or either depending on evidence?
+<hr>
 
 <details>
-<summary>Show answer</summary>
+<summary><strong>3. Q:</strong> Which setting reduces overload queues: size, cluster count, or either depending on evidence?</summary>
+
+<br>
 
 **A:** Investigate the queue first; multi-cluster scale-out/isolation can help concurrency, while size can also affect throughput for an appropriate workload.
 
 </details>
 
-**4. Q:** What differs between Standard and Economy scaling policies?
+<hr>
 
 <details>
-<summary>Show answer</summary>
+<summary><strong>4. Q:</strong> What differs between Standard and Economy scaling policies?</summary>
+
+<br>
 
 **A:** Standard starts extra capacity more readily; Economy favors existing-cluster utilization and can allow more waiting.
 
 </details>
 
-**5. Q:** How do auto-suspend, auto-resume, and initially suspended differ?
+<hr>
 
 <details>
-<summary>Show answer</summary>
+<summary><strong>5. Q:</strong> How do auto-suspend, auto-resume, and initially suspended differ?</summary>
+
+<br>
 
 **A:** AUTO_SUSPEND is idle timeout; AUTO_RESUME permits automatic restart; INITIALLY_SUSPENDED controls creation state.
 
 </details>
 
-**6. Q:** Why might one shared warehouse be unsuitable for BI and heavy ETL?
+<hr>
 
 <details>
-<summary>Show answer</summary>
+<summary><strong>6. Q:</strong> Why might one shared warehouse be unsuitable for BI and heavy ETL?</summary>
+
+<br>
 
 **A:** Long ETL can compete with latency-sensitive BI for the same compute and cache.
 
 </details>
 
-**7. Q:** How does suspension affect local cache versus table data?
+<hr>
 
 <details>
-<summary>Show answer</summary>
+<summary><strong>7. Q:</strong> How does suspension affect local cache versus table data?</summary>
+
+<br>
 
 **A:** Suspension clears warehouse-local cached table data; persistent tables remain.
 
 </details>
 
-**8. Q:** Does AUTO_SUSPEND cancel an active query after that many seconds?
+<hr>
 
 <details>
-<summary>Show answer</summary>
+<summary><strong>8. Q:</strong> Does AUTO_SUSPEND cancel an active query after that many seconds?</summary>
+
+<br>
 
 **A:** No. An idle timer does not cancel active work. A statement timeout is separate.
 
 </details>
 
-**9. Q:** Does stopping a SQL warehouse necessarily stop notebook runtime compute?
+<hr>
 
 <details>
-<summary>Show answer</summary>
+<summary><strong>9. Q:</strong> Does stopping a SQL warehouse necessarily stop notebook runtime compute?</summary>
+
+<br>
 
 **A:** No. Stop/check the independent notebook service/runtime or compute pool separately.
 
 </details>
+
 
 ## Official references
 

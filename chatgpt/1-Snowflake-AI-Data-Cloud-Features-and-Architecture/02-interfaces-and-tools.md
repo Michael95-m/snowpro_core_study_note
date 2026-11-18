@@ -82,13 +82,7 @@ snow sql -c learning -f exercise.sql
 
 ### 1. Snowflake CLI versus SnowSQL
 
-- These are separate command-line clients:
-
-- **Snowflake CLI** uses the `snow` command.
-- **SnowSQL** uses the `snowsql` command.
-
-- Run the following directly in your terminal using **Snowflake CLI**.
-- You do not first enter a SnowSQL session:
+**Snowflake CLI** and **SnowSQL** are separate command-line clients: the first uses `snow`, and the second uses `snowsql`. Run this Snowflake CLI command directly in a terminal; it does not require a SnowSQL session:
 
 ```bash
 snow sql -c learning -f exercise.sql
@@ -141,59 +135,70 @@ snow sql -c learning -f "chatgpt/1-Snowflake-AI-Data-Cloud-Features-and-Architec
 
 
 
-**1. Q:** Which tool suits browser administration, scripted SQL, or local IDE development?
-
 <details>
-<summary>Show answer</summary>
+<summary><strong>1. Q:</strong> Which tool suits browser administration, scripted SQL, or local IDE development?</summary>
+
+<br>
 
 **A:** Snowsight for browser work, Snowflake CLI for scripted terminal operations, and the VS Code extension for IDE work.
 
 </details>
 
-**2. Q:** Why does the same SQL work in one session and fail in another?
+<hr>
 
 <details>
-<summary>Show answer</summary>
+<summary><strong>2. Q:</strong> Why does the same SQL work in one session and fail in another?</summary>
+
+<br>
 
 **A:** Different active roles, database/schema context, warehouse, identifier case, or parameters can change behavior.
 
 </details>
 
-**3. Q:** What distinguishes a shell command from Snowflake SQL?
+<hr>
 
 <details>
-<summary>Show answer</summary>
+<summary><strong>3. Q:</strong> What distinguishes a shell command from Snowflake SQL?</summary>
+
+<br>
 
 **A:** A shell command invokes a client such as snow; SQL is submitted to Snowflake by that client.
 
 </details>
 
-**4. Q:** Which client workflow uploads a local file to an internal stage?
+<hr>
 
 <details>
-<summary>Show answer</summary>
+<summary><strong>4. Q:</strong> Which client workflow uploads a local file to an internal stage?</summary>
+
+<br>
 
 **A:** Use PUT through a supported client to an internal stage, then COPY INTO to load rows.
 
 </details>
 
-**5. Q:** Does changing the client from Snowsight to VS Code grant additional table privileges?
+<hr>
 
 <details>
-<summary>Show answer</summary>
+<summary><strong>5. Q:</strong> Does changing the client from Snowsight to VS Code grant additional table privileges?</summary>
+
+<br>
 
 **A:** No. The client still needs authentication, role privileges, correct context, and query compute.
 
 </details>
 
-**6. Q:** What does Partner Connect help you set up, and what Snowflake objects can the connection create?
+<hr>
 
 <details>
-<summary>Show answer</summary>
+<summary><strong>6. Q:</strong> What does Partner Connect help you set up, and what Snowflake objects can the connection create?</summary>
+
+<br>
 
 **A:** A supported third-party service trial connected to Snowflake; setup can create a partner user, role, warehouse, and database. Review any access granted to the partner.
 
 </details>
+
 
 ## Official references
 

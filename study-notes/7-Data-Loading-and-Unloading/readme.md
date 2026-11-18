@@ -9,9 +9,7 @@
 
 For the C03 object hierarchy and the distinction between stages, file formats, and pipes, see [Domain 1.3](../../chatgpt/1-Snowflake-AI-Data-Cloud-Features-and-Architecture/03-objects-sessions-and-parameters.md). This section keeps the loading/unloading operations and examples.
 
-- Stages are storage locations for files used in Snowflake loading and unloading.
-- **Internal stages** store files inside Snowflake.
-- **External stages** reference files in cloud storage, such as Amazon S3, Google Cloud Storage, or Microsoft Azure.
+Stages hold or reference files used for loading and unloading. **Internal stages** store files inside Snowflake; **external stages** reference cloud files in Amazon S3, Google Cloud Storage, or Microsoft Azure.
 
 ### Internal Stages
 
