@@ -7,5 +7,5 @@
 
 - **[img](img/)** contains the images used by both collections.
 - The images stay in this shared folder; each note uses a relative path to the same image file.
-- **[SnowPro Core C03 study guide](SnowProCoreStudyGuideC03.pdf)** stays at the repository root.
+- **[SnowPro Core C03 study guide](https://learn.snowflake.com/en/certifications/snowpro-core-c03/)** is available from Snowflake.
 - Course chapter numbers such as 7, 8, and 9 are different from C03 exam domain numbers.

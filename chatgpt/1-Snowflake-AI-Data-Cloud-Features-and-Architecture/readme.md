@@ -1,6 +1,6 @@
 # Domain 1.0: Snowflake AI Data Cloud Features and Architecture
 
-- **Exam outline:** supplied [C03 guide](../../SnowProCoreStudyGuideC03.pdf), pages 5-7; **31%** weighting.
+- **Exam outline:** supplied [C03 guide](https://learn.snowflake.com/en/certifications/snowpro-core-c03/), pages 5-7; **31%** weighting.
 - **Format and exercise update:** November 5, 2026.
 - **Study cycle:** numbered topic -> Remember line/scenario -> exercise -> expected result -> click a recall question to reveal its answer.
 - **SQL status:** reviewed against official documentation; not executed in your account.

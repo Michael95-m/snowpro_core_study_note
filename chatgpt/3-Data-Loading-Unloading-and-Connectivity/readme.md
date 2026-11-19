@@ -1,6 +1,6 @@
 # Domain 3.0: Data Loading, Unloading, and Connectivity
 
-The [SnowPro Core C03 study guide](../../SnowProCoreStudyGuideC03.pdf) assigns **18%** of the exam to Domain 3. This is a short review sheet: learn the decisions and core syntax here, then use the exercises for hands-on practice.
+The [SnowPro Core C03 study guide](https://learn.snowflake.com/en/certifications/snowpro-core-c03/) assigns **18%** of the exam to Domain 3. This is a short review sheet: learn the decisions and core syntax here, then use the exercises for hands-on practice.
 
 | Objective | Main question |
 | --- | --- |

@@ -1,6 +1,6 @@
 # Domain 4.0: Performance Optimization, Querying, and Transformation
 
-The [SnowPro Core C03 study guide](../../SnowProCoreStudyGuideC03.pdf) assigns **21%** of the exam to Domain 4. This note focuses on recognizing a performance symptom, choosing the right tool, and reading common SQL patterns.
+The [SnowPro Core C03 study guide](https://learn.snowflake.com/en/certifications/snowpro-core-c03/) assigns **21%** of the exam to Domain 4. This note focuses on recognizing a performance symptom, choosing the right tool, and reading common SQL patterns.
 
 | Objective | Main question |
 | --- | --- |

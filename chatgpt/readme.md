@@ -6,7 +6,7 @@
 
 - The notes have sections for all **19 published C03 objectives** across the five domains.
 - This is a map of the exam outline, not a guarantee that every detail or possible exam question appears in the notes.
-- Use the [C03 guide](../SnowProCoreStudyGuideC03.pdf) as your checklist. When a practice question exposes a gap, check the current Snowflake documentation and add that detail to the relevant note.
+- Use the [C03 guide](https://learn.snowflake.com/en/certifications/snowpro-core-c03/) as your checklist. When a practice question exposes a gap, check the current Snowflake documentation and add that detail to the relevant note.
 
 ## Domain notes
 
@@ -43,5 +43,5 @@
 ## Shared resources
 
 - [Images](../img/)
-- [C03 exam study guide](../SnowProCoreStudyGuideC03.pdf)
+- [C03 exam study guide](https://learn.snowflake.com/en/certifications/snowpro-core-c03/)
 - [Repository index](../readme.md)

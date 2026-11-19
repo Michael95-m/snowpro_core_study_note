@@ -15,5 +15,5 @@
 ## Shared resources
 
 - [Images](../img/) remain shared with the generated notes.
-- [C03 exam study guide](../SnowProCoreStudyGuideC03.pdf)
+- [C03 exam study guide](https://learn.snowflake.com/en/certifications/snowpro-core-c03/)
 - [Repository index](../readme.md)

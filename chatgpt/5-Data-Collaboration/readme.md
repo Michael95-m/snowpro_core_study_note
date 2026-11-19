@@ -1,6 +1,6 @@
 # Domain 5.0 · Data Collaboration
 
-- **Exam scope.** The supplied [SnowPro Core C03 study guide](../../SnowProCoreStudyGuideC03.pdf) assigns Domain 5 **10%**. See pages 5 and 11.
+- **Exam scope.** The supplied [SnowPro Core C03 study guide](https://learn.snowflake.com/en/certifications/snowpro-core-c03/) assigns Domain 5 **10%**. See pages 5 and 11.
 - **Study method.** Read a numbered topic, explain its **Remember** line aloud, then try the related SQL and check the expected result.
 - [SQL exercises and checkpoints](exercises/readme.md) · [Share data from multiple databases](#share-data-from-multiple-databases-in-one-direct-share) · [Scenario decision guide](#scenario-decision-guide) · [What to Recall](#what-to-recall)
 - [25-question Domain 5 quiz](practice/domain-5-qa.md) · [Additional lab on sharing unstructured files](../additional-exercises/01-unstructured-data-sharing/readme.md)

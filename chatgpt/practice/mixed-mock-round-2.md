@@ -1,6 +1,6 @@
 # Mixed SnowPro Core Practice — Round 2
 
-[Study notes](../readme.md) · [C03 study guide](../../SnowProCoreStudyGuideC03.pdf)
+[Study notes](../readme.md) · [C03 study guide](https://learn.snowflake.com/en/certifications/snowpro-core-c03/)
 
 These 25 questions mix all five domains, with five questions from each. Try them without opening the answers. Each explanation links to Snowflake documentation. The questions are practice material, not official exam questions.
 

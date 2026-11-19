@@ -1,6 +1,6 @@
 # Domain 2.0: Account Management and Data Governance
 
-The [SnowPro Core C03 study guide](../../SnowProCoreStudyGuideC03.pdf) assigns **20%** of the exam to Domain 2. Learn the access decisions and governance features here; use the linked labs for detailed SQL practice.
+The [SnowPro Core C03 study guide](https://learn.snowflake.com/en/certifications/snowpro-core-c03/) assigns **20%** of the exam to Domain 2. Learn the access decisions and governance features here; use the linked labs for detailed SQL practice.
 
 | Objective | Main question |
 | --- | --- |
